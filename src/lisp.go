@@ -855,18 +855,22 @@ func build_env() {
 		}
 	}
 	syntax_keyword["let"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) <= 2 {
-			return nil, NewRuntimeError("Not Enough Parameter")
-		}
 		var letsym *Symbol
 		var pname []Expression
 		body := 2
 
 		l, ok := v[1].(*List)
+		if ok && len(v) <= 2 {
+			return nil, NewRuntimeError("Not Enough Parameter")
+		}
+
 		if !ok {
 			letsym, ok = v[1].(*Symbol)
 			if !ok {
 				return nil, NewRuntimeError("Not Symbol")
+			}
+			if len(v) <= 3 {
+				return nil, NewRuntimeError("Not Enough Parameter")
 			}
 			l, ok = v[2].(*List)
 			if !ok {
