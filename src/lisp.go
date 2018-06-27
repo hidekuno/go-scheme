@@ -294,6 +294,34 @@ func (self *List) Print() {
 	fmt.Print("\n")
 }
 
+type Pair struct {
+	Expression
+	Car Expression
+	Cdr Expression
+}
+
+func NewPair(car Expression, cdr Expression) *Pair {
+	p := new(Pair)
+	p.Car = car
+	p.Cdr = cdr
+	return p
+}
+
+func (self *Pair) Print() {
+	// for the time being two atom
+	if atom, ok := self.Car.(Atom); ok {
+		fmt.Print("(")
+		atom.PrintValue()
+	}
+	if atom, ok := self.Cdr.(Atom); ok {
+		atom.PrintValue()
+		fmt.Println(")")
+	}
+}
+func (self *Pair) PrintValue() {
+	fmt.Println("Not Support")
+}
+
 type Operator struct {
 	Expression
 	Value func(...Expression) (Expression, error)
