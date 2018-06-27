@@ -361,6 +361,23 @@ func (self *Function) SetEnv(env *Environment) {
 	}
 }
 
+type LetLoop struct {
+	Expression
+	ParamName Expression
+	Body      Expression
+}
+
+func NewLetLoop(param Expression, body Expression) *LetLoop {
+	let := new(LetLoop)
+	let.ParamName = param
+	let.Body = body
+	return let
+}
+
+func (self *LetLoop) Print() {
+	fmt.Println("Let Macro: ", self)
+}
+
 // Parse from tokens,
 func parse(line string) (Expression, error) {
 	token := tokenize(line)
@@ -454,7 +471,6 @@ func atom(token string) Atom {
 
 // Evaluate an expression in an environment.
 func eval(sexp Expression, env *Environment) (Expression, error) {
-
 	if _, ok := sexp.(Atom); ok {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env)[sym.Value]; ok {
@@ -504,12 +520,25 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 					return sexp, err
 				}
 
+				// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
 				if closure, ok := result.(*Function); ok {
 					closure.Env = let
 				} else {
 					fn.SetEnv(let)
 				}
 				return result, nil
+			} else if let, ok := proc.(*LetLoop); ok {
+				// (let loop ((a (list 1 2))) (if (null? a) "ok" (loop (cdr a))))
+				l, _ := let.ParamName.(*List)
+
+				for i, c := range l.Value {
+					pname := c.(*Symbol)
+					(*env)[pname.Value], err = eval(v[i+1], env)
+					if err != nil {
+						return sexp, err
+					}
+				}
+				return eval(let.Body, env)
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -826,12 +855,28 @@ func build_env() {
 		}
 	}
 	syntax_keyword["let"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+		var letsym *Symbol
+		var pname []Expression
+		body := 2
+
+		l, ok := v[1].(*List)
+		if ok && len(v) <= 2 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		l, ok := v[1].(*List)
+
 		if !ok {
-			return nil, NewRuntimeError("Not List")
+			letsym, ok = v[1].(*Symbol)
+			if !ok {
+				return nil, NewRuntimeError("Not Symbol")
+			}
+			if len(v) <= 3 {
+				return nil, NewRuntimeError("Not Enough Parameter")
+			}
+			l, ok = v[2].(*List)
+			if !ok {
+				return nil, NewRuntimeError("Not List")
+			}
+			body = 3
 		}
 		for _, let := range l.Value {
 			r, ok := let.(*List)
@@ -846,9 +891,13 @@ func build_env() {
 			if err != nil {
 				return nil, err
 			}
+			pname = append(pname, sym)
 			(*env)[sym.Value] = v
 		}
-		return eval(v[2], env)
+		if letsym != nil {
+			(*env)[letsym.Value] = NewLetLoop(NewList(pname), v[body])
+		}
+		return eval(v[body], env)
 	}
 }
 
