@@ -312,6 +312,7 @@ func (self *Pair) Print() {
 	if atom, ok := self.Car.(Atom); ok {
 		fmt.Print("(")
 		atom.PrintValue()
+		fmt.Print(" . ")
 	}
 	if atom, ok := self.Cdr.(Atom); ok {
 		atom.PrintValue()
@@ -794,27 +795,26 @@ func build_env() {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
-		if _, ok := exp[0].(Atom); !ok {
-			return nil, NewRuntimeError("Not Atom")
+		if _, ok := exp[1].(*List); ok {
+			var args []Expression
+			args = append(args, exp[0])
+			return NewList(append(args, (exp[1].(*List)).Value...)), nil
 		}
-		if _, ok := exp[1].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
-		}
-		var args []Expression
-		args = append(args, exp[0].(Atom))
-		return NewList(append(args, (exp[1].(*List)).Value...)), nil
+		return NewPair(exp[0], exp[1]), nil
 	}
 	builtin_func["append"] = func(exp ...Expression) (Expression, error) {
-		if len(exp) != 2 {
+		if len(exp) < 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
-		if _, ok := exp[0].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
+		var append_list []Expression
+		for _, e := range exp {
+			if v, ok := e.(*List); ok {
+				append_list = append(append_list, v.Value...)
+			} else {
+				return nil, NewRuntimeError("Not List")
+			}
 		}
-		if _, ok := exp[1].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
-		}
-		return NewList(append((exp[0].(*List)).Value, (exp[1].(*List)).Value...)), nil
+		return NewList(append_list), nil
 	}
 
 	// syntax keyword implements
