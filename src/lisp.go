@@ -812,6 +812,7 @@ func build_env() {
 
 	// map,filter,reduce
 	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
+
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
@@ -837,6 +838,42 @@ func build_env() {
 				return nil, err
 			}
 			va_list = append(va_list, result)
+		}
+		return NewList(va_list), nil
+	}
+	builtin_func["filter"] = func(exp ...Expression) (Expression, error) {
+
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		fn, ok := exp[0].(*Function)
+		if !ok {
+			return nil, NewRuntimeError("Not Function")
+		}
+		l, ok := exp[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("Not List")
+		}
+		var va_list []Expression
+		for _, c := range l.Value {
+
+			values := make([]Expression, 1)
+			values[0] = c
+			let, err := fn.BindParam(fn.Env, values)
+			if err != nil {
+				return nil, err
+			}
+			result, _ := eval(fn.Body, let)
+			if err != nil {
+				return nil, err
+			}
+			b, ok := result.(*Boolean)
+			if !ok {
+				return nil, NewRuntimeError("Not Boolean")
+			}
+			if b.Value {
+				va_list = append(va_list, c)
+			}
 		}
 		return NewList(va_list), nil
 	}
