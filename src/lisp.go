@@ -306,17 +306,17 @@ func (self *Pair) Print() {
 
 type Operator struct {
 	Expression
-	Value func(...Expression) (Expression, error)
+	Impl func(...Expression) (Expression, error)
 }
 
 func NewOperator(fn func(...Expression) (Expression, error)) *Operator {
 	op := new(Operator)
-	op.Value = fn
+	op.Impl = fn
 	return op
 }
 
 func (self *Operator) Print() {
-	fmt.Print(self.Value)
+	fmt.Print("Operatotion or Builtin: ", self)
 }
 
 type Function struct {
@@ -520,7 +520,7 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 					}
 					args = append(args, e)
 				}
-				return op.Value(args...)
+				return op.Impl(args...)
 
 			} else if fn, ok := proc.(*Function); ok {
 				// (proc 10 20)
