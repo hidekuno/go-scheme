@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -60,7 +61,6 @@ type Expression interface {
 
 type Atom interface {
 	Expression
-	PrintValue()
 }
 
 type Symbol struct {
@@ -75,9 +75,6 @@ func NewSymbol(token string) *Symbol {
 }
 
 func (self *Symbol) Print() {
-	fmt.Println(self.Value)
-}
-func (self *Symbol) PrintValue() {
 	fmt.Print(self.Value)
 }
 
@@ -106,11 +103,9 @@ func NewInteger(p int) *Integer {
 }
 
 func (self *Integer) Print() {
-	fmt.Println(self.Value)
-}
-func (self *Integer) PrintValue() {
 	fmt.Print(self.Value)
 }
+
 func (self *Integer) Add(p Number) Number {
 	v, _ := p.(*Integer)
 	self.Value += v.Value
@@ -171,9 +166,6 @@ func NewBoolean(v bool) *Boolean {
 }
 
 func (self *Boolean) Print() {
-	fmt.Println(self.name)
-}
-func (self *Boolean) PrintValue() {
 	fmt.Print(self.name)
 }
 
@@ -187,11 +179,8 @@ func NewFloat(p float64) *Float {
 	v.Value = p
 	return v
 }
-func (self *Float) PrintValue() {
-	fmt.Print(self.Value)
-}
 func (self *Float) Print() {
-	fmt.Println(self.Value)
+	fmt.Print(self.Value)
 }
 func (self *Float) Add(p Number) Number {
 	v, _ := p.(*Float)
@@ -256,9 +245,6 @@ func NewString(p string) *String {
 }
 
 func (self *String) Print() {
-	fmt.Println("\"" + self.Value + "\"")
-}
-func (self *String) PrintValue() {
 	fmt.Print("\"" + self.Value + "\"")
 }
 
@@ -281,8 +267,8 @@ func (self *List) Print() {
 		for _, i := range l.Value {
 			if j, ok := i.(*List); ok {
 				tprint(j)
-			} else if j, ok := i.(Atom); ok {
-				j.PrintValue()
+			} else {
+				j.Print()
 			}
 			if i != l.Value[len(l.Value)-1] {
 				fmt.Print(" ")
@@ -291,7 +277,6 @@ func (self *List) Print() {
 		fmt.Print(")")
 	}
 	tprint(self)
-	fmt.Print("\n")
 }
 
 type Pair struct {
@@ -308,19 +293,11 @@ func NewPair(car Expression, cdr Expression) *Pair {
 }
 
 func (self *Pair) Print() {
-	// for the time being two atom
-	if atom, ok := self.Car.(Atom); ok {
-		fmt.Print("(")
-		atom.PrintValue()
-		fmt.Print(" . ")
-	}
-	if atom, ok := self.Cdr.(Atom); ok {
-		atom.PrintValue()
-		fmt.Println(")")
-	}
-}
-func (self *Pair) PrintValue() {
-	fmt.Println("Not Support")
+	fmt.Print("(")
+	self.Car.Print()
+	fmt.Print(" . ")
+	self.Cdr.Print()
+	fmt.Print(")")
 }
 
 type Operator struct {
@@ -335,7 +312,7 @@ func NewOperator(fn func(...Expression) (Expression, error)) *Operator {
 }
 
 func (self *Operator) Print() {
-	fmt.Println(self.Value)
+	fmt.Print(self.Value)
 }
 
 type Function struct {
@@ -354,7 +331,7 @@ func NewFunction(param Expression, body Expression) *Function {
 }
 
 func (self *Function) Print() {
-	fmt.Println("Function: ", self)
+	fmt.Print("Function: ", self)
 }
 
 // Bind lambda function' parameters.
@@ -404,7 +381,7 @@ func NewLetLoop(param Expression, body Expression) *LetLoop {
 }
 
 func (self *LetLoop) Print() {
-	fmt.Println("Let Macro: ", self)
+	fmt.Print("Let Macro: ", self)
 }
 
 // Parse from tokens,
@@ -618,7 +595,9 @@ func do_interactive() {
 			fmt.Println(err.Error())
 			continue
 		}
+		fmt.Print(reflect.TypeOf(val))
 		val.Print()
+		fmt.Print("\n")
 	}
 }
 
