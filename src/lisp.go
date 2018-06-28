@@ -765,6 +765,8 @@ func build_env() {
 	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
 			return l.Value[0], nil
+		} else if p, ok := exp[0].(*Pair); ok {
+			return p.Car, nil
 		} else {
 			return nil, NewRuntimeError("Not List")
 		}
@@ -772,6 +774,8 @@ func build_env() {
 	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
 			return NewList(l.Value[1:]), nil
+		} else if p, ok := exp[0].(*Pair); ok {
+			return p.Cdr, nil
 		} else {
 			return nil, NewRuntimeError("Not List")
 		}
