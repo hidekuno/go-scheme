@@ -22,6 +22,7 @@ type (
 
 const (
 	MAX_LINE_SIZE = 1024
+	DEBUG         = false
 )
 
 var (
@@ -59,8 +60,13 @@ type Expression interface {
 	Print()
 }
 
+type Any interface{}
 type Atom interface {
 	Expression
+
+	// I don't know why
+	// !!! I need to research about this
+	GetValue() Any
 }
 
 type Symbol struct {
@@ -267,7 +273,7 @@ func (self *List) Print() {
 		for _, i := range l.Value {
 			if j, ok := i.(*List); ok {
 				tprint(j)
-			} else {
+			} else if j, ok := i.(Expression); ok {
 				j.Print()
 			}
 			if i != l.Value[len(l.Value)-1] {
@@ -595,7 +601,9 @@ func do_interactive() {
 			fmt.Println(err.Error())
 			continue
 		}
-		fmt.Print(reflect.TypeOf(val))
+		if DEBUG {
+			fmt.Print(reflect.TypeOf(val))
+		}
 		val.Print()
 		fmt.Print("\n")
 	}
