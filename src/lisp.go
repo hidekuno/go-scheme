@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -21,6 +22,7 @@ type (
 
 const (
 	MAX_LINE_SIZE = 1024
+	DEBUG         = false
 )
 
 var (
@@ -58,9 +60,11 @@ type Expression interface {
 	Print()
 }
 
+type Any interface{}
 type Atom interface {
 	Expression
-	PrintValue()
+	// Because Expression is different
+	Dummy() Any
 }
 
 type Symbol struct {
@@ -75,9 +79,6 @@ func NewSymbol(token string) *Symbol {
 }
 
 func (self *Symbol) Print() {
-	fmt.Println(self.Value)
-}
-func (self *Symbol) PrintValue() {
 	fmt.Print(self.Value)
 }
 
@@ -106,11 +107,9 @@ func NewInteger(p int) *Integer {
 }
 
 func (self *Integer) Print() {
-	fmt.Println(self.Value)
-}
-func (self *Integer) PrintValue() {
 	fmt.Print(self.Value)
 }
+
 func (self *Integer) Add(p Number) Number {
 	v, _ := p.(*Integer)
 	self.Value += v.Value
@@ -171,9 +170,6 @@ func NewBoolean(v bool) *Boolean {
 }
 
 func (self *Boolean) Print() {
-	fmt.Println(self.name)
-}
-func (self *Boolean) PrintValue() {
 	fmt.Print(self.name)
 }
 
@@ -187,11 +183,8 @@ func NewFloat(p float64) *Float {
 	v.Value = p
 	return v
 }
-func (self *Float) PrintValue() {
-	fmt.Print(self.Value)
-}
 func (self *Float) Print() {
-	fmt.Println(self.Value)
+	fmt.Print(self.Value)
 }
 func (self *Float) Add(p Number) Number {
 	v, _ := p.(*Float)
@@ -256,9 +249,6 @@ func NewString(p string) *String {
 }
 
 func (self *String) Print() {
-	fmt.Println("\"" + self.Value + "\"")
-}
-func (self *String) PrintValue() {
 	fmt.Print("\"" + self.Value + "\"")
 }
 
@@ -281,8 +271,8 @@ func (self *List) Print() {
 		for _, i := range l.Value {
 			if j, ok := i.(*List); ok {
 				tprint(j)
-			} else if j, ok := i.(Atom); ok {
-				j.PrintValue()
+			} else if j, ok := i.(Expression); ok {
+				j.Print()
 			}
 			if i != l.Value[len(l.Value)-1] {
 				fmt.Print(" ")
@@ -291,7 +281,27 @@ func (self *List) Print() {
 		fmt.Print(")")
 	}
 	tprint(self)
-	fmt.Print("\n")
+}
+
+type Pair struct {
+	Expression
+	Car Expression
+	Cdr Expression
+}
+
+func NewPair(car Expression, cdr Expression) *Pair {
+	p := new(Pair)
+	p.Car = car
+	p.Cdr = cdr
+	return p
+}
+
+func (self *Pair) Print() {
+	fmt.Print("(")
+	self.Car.Print()
+	fmt.Print(" . ")
+	self.Cdr.Print()
+	fmt.Print(")")
 }
 
 type Operator struct {
@@ -306,7 +316,7 @@ func NewOperator(fn func(...Expression) (Expression, error)) *Operator {
 }
 
 func (self *Operator) Print() {
-	fmt.Println(self.Value)
+	fmt.Print(self.Value)
 }
 
 type Function struct {
@@ -325,7 +335,7 @@ func NewFunction(param Expression, body Expression) *Function {
 }
 
 func (self *Function) Print() {
-	fmt.Println("Function: ", self)
+	fmt.Print("Function: ", self)
 }
 
 // Bind lambda function' parameters.
@@ -375,7 +385,7 @@ func NewLetLoop(param Expression, body Expression) *LetLoop {
 }
 
 func (self *LetLoop) Print() {
-	fmt.Println("Let Macro: ", self)
+	fmt.Print("Let Macro: ", self)
 }
 
 // Parse from tokens,
@@ -589,7 +599,11 @@ func do_interactive() {
 			fmt.Println(err.Error())
 			continue
 		}
+		if DEBUG {
+			fmt.Print(reflect.TypeOf(val))
+		}
 		val.Print()
+		fmt.Print("\n")
 	}
 }
 
@@ -751,6 +765,8 @@ func build_env() {
 	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
 			return l.Value[0], nil
+		} else if p, ok := exp[0].(*Pair); ok {
+			return p.Car, nil
 		} else {
 			return nil, NewRuntimeError("Not List")
 		}
@@ -758,6 +774,8 @@ func build_env() {
 	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
 			return NewList(l.Value[1:]), nil
+		} else if p, ok := exp[0].(*Pair); ok {
+			return p.Cdr, nil
 		} else {
 			return nil, NewRuntimeError("Not List")
 		}
@@ -766,27 +784,26 @@ func build_env() {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
-		if _, ok := exp[0].(Atom); !ok {
-			return nil, NewRuntimeError("Not Atom")
+		if _, ok := exp[1].(*List); ok {
+			var args []Expression
+			args = append(args, exp[0])
+			return NewList(append(args, (exp[1].(*List)).Value...)), nil
 		}
-		if _, ok := exp[1].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
-		}
-		var args []Expression
-		args = append(args, exp[0].(Atom))
-		return NewList(append(args, (exp[1].(*List)).Value...)), nil
+		return NewPair(exp[0], exp[1]), nil
 	}
 	builtin_func["append"] = func(exp ...Expression) (Expression, error) {
-		if len(exp) != 2 {
+		if len(exp) < 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
-		if _, ok := exp[0].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
+		var append_list []Expression
+		for _, e := range exp {
+			if v, ok := e.(*List); ok {
+				append_list = append(append_list, v.Value...)
+			} else {
+				return nil, NewRuntimeError("Not List")
+			}
 		}
-		if _, ok := exp[1].(*List); !ok {
-			return nil, NewRuntimeError("Not List")
-		}
-		return NewList(append((exp[0].(*List)).Value, (exp[1].(*List)).Value...)), nil
+		return NewList(append_list), nil
 	}
 
 	// syntax keyword implements
