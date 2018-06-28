@@ -63,10 +63,8 @@ type Expression interface {
 type Any interface{}
 type Atom interface {
 	Expression
-
-	// I don't know why
-	// !!! I need to research about this
-	GetValue() Any
+	// Because Expression is different
+	Dummy() Any
 }
 
 type Symbol struct {
