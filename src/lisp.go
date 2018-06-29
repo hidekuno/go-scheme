@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -481,6 +482,7 @@ func atom(token string) Atom {
 
 // Evaluate an expression in an environment.
 func eval(sexp Expression, env *Environment) (Expression, error) {
+
 	if _, ok := sexp.(Atom); ok {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env)[sym.Value]; ok {
@@ -568,9 +570,16 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 			if ef, err := fn.BindParam(env, v[1:]); err == nil {
 				return eval(fn.Body, ef)
 			}
+		} else {
+			// 10,11.. ,etc
+			return v[0], nil
 		}
 	}
-	return sexp, NewRuntimeError("Undefine Data Type")
+	if DEBUG {
+		fmt.Println(reflect.TypeOf(sexp))
+		return sexp, NewRuntimeError("Undefine Data Type")
+	}
+	return sexp, nil
 }
 
 // CUI desu.
@@ -809,7 +818,41 @@ func build_env() {
 		}
 		return NewList(append_list), nil
 	}
+	builtin_func["last"] = func(exp ...Expression) (Expression, error) {
+		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) <= 0 {
+				return nil, NewRuntimeError("Not Enough Parameter Length")
+			}
+			return l.Value[len(l.Value)-1], nil
+		} else if p, ok := exp[0].(*Pair); ok {
+			return p.Car, nil
+		} else {
+			return nil, NewRuntimeError("Not List")
+		}
+	}
+	builtin_func["iota"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		var l []Expression
+		max, ok := exp[0].(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("Not Integer")
+		}
+		start := 0
+		if len(exp) == 2 {
+			v, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("Not Integer")
+			}
+			start = v.Value
+		}
+		for i := start; i < start+max.Value; i++ {
+			l = append(l, NewInteger(i))
+		}
 
+		return NewList(l), nil
+	}
 	// map,filter,reduce
 	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
 
@@ -824,16 +867,14 @@ func build_env() {
 		if !ok {
 			return nil, NewRuntimeError("Not List")
 		}
+
 		var va_list []Expression
 		for _, c := range l.Value {
+			plist := fn.ParamName.(*List)
+			sym := plist.Value[0].(*Symbol)
 
-			values := make([]Expression, 1)
-			values[0] = c
-			let, err := fn.BindParam(fn.Env, values)
-			if err != nil {
-				return nil, err
-			}
-			result, _ := eval(fn.Body, let)
+			(*fn.Env)[sym.Value] = c
+			result, err := eval(fn.Body, fn.Env)
 			if err != nil {
 				return nil, err
 			}
@@ -856,14 +897,11 @@ func build_env() {
 		}
 		var va_list []Expression
 		for _, c := range l.Value {
+			plist := fn.ParamName.(*List)
+			sym := plist.Value[0].(*Symbol)
 
-			values := make([]Expression, 1)
-			values[0] = c
-			let, err := fn.BindParam(fn.Env, values)
-			if err != nil {
-				return nil, err
-			}
-			result, _ := eval(fn.Body, let)
+			(*fn.Env)[sym.Value] = c
+			result, err := eval(fn.Body, fn.Env)
 			if err != nil {
 				return nil, err
 			}
@@ -877,6 +915,19 @@ func build_env() {
 		}
 		return NewList(va_list), nil
 	}
+	// math
+	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		if v, ok := exp[0].(*Float); ok {
+			return NewFloat(math.Sqrt(v.Value)), nil
+		} else if v, ok := exp[0].(*Integer); ok {
+			return NewFloat(math.Sqrt((float64)(v.Value))), nil
+		}
+		return nil, NewRuntimeError("Not Enough Type")
+	}
+
 	// syntax keyword implements
 	syntax_keyword["if"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 4 {
