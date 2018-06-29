@@ -570,16 +570,9 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 			if ef, err := fn.BindParam(env, v[1:]); err == nil {
 				return eval(fn.Body, ef)
 			}
-		} else {
-			// 10,11.. ,etc
-			return v[0], nil
 		}
 	}
-	if DEBUG {
-		fmt.Println(reflect.TypeOf(sexp))
-		return sexp, NewRuntimeError("Undefine Data Type")
-	}
-	return sexp, nil
+	return sexp, NewRuntimeError("Undefine Data Type")
 }
 
 // CUI desu.
