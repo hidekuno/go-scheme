@@ -364,7 +364,7 @@ func (self *Function) BindParam(env *Environment, values []Expression) (*Environ
 	}
 	return &local_env, nil
 }
-func (self *Function) SetEnv(env *Environment) {
+func (self *Function) SetKeyNameEnv(env *Environment) {
 	for key, _ := range *self.Env {
 		if _, ok := (*env)[key]; ok {
 			(*self.Env)[key] = (*env)[key]
@@ -540,7 +540,7 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 				if closure, ok := result.(*Function); ok {
 					closure.Env = let
 				} else {
-					fn.SetEnv(let)
+					fn.SetKeyNameEnv(let)
 				}
 				return result, nil
 			} else if let, ok := proc.(*LetLoop); ok {
