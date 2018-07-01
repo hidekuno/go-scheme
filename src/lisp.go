@@ -897,19 +897,66 @@ func build_env() {
 		}
 		return iter_func(lambda, exp...)
 	}
-	// math
-	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
+	builtin_func["reduce"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		fn, ok := exp[0].(*Function)
+		if !ok {
+			return nil, NewRuntimeError("Not Function")
+		}
+		l, ok := exp[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("Not List")
+		}
+
+		param := make([]Expression,len((fn.ParamName.(*List)).Value))
+		result := l.Value[0]
+		var err error
+		for _, c := range l.Value[1:] {
+			param[0] = result
+			param[1] = c
+			let,_ := fn.BindParam(nil,param)
+			result, err = eval(fn.Body, let)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return result,nil
+	}
+	// math skelton
+	math_impl := func(math_func func (float64) float64, exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
 		if v, ok := exp[0].(*Float); ok {
-			return NewFloat(math.Sqrt(v.Value)), nil
+			return NewFloat(math_func(v.Value)), nil
 		} else if v, ok := exp[0].(*Integer); ok {
-			return NewFloat(math.Sqrt((float64)(v.Value))), nil
+			return NewFloat(math_func((float64)(v.Value))), nil
 		}
 		return nil, NewRuntimeError("Not Enough Type")
 	}
-
+	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Sqrt, exp...)
+	}
+	builtin_func["sin"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Sin, exp...)
+	}
+	builtin_func["cos"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Cos, exp...)
+	}
+	builtin_func["tan"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Tan, exp...)
+	}
+	builtin_func["atan"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Atan, exp...)
+	}
+	builtin_func["log"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Log, exp...)
+	}
+	builtin_func["exp"] = func(exp ...Expression) (Expression, error) {
+		return math_impl(math.Exp, exp...)
+	}
 	// syntax keyword implements
 	syntax_keyword["if"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 4 {
