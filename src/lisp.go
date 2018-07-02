@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"os"
 	"reflect"
 	"strconv"
@@ -851,7 +852,7 @@ func build_env() {
 		return NewList(l), nil
 	}
 	// map,filter,reduce
-	iter_func := func(lambda func(Expression, Expression,[]Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
+	iter_func := func(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
@@ -864,25 +865,25 @@ func build_env() {
 			return nil, NewRuntimeError("Not List")
 		}
 		var va_list []Expression
-		param := make([]Expression,1)
+		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
-			let,_ := fn.BindParam(nil,param)
+			let, _ := fn.BindParam(nil, param)
 			result, err := eval(fn.Body, let)
 			if err != nil {
 				return nil, err
 			}
 			va_list, err = lambda(result, param[0], va_list)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 		}
 		return NewList(va_list), nil
 	}
 	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
-			return append(va_list, result),nil
+			return append(va_list, result), nil
 		}
-		return iter_func(lambda,exp...)
+		return iter_func(lambda, exp...)
 	}
 	builtin_func["filter"] = func(exp ...Expression) (Expression, error) {
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
@@ -891,9 +892,9 @@ func build_env() {
 				return nil, NewRuntimeError("Not Boolean")
 			}
 			if b.Value {
-				return append(va_list, item),nil
+				return append(va_list, item), nil
 			}
-			return va_list,nil
+			return va_list, nil
 		}
 		return iter_func(lambda, exp...)
 	}
@@ -910,22 +911,22 @@ func build_env() {
 			return nil, NewRuntimeError("Not List")
 		}
 
-		param := make([]Expression,len((fn.ParamName.(*List)).Value))
+		param := make([]Expression, len((fn.ParamName.(*List)).Value))
 		result := l.Value[0]
 		var err error
 		for _, c := range l.Value[1:] {
 			param[0] = result
 			param[1] = c
-			let,_ := fn.BindParam(nil,param)
+			let, _ := fn.BindParam(nil, param)
 			result, err = eval(fn.Body, let)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return result,nil
+		return result, nil
 	}
 	// math skelton
-	math_impl := func(math_func func (float64) float64, exp ...Expression) (Expression, error) {
+	math_impl := func(math_func func(float64) float64, exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
@@ -956,6 +957,15 @@ func build_env() {
 	}
 	builtin_func["exp"] = func(exp ...Expression) (Expression, error) {
 		return math_impl(math.Exp, exp...)
+	}
+	builtin_func["rand-integer"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		if v, ok := exp[0].(*Integer); ok {
+			return NewInteger(rand.Intn(v.Value)), nil
+		}
+		return nil, NewRuntimeError("Not Integer")
 	}
 	// syntax keyword implements
 	syntax_keyword["if"] = func(env *Environment, v []Expression) (Expression, error) {
