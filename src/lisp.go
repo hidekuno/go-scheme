@@ -28,9 +28,9 @@ const (
 )
 
 var (
-	builtin_func   map[string]func(...Expression) (Expression, error)
-	syntax_keyword map[string]func(*Environment, []Expression) (Expression, error)
-	define_env     Environment
+	builtin_func map[string]func(...Expression) (Expression, error)
+	special_func map[string]func(*Environment, []Expression) (Expression, error)
+	define_env   Environment
 )
 
 // Basic Data Type. (need
@@ -507,7 +507,7 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 		v := sl.Value
 
 		if sym, ok := v[0].(*Symbol); ok {
-			if kfn, ok := syntax_keyword[sym.Value]; ok {
+			if kfn, ok := special_func[sym.Value]; ok {
 				return kfn(env, v)
 			}
 			proc, err := eval(v[0], env)
@@ -622,7 +622,7 @@ func do_interactive() {
 func build_env() {
 
 	builtin_func = map[string]func(...Expression) (Expression, error){}
-	syntax_keyword = map[string]func(*Environment, []Expression) (Expression, error){}
+	special_func = map[string]func(*Environment, []Expression) (Expression, error){}
 	define_env = Environment{}
 
 	// addl, subl,imul,idiv,modulo
@@ -741,6 +741,9 @@ func build_env() {
 		return NewList(append(l, exp...)), nil
 	}
 	builtin_func["null?"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		if l, ok := exp[0].(*List); ok {
 			return NewBoolean(0 == len(l.Value)), nil
 		} else {
@@ -748,6 +751,9 @@ func build_env() {
 		}
 	}
 	builtin_func["length"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		if l, ok := exp[0].(*List); ok {
 			return NewInteger(len(l.Value)), nil
 		} else {
@@ -755,6 +761,9 @@ func build_env() {
 		}
 	}
 	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
 				return nil, NewRuntimeError("Not Enough Parameter Number")
@@ -767,6 +776,9 @@ func build_env() {
 		}
 	}
 	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
 				var v []Expression
@@ -805,6 +817,9 @@ func build_env() {
 		return NewList(append_list), nil
 	}
 	builtin_func["last"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
 				return nil, NewRuntimeError("Not Enough Parameter Length")
@@ -868,12 +883,18 @@ func build_env() {
 		return NewList(va_list), nil
 	}
 	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
 			return append(va_list, result), nil
 		}
 		return iter_func(lambda, exp...)
 	}
 	builtin_func["filter"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
 			b, ok := result.(*Boolean)
 			if !ok {
@@ -956,7 +977,7 @@ func build_env() {
 		return nil, NewRuntimeError("Not Integer")
 	}
 	// syntax keyword implements
-	syntax_keyword["if"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["if"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 4 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
@@ -977,7 +998,7 @@ func build_env() {
 			return eval(v[3], env)
 		}
 	}
-	syntax_keyword["define"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["define"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
@@ -989,13 +1010,13 @@ func build_env() {
 		define_env[key.Value] = exp
 		return key, nil
 	}
-	syntax_keyword["lambda"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["lambda"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
 		return NewFunction(v[1], v[2]), nil
 	}
-	syntax_keyword["set!"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["set!"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
@@ -1020,7 +1041,7 @@ func build_env() {
 			return exp, NewRuntimeError("Undefined Variable: " + s.Value)
 		}
 	}
-	syntax_keyword["let"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["let"] = func(env *Environment, v []Expression) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
 		body := 2
@@ -1084,10 +1105,10 @@ func build_env() {
 		}
 		return NewBoolean(bret), nil
 	}
-	syntax_keyword["and"] = func(env *Environment, exp []Expression) (Expression, error) {
+	special_func["and"] = func(env *Environment, exp []Expression) (Expression, error) {
 		return op_logical(env, exp[1:], false, true)
 	}
-	syntax_keyword["or"] = func(env *Environment, exp []Expression) (Expression, error) {
+	special_func["or"] = func(env *Environment, exp []Expression) (Expression, error) {
 		return op_logical(env, exp[1:], true, false)
 	}
 
