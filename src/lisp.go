@@ -323,14 +323,14 @@ func (self *Operator) Print() {
 
 type Function struct {
 	Expression
-	ParamName Expression
+	ParamName List
 	Body      []Expression
 	Env       *Environment
 }
 
-func NewFunction(param Expression, body []Expression) *Function {
+func NewFunction(param *List, body []Expression) *Function {
 	fn := new(Function)
-	fn.ParamName = param
+	fn.ParamName = *param
 	fn.Body = body
 	fn.Env = &Environment{}
 	return fn
@@ -343,14 +343,13 @@ func (self *Function) Print() {
 // Bind lambda function' parameters.
 func (self *Function) BindParam(env *Environment, values []Expression) (*Environment, error) {
 
-	plist, _ := self.ParamName.(*List)
 	local_env := Environment{}
 	for key, _ := range *self.Env {
 		local_env[key] = (*self.Env)[key]
 	}
 
 	idx := 0
-	for _, i := range plist.Value {
+	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
 			if idx+1 > len(values) {
 				return nil, NewRuntimeError("Not Enough ParamName Number")
@@ -930,7 +929,7 @@ func build_env() {
 			return nil, NewRuntimeError("Not List")
 		}
 
-		param := make([]Expression, len((fn.ParamName.(*List)).Value))
+		param := make([]Expression, len(fn.ParamName.Value))
 		result := l.Value[0]
 		var err error
 		for _, c := range l.Value[1:] {
@@ -1027,7 +1026,11 @@ func build_env() {
 		if len(v) < 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		return NewFunction(v[1], v[2:]), nil
+		l, ok := v[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("Not List")
+		}
+		return NewFunction(l, v[2:]), nil
 	}
 	special_func["set!"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
