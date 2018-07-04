@@ -324,11 +324,11 @@ func (self *Operator) Print() {
 type Function struct {
 	Expression
 	ParamName Expression
-	Body      Expression
+	Body      []Expression
 	Env       *Environment
 }
 
-func NewFunction(param Expression, body Expression) *Function {
+func NewFunction(param Expression, body []Expression) *Function {
 	fn := new(Function)
 	fn.ParamName = param
 	fn.Body = body
@@ -375,6 +375,25 @@ func (self *Function) SetKeyNameEnv(env *Environment) {
 			(*self.Env)[key] = (*env)[key]
 		}
 	}
+}
+func (self *Function) Execute(env *Environment) (Expression, error) {
+	var (
+		result Expression
+		err    error
+	)
+	for _, exp := range self.Body {
+		result, err = eval(exp, env)
+		if err != nil {
+			return exp, err
+		}
+		// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
+		if closure, ok := result.(*Function); ok {
+			closure.Env = env
+		} else {
+			self.SetKeyNameEnv(env)
+		}
+	}
+	return result, nil
 }
 
 type LetLoop struct {
@@ -535,19 +554,8 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 				if err != nil {
 					return sexp, err
 				}
+				return fn.Execute(let)
 
-				result, err := eval(fn.Body, let)
-				if err != nil {
-					return sexp, err
-				}
-
-				// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
-				if closure, ok := result.(*Function); ok {
-					closure.Env = let
-				} else {
-					fn.SetKeyNameEnv(let)
-				}
-				return result, nil
 			} else if let, ok := proc.(*LetLoop); ok {
 				// (let loop ((a (list 1 2))) (if (null? a) "ok" (loop (cdr a))))
 				l, _ := let.ParamName.(*List)
@@ -572,9 +580,11 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 				return sexp, NewRuntimeError("Not Function")
 			}
 			// name binding
-			if ef, err := fn.BindParam(env, v[1:]); err == nil {
-				return eval(fn.Body, ef)
+			ef, err := fn.BindParam(env, v[1:])
+			if err != nil {
+				return nil, err
 			}
+			return fn.Execute(ef)
 		}
 	}
 	return sexp, NewRuntimeError("Undefine Data Type")
@@ -871,7 +881,7 @@ func build_env() {
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
 			let, _ := fn.BindParam(nil, param)
-			result, err := eval(fn.Body, let)
+			result, err := fn.Execute(let)
 			if err != nil {
 				return nil, err
 			}
@@ -927,7 +937,7 @@ func build_env() {
 			param[0] = result
 			param[1] = c
 			let, _ := fn.BindParam(nil, param)
-			result, err = eval(fn.Body, let)
+			result, err = fn.Execute(let)
 			if err != nil {
 				return nil, err
 			}
@@ -1006,15 +1016,18 @@ func build_env() {
 		if !ok {
 			return nil, NewRuntimeError("Not Symbol")
 		}
-		exp, _ := eval(v[2], env)
+		exp, err := eval(v[2], env)
+		if err != nil {
+			return nil, err
+		}
 		define_env[key.Value] = exp
 		return key, nil
 	}
 	special_func["lambda"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+		if len(v) < 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		return NewFunction(v[1], v[2]), nil
+		return NewFunction(v[1], v[2:]), nil
 	}
 	special_func["set!"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
