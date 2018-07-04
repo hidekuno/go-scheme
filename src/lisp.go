@@ -725,25 +725,6 @@ func build_env() {
 	builtin_func["="] = func(exp ...Expression) (Expression, error) {
 		return op_cmp(func(a Number, b Number) bool { return a.Equal(b) }, exp...)
 	}
-	// and or not
-	op_logical := func(logic func(bool, bool) bool, exp ...Expression) (*Boolean, error) {
-		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
-		}
-		if _, ok := exp[0].(*Boolean); !ok {
-			return nil, NewRuntimeError("Not Boolean")
-		}
-		if _, ok := exp[1].(*Boolean); !ok {
-			return nil, NewRuntimeError("Not Boolean")
-		}
-		return NewBoolean(logic((exp[0].(*Boolean)).Value, (exp[1].(*Boolean)).Value)), nil
-	}
-	builtin_func["and"] = func(exp ...Expression) (Expression, error) {
-		return op_logical(func(p1 bool, p2 bool) bool { return p1 && p2 }, exp...)
-	}
-	builtin_func["or"] = func(exp ...Expression) (Expression, error) {
-		return op_logical(func(p1 bool, p2 bool) bool { return p1 || p2 }, exp...)
-	}
 	builtin_func["not"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
@@ -775,6 +756,9 @@ func build_env() {
 	}
 	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) <= 0 {
+				return nil, NewRuntimeError("Not Enough Parameter Number")
+			}
 			return l.Value[0], nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Car, nil
@@ -784,6 +768,10 @@ func build_env() {
 	}
 	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
 		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) <= 0 {
+				var v []Expression
+				return NewList(v), nil
+			}
 			return NewList(l.Value[1:]), nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Cdr, nil
@@ -1077,6 +1065,32 @@ func build_env() {
 		}
 		return eval(v[body], env)
 	}
+	// and or not
+	op_logical := func(env *Environment, exp []Expression, bcond bool, bret bool) (Expression, error) {
+		if len(exp) <= 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		for _, e := range exp {
+			b, err := eval(e, env)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := b.(*Boolean); !ok {
+				return nil, NewRuntimeError("Not Boolean")
+			}
+			if bcond == (b.(*Boolean)).Value {
+				return NewBoolean(bcond), nil
+			}
+		}
+		return NewBoolean(bret), nil
+	}
+	syntax_keyword["and"] = func(env *Environment, exp []Expression) (Expression, error) {
+		return op_logical(env, exp[1:], false, true)
+	}
+	syntax_keyword["or"] = func(env *Environment, exp []Expression) (Expression, error) {
+		return op_logical(env, exp[1:], true, false)
+	}
+
 }
 
 // Main
