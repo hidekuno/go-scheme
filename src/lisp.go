@@ -30,64 +30,44 @@ const (
 var (
 	builtin_func map[string]func(...Expression) (Expression, error)
 	special_func map[string]func(*SimpleEnv, []Expression) (Expression, error)
-	define_env   Environment
 )
 
 // env structure
 type SimpleEnv struct {
-	env    *Environment
-	parent *SimpleEnv
+	EnvTable *Environment
+	Parent *SimpleEnv
 }
 
 func NewSimpleEnv(parent *SimpleEnv) *SimpleEnv {
 	v := new(SimpleEnv)
-	v.parent = parent
+	v.Parent = parent
 	env := Environment{}
-	v.env = &env
+	v.EnvTable = &env
 	return v
 }
 func (self *SimpleEnv) Find(key string) (Expression, bool) {
-	if v, ok := (*self.env)[key]; ok {
+	if v, ok := (*self.EnvTable)[key]; ok {
 		return v, true
 	}
-	for c := self.parent; c != nil; c = c.parent {
-		if v, ok := (*c.env)[key]; ok {
+	for c := self.Parent; c != nil; c = c.Parent {
+		if v, ok := (*c.EnvTable)[key]; ok {
 			return v, true
 		}
 	}
 	return nil, false
 }
 func (self *SimpleEnv) Set(key string, exp Expression) {
-	if _, ok := (*self.env)[key]; ok {
-		(*self.env)[key] = exp
+	if _, ok := (*self.EnvTable)[key]; ok {
+		(*self.EnvTable)[key] = exp
 		return
 	}
-	for c := self.parent; c != nil; c = c.parent {
-		if v, ok := (*c.env)[key]; ok {
-			(*c.env)[key] = exp
+	for c := self.Parent; c != nil; c = c.Parent {
+		if _, ok := (*c.EnvTable)[key]; ok {
+			(*c.EnvTable)[key] = exp
 			return
 		}
 	}
-	(*self.env)[key] = exp
-}
-
-func test_env() {
-	root_env := NewSimpleEnv(nil)
-	root_env.Set("test", NewBoolean(true))
-	b, _ := root_env.Find("test")
-	b.Print()
-	fmt.Println()
-	child := NewSimpleEnv(root_env)
-	child.Set("test1", NewInteger(10))
-
-	if i, ok := child.Find("test1"); ok {
-		i.Print()
-		fmt.Println()
-	}
-	if z, ok := child.Find("test"); ok {
-		z.Print()
-		fmt.Println()
-	}
+	(*self.EnvTable)[key] = exp
 }
 
 // Basic Data Type. (need
@@ -398,16 +378,12 @@ func (self *Function) Print() {
 }
 
 // Bind lambda function' parameters.
-func (self *Function) BindParam(env *SimpleEnv, values []Expression) (*Environment, error) {
-
+func (self *Function) BindParam(env *SimpleEnv, values []Expression) (*SimpleEnv, error) {
 	local_env := Environment{}
-	for key, _ := range *self.Env {
-		local_env[key] = (*self.Env)[key]
-	}
-
 	idx := 0
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
+
 			if idx+1 > len(values) {
 				return nil, NewRuntimeError("Not Enough ParamName Number")
 			}
@@ -423,14 +399,9 @@ func (self *Function) BindParam(env *SimpleEnv, values []Expression) (*Environme
 			idx = idx + 1
 		}
 	}
-	return &local_env, nil
-}
-func (self *Function) SetKeyNameEnv(env *SimpleEnv) {
-	for key, _ := range *self.Env {
-		if _, ok := (*env)[key]; ok {
-			(*self.Env)[key] = (*env)[key]
-		}
-	}
+	self.Env = NewSimpleEnv(self.Env)
+	self.Env.EnvTable = &local_env
+	return self.Env,nil
 }
 func (self *Function) Execute(env *SimpleEnv) (Expression, error) {
 	var (
@@ -441,12 +412,6 @@ func (self *Function) Execute(env *SimpleEnv) (Expression, error) {
 		result, err = eval(exp, env)
 		if err != nil {
 			return exp, err
-		}
-		// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
-		if closure, ok := result.(*Function); ok {
-			closure.Env = env
-		} else {
-			self.SetKeyNameEnv(env)
 		}
 	}
 	return result, nil
@@ -672,7 +637,7 @@ func do_interactive() {
 			continue
 		}
 
-		val, err := eval(ast, &root_env)
+		val, err := eval(ast, root_env)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -1112,7 +1077,7 @@ func build_func() {
 			return exp, NewRuntimeError("Undefined Variable: " + s.Value)
 		}
 		(*env).Set(s.Value, exp)
-		return (*env)[s.Value], nil
+		return exp, nil
 	}
 	special_func["let"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		var letsym *Symbol
@@ -1138,6 +1103,8 @@ func build_func() {
 			}
 			body = 3
 		}
+		letenv := NewSimpleEnv(env)
+		local_env := Environment{}
 		for _, let := range l.Value {
 			r, ok := let.(*List)
 			if !ok {
@@ -1152,12 +1119,13 @@ func build_func() {
 				return nil, err
 			}
 			pname = append(pname, sym)
-			(*env).Set(letsym.Value, v)
+			local_env[sym.Value] = v
 		}
 		if letsym != nil {
 			(*env).Set(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
-		return eval(v[body], env)
+		letenv.EnvTable = &local_env
+		return eval(v[body], letenv)
 	}
 	// and or not
 	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
@@ -1189,6 +1157,5 @@ func build_func() {
 // Main
 func main() {
 	build_func()
-	test_env()
-	//do_interactive()
+	do_interactive()
 }
