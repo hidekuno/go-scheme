@@ -33,6 +33,53 @@ var (
 	define_env   Environment
 )
 
+// env structure
+type SimpleEnv struct {
+	env    *Environment
+	parent *SimpleEnv
+}
+
+func NewSimpleEnv(parent *SimpleEnv) *SimpleEnv {
+	v := new(SimpleEnv)
+	v.parent = parent
+	env := Environment{}
+	v.env = &env
+	return v
+}
+func (self *SimpleEnv) Find(key string) (Expression, bool) {
+	if v, ok := (*self.env)[key]; ok {
+		return v, true
+	}
+	for c := self.parent; c != nil; c = c.parent {
+		if v, ok := (*c.env)[key]; ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+func (self *SimpleEnv) Set(key string, exp Expression) {
+	(*self.env)[key] = exp
+}
+
+func test_env() {
+	root_env := NewSimpleEnv(nil)
+	root_env.Set("test", NewBoolean(true))
+	b, _ := root_env.Find("test")
+	b.Print()
+	fmt.Println()
+	child := NewSimpleEnv(root_env)
+	child.Set("test1", NewInteger(10))
+
+	if i, ok := child.Find("test1"); ok {
+		i.Print()
+		fmt.Println()
+	}
+	if z, ok := child.Find("test"); ok {
+		z.Print()
+		fmt.Println()
+	}
+}
+
 // Basic Data Type. (need
 type SyntaxError struct {
 	Msg string
@@ -1136,11 +1183,11 @@ func build_env() {
 	special_func["or"] = func(env *Environment, exp []Expression) (Expression, error) {
 		return op_logical(env, exp[1:], true, false)
 	}
-
 }
 
 // Main
 func main() {
 	build_env()
-	do_interactive()
+	test_env()
+	//do_interactive()
 }
