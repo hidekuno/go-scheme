@@ -448,6 +448,11 @@ func create_ast(tokens []string) (Expression, int, error) {
 
 		count := 1
 		for {
+			if tokens[0] == ")" {
+				count = count + 1
+				break
+			}
+
 			exp, c, err := create_ast(tokens)
 			if err != nil {
 				return nil, c, err
@@ -459,10 +464,6 @@ func create_ast(tokens []string) (Expression, int, error) {
 			if len(tokens) == 0 {
 				err := NewSyntaxError("unexpected ')' while reading")
 				return nil, 0, err
-			}
-			if tokens[0] == ")" {
-				count = count + 1
-				break
 			}
 		}
 		item := NewList(L)
