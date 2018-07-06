@@ -323,14 +323,14 @@ func (self *Operator) Print() {
 
 type Function struct {
 	Expression
-	ParamName Expression
-	Body      Expression
+	ParamName List
+	Body      []Expression
 	Env       *Environment
 }
 
-func NewFunction(param Expression, body Expression) *Function {
+func NewFunction(param *List, body []Expression) *Function {
 	fn := new(Function)
-	fn.ParamName = param
+	fn.ParamName = *param
 	fn.Body = body
 	fn.Env = &Environment{}
 	return fn
@@ -343,14 +343,13 @@ func (self *Function) Print() {
 // Bind lambda function' parameters.
 func (self *Function) BindParam(env *Environment, values []Expression) (*Environment, error) {
 
-	plist, _ := self.ParamName.(*List)
 	local_env := Environment{}
 	for key, _ := range *self.Env {
 		local_env[key] = (*self.Env)[key]
 	}
 
 	idx := 0
-	for _, i := range plist.Value {
+	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
 			if idx+1 > len(values) {
 				return nil, NewRuntimeError("Not Enough ParamName Number")
@@ -376,16 +375,35 @@ func (self *Function) SetKeyNameEnv(env *Environment) {
 		}
 	}
 }
+func (self *Function) Execute(env *Environment) (Expression, error) {
+	var (
+		result Expression
+		err    error
+	)
+	for _, exp := range self.Body {
+		result, err = eval(exp, env)
+		if err != nil {
+			return exp, err
+		}
+		// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
+		if closure, ok := result.(*Function); ok {
+			closure.Env = env
+		} else {
+			self.SetKeyNameEnv(env)
+		}
+	}
+	return result, nil
+}
 
 type LetLoop struct {
 	Expression
-	ParamName Expression
+	ParamName List
 	Body      Expression
 }
 
-func NewLetLoop(param Expression, body Expression) *LetLoop {
+func NewLetLoop(param *List, body Expression) *LetLoop {
 	let := new(LetLoop)
-	let.ParamName = param
+	let.ParamName = *param
 	let.Body = body
 	return let
 }
@@ -430,7 +448,15 @@ func create_ast(tokens []string) (Expression, int, error) {
 
 		count := 1
 		for {
-			exp, c, _ := create_ast(tokens)
+			if tokens[0] == ")" {
+				count = count + 1
+				break
+			}
+
+			exp, c, err := create_ast(tokens)
+			if err != nil {
+				return nil, c, err
+			}
 			L = append(L, exp)
 			tokens = tokens[c:]
 			count = count + c
@@ -438,10 +464,6 @@ func create_ast(tokens []string) (Expression, int, error) {
 			if len(tokens) == 0 {
 				err := NewSyntaxError("unexpected ')' while reading")
 				return nil, 0, err
-			}
-			if tokens[0] == ")" {
-				count = count + 1
-				break
 			}
 		}
 		item := NewList(L)
@@ -535,24 +557,11 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 				if err != nil {
 					return sexp, err
 				}
+				return fn.Execute(let)
 
-				result, err := eval(fn.Body, let)
-				if err != nil {
-					return sexp, err
-				}
-
-				// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
-				if closure, ok := result.(*Function); ok {
-					closure.Env = let
-				} else {
-					fn.SetKeyNameEnv(let)
-				}
-				return result, nil
 			} else if let, ok := proc.(*LetLoop); ok {
-				// (let loop ((a (list 1 2))) (if (null? a) "ok" (loop (cdr a))))
-				l, _ := let.ParamName.(*List)
-
-				for i, c := range l.Value {
+				// (let loop ((a (list 1 2 3))(b 0)) (if (null? a) b (loop (cdr a)(+ b (car a)))))
+				for i, c := range let.ParamName.Value {
 					pname := c.(*Symbol)
 					(*env)[pname.Value], err = eval(v[i+1], env)
 					if err != nil {
@@ -572,9 +581,11 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 				return sexp, NewRuntimeError("Not Function")
 			}
 			// name binding
-			if ef, err := fn.BindParam(env, v[1:]); err == nil {
-				return eval(fn.Body, ef)
+			let, err := fn.BindParam(env, v[1:])
+			if err != nil {
+				return nil, err
 			}
+			return fn.Execute(let)
 		}
 	}
 	return sexp, NewRuntimeError("Undefine Data Type")
@@ -584,7 +595,7 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 func do_interactive() {
 	prompt := "scheme.go> "
 	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
-	local_env := Environment{}
+
 	for {
 		fmt.Print(prompt + " ")
 
@@ -604,7 +615,7 @@ func do_interactive() {
 			fmt.Println(err.Error())
 			continue
 		}
-
+		local_env := Environment{}
 		val, err := eval(ast, &local_env)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -870,8 +881,11 @@ func build_env() {
 		var va_list []Expression
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
-			let, _ := fn.BindParam(nil, param)
-			result, err := eval(fn.Body, let)
+			let, err := fn.BindParam(nil, param)
+			if err != nil {
+				return nil, err
+			}
+			result, err := fn.Execute(let)
 			if err != nil {
 				return nil, err
 			}
@@ -920,14 +934,18 @@ func build_env() {
 			return nil, NewRuntimeError("Not List")
 		}
 
-		param := make([]Expression, len((fn.ParamName.(*List)).Value))
+		param := make([]Expression, len(fn.ParamName.Value))
 		result := l.Value[0]
-		var err error
+
 		for _, c := range l.Value[1:] {
 			param[0] = result
 			param[1] = c
-			let, _ := fn.BindParam(nil, param)
-			result, err = eval(fn.Body, let)
+			let, err := fn.BindParam(nil, param)
+			if err != nil {
+				return nil, err
+			}
+			r, err := fn.Execute(let)
+			result = r
 			if err != nil {
 				return nil, err
 			}
@@ -1006,15 +1024,22 @@ func build_env() {
 		if !ok {
 			return nil, NewRuntimeError("Not Symbol")
 		}
-		exp, _ := eval(v[2], env)
+		exp, err := eval(v[2], env)
+		if err != nil {
+			return nil, err
+		}
 		define_env[key.Value] = exp
 		return key, nil
 	}
 	special_func["lambda"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+		if len(v) < 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		return NewFunction(v[1], v[2]), nil
+		l, ok := v[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("Not List")
+		}
+		return NewFunction(l, v[2:]), nil
 	}
 	special_func["set!"] = func(env *Environment, v []Expression) (Expression, error) {
 		if len(v) != 3 {
