@@ -477,20 +477,6 @@ func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression,error){
 	return eval(self.Body, env)
 }
 
-// Parse from tokens,
-func parse(line string) (Expression, error) {
-	token := tokenize(line)
-	ast, c, err := create_ast(token)
-
-	if err != nil {
-		return nil, err
-	}
-	if c != len(token) {
-		return nil, NewSyntaxError("extra close parenthesis `)'")
-	}
-	return ast, nil
-}
-
 // Tenuki lex.
 func tokenize(s string) []string {
 	s = strings.Replace(s, "(", " ( ", -1)
@@ -500,7 +486,7 @@ func tokenize(s string) []string {
 }
 
 // Create abstract syntax tree.
-func create_ast(tokens []string) (Expression, int, error) {
+func parse(tokens []string) (Expression, int, error) {
 	if len(tokens) == 0 {
 		return nil, 0, NewSyntaxError("unexpected EOF while reading")
 	}
@@ -519,8 +505,7 @@ func create_ast(tokens []string) (Expression, int, error) {
 				count = count + 1
 				break
 			}
-
-			exp, c, err := create_ast(tokens)
+			exp, c, err := parse(tokens)
 			if err != nil {
 				return nil, c, err
 			}
@@ -631,7 +616,24 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	}
 	return sexp, NewRuntimeError("Undefine Data Type")
 }
+// main logic
+func do_core_logic(program string, root_env *SimpleEnv) (Expression,error) {
 
+	token := tokenize(program)
+	ast, c, err := parse(token)
+	if err != nil {
+		return nil, err
+	}
+	if c != len(token) {
+		return nil, NewSyntaxError("extra close parenthesis `)'")
+	}
+
+	val, err := eval(ast, root_env)
+	if err != nil {
+		return nil, err
+	}
+	return val,nil
+}
 // CUI desu.
 func do_interactive() {
 	prompt := "scheme.go> "
@@ -651,22 +653,17 @@ func do_interactive() {
 			break
 		}
 
-		ast, err := parse(line)
+		val,err := do_core_logic(line,root_env)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
-		}
-
-		val, err := eval(ast, root_env)
-		if err != nil {
-			fmt.Println(err.Error())
-			continue
-		}
-		if DEBUG {
-			fmt.Print(reflect.TypeOf(val))
 		}
 		val.Print()
 		fmt.Print("\n")
+		if DEBUG {
+			fmt.Print(reflect.TypeOf(val))
+		}
+
 	}
 }
 
