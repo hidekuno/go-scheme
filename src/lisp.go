@@ -388,10 +388,6 @@ func (self *Operator) Execute(env *SimpleEnv,exps []Expression ) (Expression, er
 		if err != nil {
 			return exp, err
 		}
-		// adhoc
-		if lambda, ok := e.(*Function); ok {
-			lambda.Env = env
-		}
 		args = append(args, e)
 	}
 	return self.Impl(args...)
