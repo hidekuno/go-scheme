@@ -29,9 +29,52 @@ const (
 
 var (
 	builtin_func map[string]func(...Expression) (Expression, error)
-	special_func map[string]func(*Environment, []Expression) (Expression, error)
-	define_env   Environment
+	special_func map[string]func(*SimpleEnv, []Expression) (Expression, error)
 )
+
+// env structure
+type SimpleEnv struct {
+	EnvTable *Environment
+	Parent *SimpleEnv
+}
+
+func NewSimpleEnv(parent *SimpleEnv, et *Environment) *SimpleEnv {
+	v := new(SimpleEnv)
+	v.Parent = parent
+	if (et != nil ) {
+		v.EnvTable = et
+	} else {
+		env := Environment{}
+		v.EnvTable = &env
+	}
+	return v
+}
+func (self *SimpleEnv) Find(key string) (Expression, bool) {
+	if v, ok := (*self.EnvTable)[key]; ok {
+		return v, true
+	}
+	for c := self.Parent; c != nil; c = c.Parent {
+		if v, ok := (*c.EnvTable)[key]; ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+func (self *SimpleEnv) Define(key string, exp Expression) {
+	(*self.EnvTable)[key] = exp
+}
+func (self *SimpleEnv) Set(key string, exp Expression) {
+	if _, ok := (*self.EnvTable)[key]; ok {
+		(*self.EnvTable)[key] = exp
+		return
+	}
+	for c := self.Parent; c != nil; c = c.Parent {
+		if _, ok := (*c.EnvTable)[key]; ok {
+			(*c.EnvTable)[key] = exp
+			return
+		}
+	}
+}
 
 // Basic Data Type. (need
 type SyntaxError struct {
@@ -305,6 +348,22 @@ func (self *Pair) Print() {
 	self.Cdr.Print()
 	fmt.Print(")")
 }
+type SpecialFunc struct {
+	Expression
+	Impl func(*SimpleEnv,[]Expression) (Expression, error)
+}
+
+func NewSpecialFunc(fn func(*SimpleEnv,[]Expression) (Expression, error)) *SpecialFunc {
+	sf := new(SpecialFunc)
+	sf.Impl = fn
+	return sf
+}
+func (self *SpecialFunc) Print() {
+	fmt.Print("Special Functon ex. if: ", self)
+}
+func (self *SpecialFunc) Execute(env *SimpleEnv,exps []Expression ) (Expression, error){
+	return self.Impl(env,exps)
+}
 
 type Operator struct {
 	Expression
@@ -321,18 +380,34 @@ func (self *Operator) Print() {
 	fmt.Print("Operatotion or Builtin: ", self)
 }
 
+func (self *Operator) Execute(env *SimpleEnv,exps []Expression ) (Expression, error){
+	var args []Expression
+
+	for _, exp := range exps {
+		e, err := eval(exp, env)
+		if err != nil {
+			return exp, err
+		}
+		// adhoc
+		if lambda, ok := e.(*Function); ok {
+			lambda.Env = env
+		}
+		args = append(args, e)
+	}
+	return self.Impl(args...)
+}
 type Function struct {
 	Expression
 	ParamName List
 	Body      []Expression
-	Env       *Environment
+	Env       *SimpleEnv
 }
 
-func NewFunction(param *List, body []Expression) *Function {
+func NewFunction(parent *SimpleEnv, param *List, body []Expression) *Function {
 	fn := new(Function)
 	fn.ParamName = *param
 	fn.Body = body
-	fn.Env = &Environment{}
+	fn.Env = NewSimpleEnv(parent,nil)
 	return fn
 }
 
@@ -341,23 +416,19 @@ func (self *Function) Print() {
 }
 
 // Bind lambda function' parameters.
-func (self *Function) BindParam(env *Environment, values []Expression) (*Environment, error) {
-
+func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
 	local_env := Environment{}
-	for key, _ := range *self.Env {
-		local_env[key] = (*self.Env)[key]
-	}
-
 	idx := 0
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
+
 			if idx+1 > len(values) {
 				return nil, NewRuntimeError("Not Enough ParamName Number")
 			}
 			if env != nil {
 				v, err := eval(values[idx], env)
 				if err != nil {
-					return env, err
+					return nil, err
 				}
 				local_env[sym.Value] = v
 			} else {
@@ -366,30 +437,15 @@ func (self *Function) BindParam(env *Environment, values []Expression) (*Environ
 			idx = idx + 1
 		}
 	}
-	return &local_env, nil
-}
-func (self *Function) SetKeyNameEnv(env *Environment) {
-	for key, _ := range *self.Env {
-		if _, ok := (*env)[key]; ok {
-			(*self.Env)[key] = (*env)[key]
-		}
-	}
-}
-func (self *Function) Execute(env *Environment) (Expression, error) {
+	self.Env = NewSimpleEnv(self.Env,&local_env)
 	var (
 		result Expression
 		err    error
 	)
 	for _, exp := range self.Body {
-		result, err = eval(exp, env)
+		result, err = eval(exp, self.Env)
 		if err != nil {
 			return exp, err
-		}
-		// (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
-		if closure, ok := result.(*Function); ok {
-			closure.Env = env
-		} else {
-			self.SetKeyNameEnv(env)
 		}
 	}
 	return result, nil
@@ -411,6 +467,19 @@ func NewLetLoop(param *List, body Expression) *LetLoop {
 func (self *LetLoop) Print() {
 	fmt.Print("Let Macro: ", self)
 }
+func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression,error){
+
+	for i, c := range self.ParamName.Value {
+		pname := c.(*Symbol)
+		data, err := eval(v[i], env)
+		if err != nil {
+			return nil, err
+		}
+		(*env).Set(pname.Value, data)
+
+	}
+	return eval(self.Body, env)
+}
 
 // Parse from tokens,
 func parse(line string) (Expression, error) {
@@ -421,8 +490,7 @@ func parse(line string) (Expression, error) {
 		return nil, err
 	}
 	if c != len(token) {
-		err := NewSyntaxError("extra close parenthesis `)'")
-		return nil, err
+		return nil, NewSyntaxError("extra close parenthesis `)'")
 	}
 	return ast, nil
 }
@@ -438,12 +506,15 @@ func tokenize(s string) []string {
 // Create abstract syntax tree.
 func create_ast(tokens []string) (Expression, int, error) {
 	if len(tokens) == 0 {
-		err := NewSyntaxError("unexpected EOF while reading")
-		return nil, 0, err
+		return nil, 0, NewSyntaxError("unexpected EOF while reading")
 	}
 	token := tokens[0]
 	tokens = tokens[1:]
+
 	if "(" == token {
+		if len(tokens) <= 0 {
+			return nil,0,NewSyntaxError("unexpected EOF while reading")
+		}
 		var L []Expression
 
 		count := 1
@@ -462,16 +533,14 @@ func create_ast(tokens []string) (Expression, int, error) {
 			count = count + c
 
 			if len(tokens) == 0 {
-				err := NewSyntaxError("unexpected ')' while reading")
-				return nil, 0, err
+				return nil, 0, NewSyntaxError("unexpected ')' while reading")
 			}
 		}
 		item := NewList(L)
 		return item, count, nil
 
 	} else if ")" == token {
-		err := NewSyntaxError("unexpected )")
-		return nil, 0, err
+		return nil, 0, NewSyntaxError("unexpected )")
 	} else {
 		return atom(token), 1, nil
 	}
@@ -508,67 +577,47 @@ func atom(token string) Atom {
 }
 
 // Evaluate an expression in an environment.
-func eval(sexp Expression, env *Environment) (Expression, error) {
+func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 
 	if _, ok := sexp.(Atom); ok {
 		if sym, ok := sexp.(*Symbol); ok {
-			if v, ok := (*env)[sym.Value]; ok {
-				return v, nil
-			} else if v, ok := define_env[sym.Value]; ok {
+			if v, ok := (*env).Find(sym.Value); ok {
 				return v, nil
 			} else if v, ok := builtin_func[sym.Value]; ok {
 				return NewOperator(v), nil
+			} else if v, ok := special_func[sym.Value]; ok {
+				return NewSpecialFunc(v), nil
 			} else {
 				return sexp, NewRuntimeError("Undefine Operator or variable: " + sym.Value)
 			}
 		} else {
-			// 10,11.. ,etc
+			// 10,11.. ,"a", "B", ,etc
 			return sexp, nil
 		}
 	} else if sl, ok := sexp.(*List); ok {
 		v := sl.Value
 
-		if sym, ok := v[0].(*Symbol); ok {
-			if kfn, ok := special_func[sym.Value]; ok {
-				return kfn(env, v)
-			}
+		if _, ok := v[0].(*Symbol); ok {
 			proc, err := eval(v[0], env)
 			if err != nil {
 				return sexp, err
 			}
-			if op, ok := proc.(*Operator); ok {
-				var args []Expression
-				for _, exp := range v[1:] {
-					e, err := eval(exp, env)
-					if err != nil {
-						return sexp, err
-					}
-					// adhoc
-					if lambda, ok := e.(*Function); ok {
-						lambda.Env = env
-					}
-					args = append(args, e)
-				}
-				return op.Impl(args...)
+			if sf, ok := proc.(*SpecialFunc); ok {
+				// (if (= a b) "a" "b")
+				return sf.Execute(env,v[1:])
+
+			} else if op, ok := proc.(*Operator); ok {
+				// (* (+ a 1) (+ b 2))
+				return op.Execute(env,v[1:])
 
 			} else if fn, ok := proc.(*Function); ok {
 				// (proc 10 20)
-				let, err := fn.BindParam(env, v[1:])
-				if err != nil {
-					return sexp, err
-				}
-				return fn.Execute(let)
+				return fn.Execute(env,v[1:])
 
 			} else if let, ok := proc.(*LetLoop); ok {
-				// (let loop ((a (list 1 2 3))(b 0)) (if (null? a) b (loop (cdr a)(+ b (car a)))))
-				for i, c := range let.ParamName.Value {
-					pname := c.(*Symbol)
-					(*env)[pname.Value], err = eval(v[i+1], env)
-					if err != nil {
-						return sexp, err
-					}
-				}
-				return eval(let.Body, env)
+				// (let loop ((a (list 1 2 3))(b 0))
+				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
+				return let.Execute(env,v[1:])
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -580,12 +629,8 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 			if !ok {
 				return sexp, NewRuntimeError("Not Function")
 			}
-			// name binding
-			let, err := fn.BindParam(env, v[1:])
-			if err != nil {
-				return nil, err
-			}
-			return fn.Execute(let)
+			// execute
+			return fn.Execute(env, v[1:])
 		}
 	}
 	return sexp, NewRuntimeError("Undefine Data Type")
@@ -595,7 +640,7 @@ func eval(sexp Expression, env *Environment) (Expression, error) {
 func do_interactive() {
 	prompt := "scheme.go> "
 	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
-
+	root_env := NewSimpleEnv(nil,nil)
 	for {
 		fmt.Print(prompt + " ")
 
@@ -615,8 +660,8 @@ func do_interactive() {
 			fmt.Println(err.Error())
 			continue
 		}
-		local_env := Environment{}
-		val, err := eval(ast, &local_env)
+
+		val, err := eval(ast, root_env)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -630,11 +675,9 @@ func do_interactive() {
 }
 
 // Build Global environement.
-func build_env() {
-
+func build_func() {
 	builtin_func = map[string]func(...Expression) (Expression, error){}
-	special_func = map[string]func(*Environment, []Expression) (Expression, error){}
-	define_env = Environment{}
+	special_func = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
 
 	// addl, subl,imul,idiv,modulo
 	iter_calc := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
@@ -881,14 +924,8 @@ func build_env() {
 		var va_list []Expression
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
-			let, err := fn.BindParam(nil, param)
-			if err != nil {
-				return nil, err
-			}
-			result, err := fn.Execute(let)
-			if err != nil {
-				return nil, err
-			}
+			result, err := fn.Execute(nil, param)
+
 			va_list, err = lambda(result, param[0], va_list)
 			if err != nil {
 				return nil, err
@@ -940,11 +977,7 @@ func build_env() {
 		for _, c := range l.Value[1:] {
 			param[0] = result
 			param[1] = c
-			let, err := fn.BindParam(nil, param)
-			if err != nil {
-				return nil, err
-			}
-			r, err := fn.Execute(let)
+			r, err := fn.Execute(nil, param)
 			result = r
 			if err != nil {
 				return nil, err
@@ -995,12 +1028,12 @@ func build_env() {
 		return nil, NewRuntimeError("Not Integer")
 	}
 	// syntax keyword implements
-	special_func["if"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 4 {
+	special_func["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 3 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
 
-		exp, err := eval(v[1], env)
+		exp, err := eval(v[0], env)
 		if err != nil {
 			return nil, err
 		}
@@ -1011,85 +1044,80 @@ func build_env() {
 		}
 
 		if b.Value {
-			return eval(v[2], env)
+			return eval(v[1], env)
 		} else {
-			return eval(v[3], env)
+			return eval(v[2], env)
 		}
 	}
-	special_func["define"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+	special_func["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		key, ok := v[1].(*Symbol)
+		key, ok := v[0].(*Symbol)
 		if !ok {
 			return nil, NewRuntimeError("Not Symbol")
 		}
-		exp, err := eval(v[2], env)
+		exp, err := eval(v[1], env)
 		if err != nil {
 			return nil, err
 		}
-		define_env[key.Value] = exp
+		(*env).Define(key.Value, exp)
 		return key, nil
 	}
-	special_func["lambda"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) < 3 {
+	special_func["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) < 2 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		l, ok := v[1].(*List)
+		l, ok := v[0].(*List)
 		if !ok {
 			return nil, NewRuntimeError("Not List")
 		}
-		return NewFunction(l, v[2:]), nil
+		return NewFunction(env, l, v[1:]), nil
 	}
-	special_func["set!"] = func(env *Environment, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+	special_func["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-		s, ok := v[1].(*Symbol)
+		s, ok := v[0].(*Symbol)
 		if !ok {
 			return nil, NewRuntimeError("Not Symbol")
 		}
 
-		exp, err := eval(v[2], env)
+		exp, err := eval(v[1], env)
 		if err != nil {
-			return v[2], err
+			return v[1], err
 		}
-
-		if _, ok := (*env)[s.Value]; ok {
-			(*env)[s.Value] = exp
-			return (*env)[s.Value], nil
-
-		} else if _, ok := define_env[s.Value]; ok {
-			define_env[s.Value] = exp
-			return define_env[s.Value], nil
-		} else {
+		if _, ok := (*env).Find(s.Value); !ok {
 			return exp, NewRuntimeError("Undefined Variable: " + s.Value)
 		}
+		(*env).Set(s.Value, exp)
+		return exp, nil
 	}
-	special_func["let"] = func(env *Environment, v []Expression) (Expression, error) {
+	special_func["let"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
-		body := 2
+		body := 1
 
-		l, ok := v[1].(*List)
-		if ok && len(v) <= 2 {
+		l, ok := v[0].(*List)
+		if ok && len(v) < 2 {
 			return nil, NewRuntimeError("Not Enough Parameter")
 		}
-
 		if !ok {
-			letsym, ok = v[1].(*Symbol)
+			letsym, ok = v[0].(*Symbol)
 			if !ok {
 				return nil, NewRuntimeError("Not Symbol")
 			}
-			if len(v) <= 3 {
+			if len(v) < 3 {
 				return nil, NewRuntimeError("Not Enough Parameter")
 			}
-			l, ok = v[2].(*List)
+			l, ok = v[1].(*List)
 			if !ok {
 				return nil, NewRuntimeError("Not List")
 			}
-			body = 3
+			body = 2
 		}
+
+		local_env := Environment{}
 		for _, let := range l.Value {
 			r, ok := let.(*List)
 			if !ok {
@@ -1104,16 +1132,16 @@ func build_env() {
 				return nil, err
 			}
 			pname = append(pname, sym)
-			(*env)[sym.Value] = v
+			local_env[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env)[letsym.Value] = NewLetLoop(NewList(pname), v[body])
+			(*env).Define(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
-		return eval(v[body], env)
+		return eval(v[body], NewSimpleEnv(env,&local_env))
 	}
 	// and or not
-	op_logical := func(env *Environment, exp []Expression, bcond bool, bret bool) (Expression, error) {
-		if len(exp) <= 1 {
+	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
+		if len(exp) < 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
 		}
 		for _, e := range exp {
@@ -1130,17 +1158,16 @@ func build_env() {
 		}
 		return NewBoolean(bret), nil
 	}
-	special_func["and"] = func(env *Environment, exp []Expression) (Expression, error) {
-		return op_logical(env, exp[1:], false, true)
+	special_func["and"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		return op_logical(env, exp, false, true)
 	}
-	special_func["or"] = func(env *Environment, exp []Expression) (Expression, error) {
-		return op_logical(env, exp[1:], true, false)
+	special_func["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		return op_logical(env, exp, true, false)
 	}
-
 }
 
 // Main
 func main() {
-	build_env()
+	build_func()
 	do_interactive()
 }
