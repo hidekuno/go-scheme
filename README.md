@@ -15,4 +15,5 @@ Go言語によるScheme(subset版)の実装
 (define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b))(map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))
 (define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))
 (define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))
+(define hoge (lambda () (define a 10) a))
 ```
