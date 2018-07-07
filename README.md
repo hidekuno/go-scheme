@@ -5,6 +5,7 @@ Go言語によるScheme(subset版)の実装
 ```
 (let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))
 (define counter (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
+(define a (counter))
 (define gcm (lambda (n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod)))))
 (define lcm (lambda (n m) (/(* n m)(gcm n m))))
 (define hanoi (lambda (from to work n) (if (>= 0 n) (list) (append (hanoi from work to (- n 1)) (list (list (cons from to) n)) (hanoi work to from (- n 1))))))
@@ -15,5 +16,7 @@ Go言語によるScheme(subset版)の実装
 (define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b))(map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))
 (define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))
 (define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))
+(define a 100)
 (define hoge (lambda () (define a 10) a))
+a
 ```
