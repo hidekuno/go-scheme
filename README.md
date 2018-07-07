@@ -4,7 +4,7 @@ Go言語によるScheme(subset版)の実装
 # 動作確認したプログラム
 ```
 (let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))
-(define counter (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c))))))
+(define counter (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c)) c))))
 (define a (counter))
 (define gcm (lambda (n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod)))))
 (define lcm (lambda (n m) (/(* n m)(gcm n m))))
