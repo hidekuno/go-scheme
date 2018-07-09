@@ -35,13 +35,13 @@ var (
 // env structure
 type SimpleEnv struct {
 	EnvTable *Environment
-	Parent *SimpleEnv
+	Parent   *SimpleEnv
 }
 
 func NewSimpleEnv(parent *SimpleEnv, et *Environment) *SimpleEnv {
 	v := new(SimpleEnv)
 	v.Parent = parent
-	if (et != nil ) {
+	if et != nil {
 		v.EnvTable = et
 	} else {
 		env := Environment{}
@@ -348,12 +348,13 @@ func (self *Pair) Print() {
 	self.Cdr.Print()
 	fmt.Print(")")
 }
+
 type SpecialFunc struct {
 	Expression
-	Impl func(*SimpleEnv,[]Expression) (Expression, error)
+	Impl func(*SimpleEnv, []Expression) (Expression, error)
 }
 
-func NewSpecialFunc(fn func(*SimpleEnv,[]Expression) (Expression, error)) *SpecialFunc {
+func NewSpecialFunc(fn func(*SimpleEnv, []Expression) (Expression, error)) *SpecialFunc {
 	sf := new(SpecialFunc)
 	sf.Impl = fn
 	return sf
@@ -361,8 +362,8 @@ func NewSpecialFunc(fn func(*SimpleEnv,[]Expression) (Expression, error)) *Speci
 func (self *SpecialFunc) Print() {
 	fmt.Print("Special Functon ex. if: ", self)
 }
-func (self *SpecialFunc) Execute(env *SimpleEnv,exps []Expression ) (Expression, error){
-	return self.Impl(env,exps)
+func (self *SpecialFunc) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
+	return self.Impl(env, exps)
 }
 
 type Operator struct {
@@ -380,7 +381,7 @@ func (self *Operator) Print() {
 	fmt.Print("Operatotion or Builtin: ", self)
 }
 
-func (self *Operator) Execute(env *SimpleEnv,exps []Expression ) (Expression, error){
+func (self *Operator) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
 	var args []Expression
 
 	for _, exp := range exps {
@@ -392,6 +393,7 @@ func (self *Operator) Execute(env *SimpleEnv,exps []Expression ) (Expression, er
 	}
 	return self.Impl(args...)
 }
+
 type Function struct {
 	Expression
 	ParamName List
@@ -403,7 +405,7 @@ func NewFunction(parent *SimpleEnv, param *List, body []Expression) *Function {
 	fn := new(Function)
 	fn.ParamName = *param
 	fn.Body = body
-	fn.Env = NewSimpleEnv(parent,nil)
+	fn.Env = NewSimpleEnv(parent, nil)
 	return fn
 }
 
@@ -433,7 +435,7 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 			idx = idx + 1
 		}
 	}
-	self.Env = NewSimpleEnv(self.Env,&local_env)
+	self.Env = NewSimpleEnv(self.Env, &local_env)
 	var (
 		result Expression
 		err    error
@@ -463,7 +465,7 @@ func NewLetLoop(param *List, body Expression) *LetLoop {
 func (self *LetLoop) Print() {
 	fmt.Print("Let Macro: ", self)
 }
-func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression,error){
+func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
 	for i, c := range self.ParamName.Value {
 		pname := c.(*Symbol)
@@ -495,7 +497,7 @@ func parse(tokens []string) (Expression, int, error) {
 
 	if "(" == token {
 		if len(tokens) <= 0 {
-			return nil,0,NewSyntaxError("unexpected EOF while reading")
+			return nil, 0, NewSyntaxError("unexpected EOF while reading")
 		}
 		var L []Expression
 
@@ -585,20 +587,20 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			}
 			if sf, ok := proc.(*SpecialFunc); ok {
 				// (if (= a b) "a" "b")
-				return sf.Execute(env,v[1:])
+				return sf.Execute(env, v[1:])
 
 			} else if op, ok := proc.(*Operator); ok {
 				// (* (+ a 1) (+ b 2))
-				return op.Execute(env,v[1:])
+				return op.Execute(env, v[1:])
 
 			} else if fn, ok := proc.(*Function); ok {
 				// (proc 10 20)
-				return fn.Execute(env,v[1:])
+				return fn.Execute(env, v[1:])
 
 			} else if let, ok := proc.(*LetLoop); ok {
 				// (let loop ((a (list 1 2 3))(b 0))
 				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
-				return let.Execute(env,v[1:])
+				return let.Execute(env, v[1:])
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -616,8 +618,9 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	}
 	return sexp, NewRuntimeError("Undefine Data Type")
 }
+
 // main logic
-func do_core_logic(program string, root_env *SimpleEnv) (Expression,error) {
+func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 
 	token := tokenize(program)
 	ast, c, err := parse(token)
@@ -632,13 +635,14 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression,error) {
 	if err != nil {
 		return nil, err
 	}
-	return val,nil
+	return val, nil
 }
+
 // CUI desu.
 func do_interactive() {
 	prompt := "scheme.go> "
 	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
-	root_env := NewSimpleEnv(nil,nil)
+	root_env := NewSimpleEnv(nil, nil)
 	for {
 		fmt.Print(prompt + " ")
 
@@ -653,7 +657,7 @@ func do_interactive() {
 			break
 		}
 
-		val,err := do_core_logic(line,root_env)
+		val, err := do_core_logic(line, root_env)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -716,6 +720,7 @@ func build_func() {
 	builtin_func["/"] = func(exp ...Expression) (Expression, error) {
 		return iter_calc(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 	}
+	builtin_func["quotient"] = builtin_func["/"]
 	builtin_func["modulo"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("Not Enough Parameter Number")
@@ -874,6 +879,25 @@ func build_func() {
 			return l.Value[len(l.Value)-1], nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Car, nil
+		} else {
+			return nil, NewRuntimeError("Not List")
+		}
+	}
+	builtin_func["reverse"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("Not Enough Parameter Number")
+		}
+		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) <= 1 {
+				return l, nil
+			}
+			args := make([]Expression, len(l.Value))
+			idx := len(l.Value) - 1
+			for _, c := range l.Value {
+				args[idx] = c
+				idx = idx - 1
+			}
+			return NewList(args), nil
 		} else {
 			return nil, NewRuntimeError("Not List")
 		}
@@ -1130,7 +1154,7 @@ func build_func() {
 		if letsym != nil {
 			(*env).Define(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
-		return eval(v[body], NewSimpleEnv(env,&local_env))
+		return eval(v[body], NewSimpleEnv(env, &local_env))
 	}
 	// and or not
 	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
