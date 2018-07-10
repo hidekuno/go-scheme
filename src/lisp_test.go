@@ -62,6 +62,20 @@ func check_logic_int(exp Expression, v int) bool {
 	return true
 }
 
+func check_error_code(err error, error_code string) bool {
+	if e, ok := err.(*SyntaxError); ok {
+		if e.MsgCode == error_code {
+			return true
+		}
+	}
+	if e, ok := err.(*RuntimeError); ok {
+		if e.MsgCode == error_code {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	program = []string{
 		"(define test_list (list 36 27 14 19 2 8 7 6 0 9 3))",
@@ -357,5 +371,112 @@ func Test_basic_opration(t *testing.T) {
 	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (or (= c a)(< c b)))", root_env)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: or")
+	}
+}
+func Test_erro_case(t *testing.T) {
+	var (
+		err error
+	)
+	build_func()
+	root_env := NewSimpleEnv(nil, nil)
+
+	test_code := [][]string{
+		{"(", "E0001"},
+		{"(a (b", "E0002"},
+		{"(a))", "E0003"},
+		{"(not 10)", "E1001"},
+		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
+		{"(if 10.2 0 1)", "E1001"},
+		{"(and 10.2 0 1)", "E1001"},
+		{"(or 10.2 0 1)", "E1001"},
+		{"(modulo 10.2 1)", "E1002"},
+		{"(iota 10.2 1)", "E1002"},
+		{"(iota 1 10.2)", "E1002"},
+		{"(rand-integer 10.2)", "E1002"},
+		{"(+ #t 10.2)", "E1003"},
+		{"(- 10.2 #f)", "E1003"},
+		{"(< 10.2 #f)", "E1003"},
+		{"(= #t 10.2)", "E1003"},
+		{"(sqrt #t)", "E1003"},
+		{"(define 10 10)", "E1004"},
+		{"(set! 10 10)", "E1004"},
+		{"(null? 10)", "E1005"},
+		{"(length 10)", "E1005"},
+		{"(car 10)", "E1005"},
+		{"(cdr 10)", "E1005"},
+		{"(append 10 10)", "E1005"},
+		{"(last 10)", "E1005"},
+		{"(reverse 10)", "E1005"},
+		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(reduce (lambda (a b) (+ a b)) 20)", "E1005"},
+		{"(lambda a (+ a b))", "E1005"},
+		{"(let loop 10 19)", "E1005"},
+		{"((list 1 12) 10)", "E1006"},
+		{"(map (list 1 12) (list 10))", "E1006"},
+		{"(filter (list 1 12) (list 10))", "E1006"},
+		{"(reduce (list 1 12) (list 10))", "E1006"},
+		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
+		{"((lambda (n m) (+ n m)) 1)", "E1007"},
+		{"(+ 1)", "E1007"},
+		{"(- 1)", "E1007"},
+		{"(modulo 1)", "E1007"},
+		{"(modulo 10 3 2)", "E1007"},
+		{"(< 10 3 2)", "E1007"},
+		{"(< 10)", "E1007"},
+		{"(not #t #f)", "E1007"},
+		{"(not)", "E1007"},
+		{"(null? (list 1)(list 2))", "E1007"},
+		{"(null?)", "E1007"},
+		{"(length (list 1)(list 2))", "E1007"},
+		{"(length)", "E1007"},
+		{"(car (list 1)(list 2))", "E1007"},
+		{"(car)", "E1007"},
+		{"(car (list))", "E1007"},
+		{"(cdr (list 1)(list 2))", "E1007"},
+		{"(cdr)", "E1007"},
+		{"(cons 1 (list 1)(list 2))", "E1007"},
+		{"(cons 1)", "E1007"},
+		{"(append (list 1))", "E1007"},
+		{"(last (list 1)(list 2))", "E1007"},
+		{"(last)", "E1007"},
+		{"(last (list))", "E1007"},
+		{"(reverse (list 1)(list 2))", "E1007"},
+		{"(reverse)", "E1007"},
+		{"(iota)", "E1007"},
+		{"(iota 1 2 3)", "E1007"},
+		{"(map (lambda (n) (* n 10)))", "E1007"},
+		{"(filter (lambda (n) (* n 10)))", "E1007"},
+		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
+		{"(map (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+		{"(filter (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+		{"(reduce (lambda (a b) (+ a b))(list 1)(list 1))", "E1007"},
+		{"(sqrt 11 10)", "E1007"},
+		{"(sqrt)", "E1007"},
+		{"(rand-integer 11 9)", "E1007"},
+		{"(rand-integer)", "E1007"},
+		{"(if (= 10 10) 1 2 3)", "E1007"},
+		{"(if (= 10 10) 1)", "E1007"},
+		{"(define a)", "E1007"},
+		{"(define a 10 11)", "E1007"},
+		{"(set! a)", "E1007"},
+		{"(set! a 10 11)", "E1007"},
+		{"(lambda (+ n m))", "E1007"},
+		{"(let ((a 10)))", "E1007"},
+		{"(let loop ((a 10)))", "E1007"},
+		{"(let ((a))(+ 1 1))", "E1007"},
+		{"hoge", "E1008"},
+		{"(set! hoge 10)", "E1008"},
+	}
+	for _, e := range test_code {
+		_, err = do_core_logic(e[0], root_env)
+		if !check_error_code(err, e[1]) {
+			t.Fatal("failed test: " + e[0])
+		}
+	}
+	// Impossible absolute, But Program bug is except
+	_, err = eval(NewFunction(root_env, NewList(nil), nil), root_env)
+	if !check_error_code(err, "E1009") {
+		t.Fatal("failed test: " + "E1009")
 	}
 }

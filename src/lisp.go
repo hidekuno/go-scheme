@@ -305,7 +305,7 @@ func (self *Float) LessEqual(p Number) bool {
 	return self.Value <= v.Value
 }
 
-func CreateNumber(p Number) (Number, error) {
+func CreateNumber(p Expression) (Number, error) {
 	if v, ok := p.(*Integer); ok {
 		return NewInteger(v.Value), nil
 	}
@@ -450,12 +450,11 @@ func (self *Function) Print() {
 func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
 	local_env := Environment{}
 	idx := 0
+	if len(self.ParamName.Value) != len(values) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
+	}
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
-
-			if idx+1 > len(values) {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
-			}
 			if env != nil {
 				v, err := eval(values[idx], env)
 				if err != nil {
@@ -714,10 +713,7 @@ func build_func() {
 		if 1 >= len(exp) {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		if _, ok := exp[0].(Number); !ok {
-			return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
-		}
-		result, err := CreateNumber(exp[0].(Number))
+		result, err := CreateNumber(exp[0])
 		if err != nil {
 			return nil, err
 		}
@@ -774,13 +770,13 @@ func build_func() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 
-		result, err := CreateNumber(exp[0].(Number))
+		result, err := CreateNumber(exp[0])
 		if err != nil {
 			return nil, err
 		}
 		prm, ok := exp[1].(Number)
 		if !ok {
-			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+			return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[1]).String())
 		}
 		if _, ok := result.(*Float); ok {
 			if c, ok := prm.(*Integer); ok {
@@ -936,7 +932,7 @@ func build_func() {
 		}
 	}
 	builtin_func["iota"] = func(exp ...Expression) (Expression, error) {
-		if len(exp) < 1 {
+		if len(exp) != 1 && len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var l []Expression
@@ -1045,7 +1041,7 @@ func build_func() {
 		} else if v, ok := exp[0].(*Integer); ok {
 			return NewFloat(math_func((float64)(v.Value))), nil
 		}
-		return nil, NewRuntimeError("E1009", reflect.TypeOf(exp[0]).String())
+		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 	}
 	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
 		return math_impl(math.Sqrt, exp...)
@@ -1082,7 +1078,6 @@ func build_func() {
 		if len(v) != 3 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
-
 		exp, err := eval(v[0], env)
 		if err != nil {
 			return nil, err
@@ -1092,7 +1087,6 @@ func build_func() {
 		if !ok {
 			return nil, NewRuntimeError("E1001", reflect.TypeOf(exp).String())
 		}
-
 		if b.Value {
 			return eval(v[1], env)
 		} else {
@@ -1118,6 +1112,7 @@ func build_func() {
 		if len(v) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
+		// if l == (), internal list implements
 		l, ok := v[0].(*List)
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(v[0]).String())
