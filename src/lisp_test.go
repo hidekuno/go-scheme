@@ -377,7 +377,7 @@ func Test_basic_opration(t *testing.T) {
 		t.Fatal("failed test: or")
 	}
 }
-func Test_erro_case(t *testing.T) {
+func Test_err_case(t *testing.T) {
 	var (
 		err error
 	)
