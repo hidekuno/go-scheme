@@ -276,6 +276,10 @@ func Test_list_func(t *testing.T) {
 	if !check_logic_int(exp, 6) {
 		t.Fatal("failed test: reduce")
 	}
+	exp, _ = do_core_logic("()", root_env)
+	if len((exp.(*List)).Value) != 0 {
+		t.Fatal("failed test: ()")
+	}
 }
 func Test_basic_opration(t *testing.T) {
 	var (

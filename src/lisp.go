@@ -611,8 +611,10 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			return sexp, nil
 		}
 	} else if sl, ok := sexp.(*List); ok {
+		if len(sl.Value) == 0 {
+			return sexp, nil
+		}
 		v := sl.Value
-
 		if _, ok := v[0].(*Symbol); ok {
 			proc, err := eval(v[0], env)
 			if err != nil {
