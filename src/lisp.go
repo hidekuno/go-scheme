@@ -10,10 +10,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/rand"
 	"os"
+	"path"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -30,6 +33,21 @@ const (
 var (
 	builtin_func map[string]func(...Expression) (Expression, error)
 	special_func map[string]func(*SimpleEnv, []Expression) (Expression, error)
+	error_msg    = map[string]string{
+		"E0001": "Unexpected EOF while reading",
+		"E0002": "Unexpected ')' while reading",
+		"E0003": "Extra close parenthesis `)'",
+		"E1001": "Not Boolean",
+		"E1002": "Not Integer",
+		"E1003": "Not Number",
+		"E1004": "Not Symbol",
+		"E1005": "Not List",
+		"E1006": "Not Function",
+		"E1007": "Not Enough Parameter Counts",
+		"E1008": "Undefine variable",
+		"E1009": "Not Enough Data Type",
+	}
+	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
 
 // env structure
@@ -60,7 +78,7 @@ func (self *SimpleEnv) Find(key string) (Expression, bool) {
 	}
 	return nil, false
 }
-func (self *SimpleEnv) Define(key string, exp Expression) {
+func (self *SimpleEnv) Regist(key string, exp Expression) {
 	(*self.EnvTable)[key] = exp
 }
 func (self *SimpleEnv) Set(key string, exp Expression) {
@@ -78,27 +96,42 @@ func (self *SimpleEnv) Set(key string, exp Expression) {
 
 // Basic Data Type. (need
 type SyntaxError struct {
-	Msg string
+	MsgCode           string
+	SourceFileName    string
+	SourceFileLineNum int
 }
 
 func (err *SyntaxError) Error() string {
-	return err.Msg
+	return error_msg[err.MsgCode] + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
 }
 
 func NewSyntaxError(text string) error {
-	return &SyntaxError{text}
+	_, sourceFileName, sourceFileLineNum, _ := runtime.Caller(1)
+	return &SyntaxError{text, sourceFileName, sourceFileLineNum}
 }
 
 type RuntimeError struct {
-	Msg string
+	MsgCode           string
+	SourceFileName    string
+	SourceFileLineNum int
+	Args              []string
 }
 
 func (err *RuntimeError) Error() string {
-	return err.Msg
+
+	args := ""
+	for i, e := range err.Args {
+		if i != 0 {
+			args = args + ","
+		}
+		args = args + e
+	}
+	return error_msg[err.MsgCode] + ": " + args + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
 }
 
-func NewRuntimeError(text string) error {
-	return &RuntimeError{text}
+func NewRuntimeError(text string, args ...string) error {
+	_, sourceFileName, sourceFileLineNum, _ := runtime.Caller(1)
+	return &RuntimeError{text, sourceFileName, sourceFileLineNum, args}
 }
 
 type Expression interface {
@@ -272,14 +305,14 @@ func (self *Float) LessEqual(p Number) bool {
 	return self.Value <= v.Value
 }
 
-func CreateNumber(p Number) (Number, error) {
+func CreateNumber(p Expression) (Number, error) {
 	if v, ok := p.(*Integer); ok {
 		return NewInteger(v.Value), nil
 	}
 	if v, ok := p.(*Float); ok {
 		return NewFloat(v.Value), nil
 	}
-	return nil, NewRuntimeError("Not Number")
+	return nil, NewRuntimeError("E1003", reflect.TypeOf(p).String())
 }
 
 type String struct {
@@ -417,12 +450,11 @@ func (self *Function) Print() {
 func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
 	local_env := Environment{}
 	idx := 0
+	if len(self.ParamName.Value) != len(values) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
+	}
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
-
-			if idx+1 > len(values) {
-				return nil, NewRuntimeError("Not Enough ParamName Number")
-			}
 			if env != nil {
 				v, err := eval(values[idx], env)
 				if err != nil {
@@ -489,15 +521,16 @@ func tokenize(s string) []string {
 
 // Create abstract syntax tree.
 func parse(tokens []string) (Expression, int, error) {
+
 	if len(tokens) == 0 {
-		return nil, 0, NewSyntaxError("unexpected EOF while reading")
+		return nil, 0, NewSyntaxError("E0001")
 	}
 	token := tokens[0]
 	tokens = tokens[1:]
 
 	if "(" == token {
 		if len(tokens) <= 0 {
-			return nil, 0, NewSyntaxError("unexpected EOF while reading")
+			return nil, 0, NewSyntaxError("E0001")
 		}
 		var L []Expression
 
@@ -516,14 +549,14 @@ func parse(tokens []string) (Expression, int, error) {
 			count = count + c
 
 			if len(tokens) == 0 {
-				return nil, 0, NewSyntaxError("unexpected ')' while reading")
+				return nil, 0, NewSyntaxError("E0002")
 			}
 		}
 		item := NewList(L)
 		return item, count, nil
 
 	} else if ")" == token {
-		return nil, 0, NewSyntaxError("unexpected )")
+		return nil, 0, NewSyntaxError("E0002")
 	} else {
 		return atom(token), 1, nil
 	}
@@ -571,7 +604,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			} else if v, ok := special_func[sym.Value]; ok {
 				return NewSpecialFunc(v), nil
 			} else {
-				return sexp, NewRuntimeError("Undefine Operator or variable: " + sym.Value)
+				return sexp, NewRuntimeError("E1008", sym.Value)
 			}
 		} else {
 			// 10,11.. ,"a", "B", ,etc
@@ -610,13 +643,13 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			}
 			fn, ok := e.(*Function)
 			if !ok {
-				return sexp, NewRuntimeError("Not Function")
+				return sexp, NewRuntimeError("E1006", reflect.TypeOf(e).String())
 			}
 			// execute
 			return fn.Execute(env, v[1:])
 		}
 	}
-	return sexp, NewRuntimeError("Undefine Data Type")
+	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
 
 // main logic
@@ -628,7 +661,7 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 		return nil, err
 	}
 	if c != len(token) {
-		return nil, NewSyntaxError("extra close parenthesis `)'")
+		return nil, NewSyntaxError("E0003")
 	}
 
 	val, err := eval(ast, root_env)
@@ -667,7 +700,6 @@ func do_interactive() {
 		if DEBUG {
 			fmt.Print(reflect.TypeOf(val))
 		}
-
 	}
 }
 
@@ -679,19 +711,16 @@ func build_func() {
 	// addl, subl,imul,idiv,modulo
 	iter_calc := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
 		if 1 >= len(exp) {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		if _, ok := exp[0].(Number); !ok {
-			return nil, NewRuntimeError("Not Number")
-		}
-		result, err := CreateNumber(exp[0].(Number))
+		result, err := CreateNumber(exp[0])
 		if err != nil {
 			return nil, err
 		}
 		for _, i := range exp[1:] {
 			prm, ok := i.(Number)
 			if !ok {
-				return nil, NewRuntimeError("Not Number")
+				return nil, NewRuntimeError("E1003", reflect.TypeOf(i).String())
 			}
 
 			if _, ok := result.(*Float); ok {
@@ -723,13 +752,13 @@ func build_func() {
 	builtin_func["quotient"] = builtin_func["/"]
 	builtin_func["modulo"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var prm []*Integer
 		for _, e := range exp {
 			v, ok := e.(*Integer)
 			if !ok {
-				return nil, NewRuntimeError("Not Integer")
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
 			}
 			prm = append(prm, v)
 		}
@@ -738,16 +767,16 @@ func build_func() {
 	// gt,lt,ge,le
 	op_cmp := func(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, error) {
 		if 2 != len(exp) {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 
-		result, err := CreateNumber(exp[0].(Number))
+		result, err := CreateNumber(exp[0])
 		if err != nil {
 			return nil, err
 		}
 		prm, ok := exp[1].(Number)
 		if !ok {
-			return nil, NewRuntimeError("Not Integer")
+			return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[1]).String())
 		}
 		if _, ok := result.(*Float); ok {
 			if c, ok := prm.(*Integer); ok {
@@ -779,10 +808,10 @@ func build_func() {
 	}
 	builtin_func["not"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if _, ok := exp[0].(*Boolean); !ok {
-			return nil, NewRuntimeError("Not Boolean")
+			return nil, NewRuntimeError("E1001", reflect.TypeOf(exp[0]).String())
 		}
 		return NewBoolean(!(exp[0].(*Boolean)).Value), nil
 	}
@@ -794,42 +823,42 @@ func build_func() {
 	}
 	builtin_func["null?"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			return NewBoolean(0 == len(l.Value)), nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["length"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			return NewInteger(len(l.Value)), nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("Not Enough Parameter Number")
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
 			}
 			return l.Value[0], nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Car, nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
@@ -840,12 +869,12 @@ func build_func() {
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Cdr, nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["cons"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if _, ok := exp[1].(*List); ok {
 			var args []Expression
@@ -856,36 +885,36 @@ func build_func() {
 	}
 	builtin_func["append"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) < 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var append_list []Expression
 		for _, e := range exp {
 			if v, ok := e.(*List); ok {
 				append_list = append(append_list, v.Value...)
 			} else {
-				return nil, NewRuntimeError("Not List")
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
 			}
 		}
 		return NewList(append_list), nil
 	}
 	builtin_func["last"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("Not Enough Parameter Length")
+				return nil, NewRuntimeError("E1007")
 			}
 			return l.Value[len(l.Value)-1], nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Car, nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["reverse"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 1 {
@@ -899,23 +928,23 @@ func build_func() {
 			}
 			return NewList(args), nil
 		} else {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
 	builtin_func["iota"] = func(exp ...Expression) (Expression, error) {
-		if len(exp) < 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+		if len(exp) != 1 && len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var l []Expression
 		max, ok := exp[0].(*Integer)
 		if !ok {
-			return nil, NewRuntimeError("Not Integer")
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 		}
 		start := 0
 		if len(exp) == 2 {
 			v, ok := exp[1].(*Integer)
 			if !ok {
-				return nil, NewRuntimeError("Not Integer")
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
 			}
 			start = v.Value
 		}
@@ -928,15 +957,15 @@ func build_func() {
 	// map,filter,reduce
 	iter_func := func(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		fn, ok := exp[0].(*Function)
 		if !ok {
-			return nil, NewRuntimeError("Not Function")
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
 		}
 		l, ok := exp[1].(*List)
 		if !ok {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 		}
 		var va_list []Expression
 		param := make([]Expression, 1)
@@ -952,7 +981,7 @@ func build_func() {
 	}
 	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
 			return append(va_list, result), nil
@@ -961,12 +990,12 @@ func build_func() {
 	}
 	builtin_func["filter"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
 			b, ok := result.(*Boolean)
 			if !ok {
-				return nil, NewRuntimeError("Not Boolean")
+				return nil, NewRuntimeError("E1001", reflect.TypeOf(result).String())
 			}
 			if b.Value {
 				return append(va_list, item), nil
@@ -977,15 +1006,15 @@ func build_func() {
 	}
 	builtin_func["reduce"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		fn, ok := exp[0].(*Function)
 		if !ok {
-			return nil, NewRuntimeError("Not Function")
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
 		}
 		l, ok := exp[1].(*List)
 		if !ok {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 		}
 
 		param := make([]Expression, len(fn.ParamName.Value))
@@ -1005,14 +1034,14 @@ func build_func() {
 	// math skelton
 	math_impl := func(math_func func(float64) float64, exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if v, ok := exp[0].(*Float); ok {
 			return NewFloat(math_func(v.Value)), nil
 		} else if v, ok := exp[0].(*Integer); ok {
 			return NewFloat(math_func((float64)(v.Value))), nil
 		}
-		return nil, NewRuntimeError("Not Enough Type")
+		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 	}
 	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
 		return math_impl(math.Sqrt, exp...)
@@ -1037,19 +1066,18 @@ func build_func() {
 	}
 	builtin_func["rand-integer"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if v, ok := exp[0].(*Integer); ok {
 			return NewInteger(rand.Intn(v.Value)), nil
 		}
-		return nil, NewRuntimeError("Not Integer")
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 	}
 	// syntax keyword implements
 	special_func["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 3 {
-			return nil, NewRuntimeError("Not Enough Parameter")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
-
 		exp, err := eval(v[0], env)
 		if err != nil {
 			return nil, err
@@ -1057,9 +1085,8 @@ func build_func() {
 
 		b, ok := exp.(*Boolean)
 		if !ok {
-			return nil, NewRuntimeError("Not Boolean")
+			return nil, NewRuntimeError("E1001", reflect.TypeOf(exp).String())
 		}
-
 		if b.Value {
 			return eval(v[1], env)
 		} else {
@@ -1068,36 +1095,37 @@ func build_func() {
 	}
 	special_func["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		key, ok := v[0].(*Symbol)
 		if !ok {
-			return nil, NewRuntimeError("Not Symbol")
+			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
 		}
 		exp, err := eval(v[1], env)
 		if err != nil {
 			return nil, err
 		}
-		(*env).Define(key.Value, exp)
+		(*env).Regist(key.Value, exp)
 		return key, nil
 	}
 	special_func["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) < 2 {
-			return nil, NewRuntimeError("Not Enough Parameter")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
+		// if l == (), internal list implements
 		l, ok := v[0].(*List)
 		if !ok {
-			return nil, NewRuntimeError("Not List")
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(v[0]).String())
 		}
 		return NewFunction(env, l, v[1:]), nil
 	}
 	special_func["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
-			return nil, NewRuntimeError("Not Enough Parameter")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		s, ok := v[0].(*Symbol)
 		if !ok {
-			return nil, NewRuntimeError("Not Symbol")
+			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
 		}
 
 		exp, err := eval(v[1], env)
@@ -1105,7 +1133,7 @@ func build_func() {
 			return v[1], err
 		}
 		if _, ok := (*env).Find(s.Value); !ok {
-			return exp, NewRuntimeError("Undefined Variable: " + s.Value)
+			return exp, NewRuntimeError("E1008", s.Value)
 		}
 		(*env).Set(s.Value, exp)
 		return exp, nil
@@ -1117,19 +1145,19 @@ func build_func() {
 
 		l, ok := v[0].(*List)
 		if ok && len(v) < 2 {
-			return nil, NewRuntimeError("Not Enough Parameter")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		if !ok {
 			letsym, ok = v[0].(*Symbol)
 			if !ok {
-				return nil, NewRuntimeError("Not Symbol")
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
 			}
 			if len(v) < 3 {
-				return nil, NewRuntimeError("Not Enough Parameter")
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 			}
 			l, ok = v[1].(*List)
 			if !ok {
-				return nil, NewRuntimeError("Not List")
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(v[1]).String())
 			}
 			body = 2
 		}
@@ -1138,10 +1166,10 @@ func build_func() {
 		for _, let := range l.Value {
 			r, ok := let.(*List)
 			if !ok {
-				return nil, NewRuntimeError("Not List")
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(let).String())
 			}
 			if len(r.Value) != 2 {
-				return nil, NewRuntimeError("Not Enough Parameter")
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(r.Value)))
 			}
 			sym := (r.Value[0]).(*Symbol)
 			v, err := eval(r.Value[1], env)
@@ -1152,14 +1180,14 @@ func build_func() {
 			local_env[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env).Define(letsym.Value, NewLetLoop(NewList(pname), v[body]))
+			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
 		return eval(v[body], NewSimpleEnv(env, &local_env))
 	}
 	// and or not
 	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
 		if len(exp) < 2 {
-			return nil, NewRuntimeError("Not Enough Parameter Number")
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		for _, e := range exp {
 			b, err := eval(e, env)
@@ -1167,7 +1195,7 @@ func build_func() {
 				return nil, err
 			}
 			if _, ok := b.(*Boolean); !ok {
-				return nil, NewRuntimeError("Not Boolean")
+				return nil, NewRuntimeError("E1001", reflect.TypeOf(b).String())
 			}
 			if bcond == (b.(*Boolean)).Value {
 				return NewBoolean(bcond), nil
