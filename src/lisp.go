@@ -78,7 +78,7 @@ func (self *SimpleEnv) Find(key string) (Expression, bool) {
 	}
 	return nil, false
 }
-func (self *SimpleEnv) Define(key string, exp Expression) {
+func (self *SimpleEnv) Regist(key string, exp Expression) {
 	(*self.EnvTable)[key] = exp
 }
 func (self *SimpleEnv) Set(key string, exp Expression) {
@@ -1111,7 +1111,7 @@ func build_func() {
 		if err != nil {
 			return nil, err
 		}
-		(*env).Define(key.Value, exp)
+		(*env).Regist(key.Value, exp)
 		return key, nil
 	}
 	special_func["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
@@ -1185,7 +1185,7 @@ func build_func() {
 			local_env[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env).Define(letsym.Value, NewLetLoop(NewList(pname), v[body]))
+			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
 		return eval(v[body], NewSimpleEnv(env, &local_env))
 	}
