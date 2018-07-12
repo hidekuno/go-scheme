@@ -544,7 +544,7 @@ func tokenize(s string) []string {
 				// Nop
 			} else {
 				string_data = string_data + s[i:i+1]
-				if (len(s)-1 == i) || (s[i+1] == ')') || (s[i+1] == ' ') {
+				if (len(s)-1 == i) || (s[i+1] == ')') || (s[i+1] == ' ') || (s[i+1] == '(') {
 					token = append(token, string_data)
 					string_data = ""
 				}
@@ -707,7 +707,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 // main logic
 func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 
-	token := tokenize_easy(program)
+	token := tokenize(program)
 	ast, c, err := parse(token)
 	if err != nil {
 		return nil, err

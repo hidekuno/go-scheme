@@ -300,6 +300,18 @@ func Test_basic_opration(t *testing.T) {
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: atom")
 	}
+	exp, _ = do_core_logic("\"(A B C)\"", root_env)
+	if (exp.(*String)).Value != "(A B C)" {
+		t.Fatal("failed test: atom")
+	}
+	exp, _ = do_core_logic("\"(\"", root_env)
+	if (exp.(*String)).Value != "(" {
+		t.Fatal("failed test: atom")
+	}
+	exp, _ = do_core_logic("\"  a  \"", root_env)
+	if (exp.(*String)).Value != "  a  " {
+		t.Fatal("failed test: atom")
+	}
 	exp, _ = do_core_logic("#t", root_env)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: atom")
