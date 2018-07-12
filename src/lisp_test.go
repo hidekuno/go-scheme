@@ -9,6 +9,9 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -495,4 +498,44 @@ func Test_err_case(t *testing.T) {
 	if !check_error_code(err, "E1009") {
 		t.Fatal("failed test: " + "E1009")
 	}
+}
+
+func Test_interactive(t *testing.T) {
+	var io_stub func(program string, ret string)
+
+	io_stub = func(program string, ret string) {
+		inr, inw, _ := os.Pipe()
+		outr, outw, _ := os.Pipe()
+		errr, errw, _ := os.Pipe()
+		orgStdin := os.Stdin
+		orgStdout := os.Stdout
+		orgStderr := os.Stderr
+		inw.Write([]byte(program))
+		inw.Close()
+		os.Stdin = inr
+		os.Stdout = outw
+		os.Stderr = errw
+
+		do_interactive()
+
+		os.Stdin = orgStdin
+		os.Stdout = orgStdout
+		os.Stderr = orgStderr
+		outw.Close()
+		outbuf, _ := ioutil.ReadAll(outr)
+		errw.Close()
+		errbuf, _ := ioutil.ReadAll(errr)
+
+		s := string(outbuf)
+		s = strings.Replace(s, "scheme.go>", "", -1)
+		s = strings.Replace(s, " ", "", -1)
+		s = strings.Replace(s, "\n", "", -1)
+		s = strings.Replace(s, "\t", "", -1)
+		if s != ret {
+			t.Fatal(s)
+			t.Fatal(string(errbuf))
+		}
+	}
+	io_stub("(+ 1 2.5)", "3.5")
+	io_stub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
 }
