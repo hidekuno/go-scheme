@@ -1,29 +1,19 @@
 Go言語によるScheme(subset版)の実装
 =================
 
-# 起動方法
+## 起動方法
 ```
 [kunohi@centos7-dev-docker src]$ go run lisp.go
 scheme.go>
 ```
 
-# 終了方法
+## 終了方法
 ```
 scheme.go>  (quit)
 [kunohi@centos7-dev-docker src]$ 
 ```
-# ビルド方法
-```
-[kunohi@centos7-dev-docker src]$ go build lisp.go
-[kunohi@centos7-dev-docker src]$ 
-```
 
-# emacsでの設定(例)
-```
-(setq scheme-program-name "~/bin/lisp") 
-```
-
-# テスト方法
+## テスト方法
 ```
 [kunohi@centos7-dev-docker src]$ go test -v lisp.go lisp_test.go 
 === RUN   Test_lisp_sample_program
@@ -48,4 +38,15 @@ scheme.go>  (quit)
 PASS
 ok  	command-line-arguments	0.013s
 [kunohi@centos7-dev-docker src]
+```
+
+## ビルド方法
+```
+[kunohi@centos7-dev-docker src]$ go build lisp.go
+[kunohi@centos7-dev-docker src]$ 
+```
+
+## emacsでの設定(例)
+```
+(setq scheme-program-name "~/bin/lisp") 
 ```
