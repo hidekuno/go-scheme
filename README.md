@@ -12,6 +12,16 @@ scheme.go>
 scheme.go>  (quit)
 [kunohi@centos7-dev-docker src]$ 
 ```
+# ビルド方法
+```
+[kunohi@centos7-dev-docker src]$ go build lisp.go
+[kunohi@centos7-dev-docker src]$ 
+```
+
+# emacsでの設定(例)
+```
+(setq scheme-program-name "~/bin/lisp") 
+```
 
 # テスト方法
 ```
