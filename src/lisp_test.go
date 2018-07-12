@@ -11,6 +11,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -528,9 +529,14 @@ func Test_interactive(t *testing.T) {
 
 		s := string(outbuf)
 		s = strings.Replace(s, "scheme.go>", "", -1)
-		s = strings.Replace(s, " ", "", -1)
 		s = strings.Replace(s, "\n", "", -1)
 		s = strings.Replace(s, "\t", "", -1)
+
+		rep := regexp.MustCompile(`^ *`)
+		s = rep.ReplaceAllString(s, "")
+		rep = regexp.MustCompile(` *$`)
+		s = rep.ReplaceAllString(s, "")
+
 		if s != ret {
 			t.Fatal(s)
 			t.Fatal(string(errbuf))
@@ -539,4 +545,11 @@ func Test_interactive(t *testing.T) {
 	}
 	io_stub("(+ 1 2.5)", "3.5")
 	io_stub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
+	io_stub("(define a 1)", "a")
+	io_stub("(= 10 10)", "#t")
+	io_stub("\"ABC\"", "\"ABC\"")
+	io_stub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
+	io_stub("(cons 1 2)", "(1 . 2)")
+	// Special Functon ex. if
+	// Operatotion or Builtin:
 }
