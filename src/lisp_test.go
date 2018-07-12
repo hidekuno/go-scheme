@@ -535,6 +535,7 @@ func Test_interactive(t *testing.T) {
 			t.Fatal(s)
 			t.Fatal(string(errbuf))
 		}
+		t.Log(s)
 	}
 	io_stub("(+ 1 2.5)", "3.5")
 	io_stub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
