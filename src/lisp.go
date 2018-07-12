@@ -771,7 +771,7 @@ func do_interactive() {
 		} else if line == "(quit)" {
 			break
 		}
-		program = append(program, " ")
+		program = append(program, line)
 		if !count_parenthesis(strings.Join(program, " ")) {
 			prompt = ""
 			continue
