@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ type (
 const (
 	MAX_LINE_SIZE = 1024
 	DEBUG         = false
+	PROMPT        = "scheme.go> "
 )
 
 var (
@@ -511,8 +513,59 @@ func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error)
 	return eval(self.Body, env)
 }
 
-// Tenuki lex.
+// lex support  for  string
 func tokenize(s string) []string {
+	var token []string
+
+	string_mode := false
+	symbol_name := make([]byte, 0, 1024)
+
+	rep := regexp.MustCompile(`^ *`)
+	s = rep.ReplaceAllString(s, "")
+	rep = regexp.MustCompile(` *$`)
+	s = rep.ReplaceAllString(s, "")
+
+	from := 0
+	for i, c := range s {
+		if string_mode {
+			if c == '"' {
+				token = append(token, s[from:i+1])
+				string_mode = false
+			}
+		} else {
+			if c == '"' {
+				from = i
+				string_mode = true
+			} else if c == '(' {
+				token = append(token, "(")
+			} else if c == ')' {
+				token = append(token, ")")
+			} else if c == ' ' {
+				// Nop
+			} else {
+				symbol_name = append(symbol_name, s[i])
+				if len(s)-1 == i {
+					token = append(token, string(symbol_name))
+				} else {
+					switch s[i+1] {
+					case '(', ')', ' ':
+						token = append(token, string(symbol_name))
+						symbol_name = make([]byte, 0, 1024)
+					}
+				}
+			}
+		}
+	}
+	if DEBUG {
+		for _, c := range token {
+			fmt.Println(c)
+		}
+	}
+	return token
+}
+
+// Tenuki lex.
+func tokenize_easy(s string) []string {
 	s = strings.Replace(s, "(", " ( ", -1)
 	s = strings.Replace(s, ")", " ) ", -1)
 	token := strings.Fields(s)
@@ -594,7 +647,9 @@ func atom(token string) Atom {
 
 // Evaluate an expression in an environment.
 func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
-
+	if DEBUG {
+		fmt.Print(reflect.TypeOf(sexp))
+	}
 	if _, ok := sexp.(Atom); ok {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env).Find(sym.Value); ok {
@@ -662,6 +717,7 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if c != len(token) {
 		return nil, NewSyntaxError("E0003")
 	}
@@ -674,8 +730,32 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 }
 
 // CUI desu.
+func count_parenthesis(program string) bool {
+	left_parenthesis := 0
+	right_parenthesis := 0
+	search_mode := true
+
+	for _, c := range program {
+		if c == '"' && search_mode {
+			search_mode = false
+		} else if c == '"' && !search_mode {
+			search_mode = true
+		}
+		if c == '(' && search_mode {
+			left_parenthesis = left_parenthesis + 1
+		}
+		if c == ')' && search_mode {
+			right_parenthesis = right_parenthesis + 1
+		}
+	}
+	return left_parenthesis <= right_parenthesis
+}
+
+// CUI desu.
 func do_interactive() {
-	prompt := "scheme.go> "
+	program := make([]string, 0, 64)
+
+	prompt := PROMPT
 	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
 	root_env := NewSimpleEnv(nil, nil)
 	for {
@@ -691,17 +771,24 @@ func do_interactive() {
 		} else if line == "(quit)" {
 			break
 		}
-
-		val, err := do_core_logic(line, root_env)
+		program = append(program, line)
+		if !count_parenthesis(strings.Join(program, " ")) {
+			prompt = ""
+			continue
+		}
+		val, err := do_core_logic(strings.Join(program, " "), root_env)
 		if err != nil {
 			fmt.Println(err.Error())
-			continue
+			goto FINISH
 		}
 		val.Print()
 		fmt.Print("\n")
 		if DEBUG {
 			fmt.Print(reflect.TypeOf(val))
 		}
+	FINISH:
+		program = make([]string, 0, 64)
+		prompt = PROMPT
 	}
 }
 

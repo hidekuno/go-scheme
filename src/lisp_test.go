@@ -9,6 +9,10 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -300,6 +304,18 @@ func Test_basic_opration(t *testing.T) {
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: atom")
 	}
+	exp, _ = do_core_logic("\"(A B C)\"", root_env)
+	if (exp.(*String)).Value != "(A B C)" {
+		t.Fatal("failed test: atom")
+	}
+	exp, _ = do_core_logic("\"(\"", root_env)
+	if (exp.(*String)).Value != "(" {
+		t.Fatal("failed test: atom")
+	}
+	exp, _ = do_core_logic("\"  a  \"", root_env)
+	if (exp.(*String)).Value != "  a  " {
+		t.Fatal("failed test: atom")
+	}
 	exp, _ = do_core_logic("#t", root_env)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: atom")
@@ -483,4 +499,57 @@ func Test_err_case(t *testing.T) {
 	if !check_error_code(err, "E1009") {
 		t.Fatal("failed test: " + "E1009")
 	}
+}
+
+func Test_interactive(t *testing.T) {
+	var io_stub func(program string, ret string)
+
+	io_stub = func(program string, ret string) {
+		inr, inw, _ := os.Pipe()
+		outr, outw, _ := os.Pipe()
+		errr, errw, _ := os.Pipe()
+		orgStdin := os.Stdin
+		orgStdout := os.Stdout
+		orgStderr := os.Stderr
+		inw.Write([]byte(program))
+		inw.Close()
+		os.Stdin = inr
+		os.Stdout = outw
+		os.Stderr = errw
+
+		do_interactive()
+
+		os.Stdin = orgStdin
+		os.Stdout = orgStdout
+		os.Stderr = orgStderr
+		outw.Close()
+		outbuf, _ := ioutil.ReadAll(outr)
+		errw.Close()
+		errbuf, _ := ioutil.ReadAll(errr)
+
+		s := string(outbuf)
+		s = strings.Replace(s, "scheme.go>", "", -1)
+		s = strings.Replace(s, "\n", "", -1)
+		s = strings.Replace(s, "\t", "", -1)
+
+		rep := regexp.MustCompile(`^ *`)
+		s = rep.ReplaceAllString(s, "")
+		rep = regexp.MustCompile(` *$`)
+		s = rep.ReplaceAllString(s, "")
+
+		if s != ret {
+			t.Fatal(s)
+			t.Fatal(string(errbuf))
+		}
+		t.Log(s)
+	}
+	io_stub("(+ 1 2.5)", "3.5")
+	io_stub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
+	io_stub("(define a 1)", "a")
+	io_stub("(= 10 10)", "#t")
+	io_stub("\"ABC\"", "\"ABC\"")
+	io_stub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
+	io_stub("(cons 1 2)", "(1 . 2)")
+	// Special Functon ex. if
+	// Operatotion or Builtin:
 }
