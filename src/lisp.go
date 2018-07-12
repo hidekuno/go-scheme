@@ -518,7 +518,7 @@ func tokenize(s string) []string {
 	var token []string
 
 	string_mode := false
-	string_data := ""
+	symbol_name := make([]byte, 0, 1024)
 
 	rep := regexp.MustCompile(`^ *`)
 	s = rep.ReplaceAllString(s, "")
@@ -543,10 +543,15 @@ func tokenize(s string) []string {
 			} else if c == ' ' {
 				// Nop
 			} else {
-				string_data = string_data + s[i:i+1]
-				if (len(s)-1 == i) || (s[i+1] == ')') || (s[i+1] == ' ') || (s[i+1] == '(') {
-					token = append(token, string_data)
-					string_data = ""
+				symbol_name = append(symbol_name, s[i])
+				if len(s)-1 == i {
+					token = append(token, string(symbol_name))
+				} else {
+					switch s[i+1] {
+					case '(', ')', ' ':
+						token = append(token, string(symbol_name))
+						symbol_name = make([]byte, 0, 1024)
+					}
 				}
 			}
 		}
@@ -748,7 +753,7 @@ func count_parenthesis(program string) bool {
 
 // CUI desu.
 func do_interactive() {
-	var program string
+	program := make([]string, 0, 64)
 
 	prompt := PROMPT
 	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
@@ -766,13 +771,12 @@ func do_interactive() {
 		} else if line == "(quit)" {
 			break
 		}
-
-		program = program + " " + line
-		if !count_parenthesis(program) {
+		program = append(program, " ")
+		if !count_parenthesis(strings.Join(program, " ")) {
 			prompt = ""
 			continue
 		}
-		val, err := do_core_logic(program, root_env)
+		val, err := do_core_logic(strings.Join(program, " "), root_env)
 		if err != nil {
 			fmt.Println(err.Error())
 			goto FINISH
@@ -783,7 +787,7 @@ func do_interactive() {
 			fmt.Print(reflect.TypeOf(val))
 		}
 	FINISH:
-		program = ""
+		program = make([]string, 0, 64)
 		prompt = PROMPT
 	}
 }
