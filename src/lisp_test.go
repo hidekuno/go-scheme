@@ -560,7 +560,8 @@ func Test_interactive(t *testing.T) {
 		s = rep.ReplaceAllString(s, "")
 		rep = regexp.MustCompile(` *$`)
 		s = rep.ReplaceAllString(s, "")
-
+		rep = regexp.MustCompile(`: &.*$`)
+		s = rep.ReplaceAllString(s, ":")
 		if s != ret {
 			t.Fatal(s)
 			t.Fatal(string(errbuf))
@@ -574,6 +575,8 @@ func Test_interactive(t *testing.T) {
 	io_stub("\"ABC\"", "\"ABC\"")
 	io_stub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
 	io_stub("(cons 1 2)", "(1 . 2)")
-	// Special Functon ex. if
-	// Operatotion or Builtin:
+	io_stub("(lambda (n m) (+ n m))", "Function:")
+	io_stub("+", "Operatotion or Builtin:")
+	io_stub("if", "Special Functon ex. if:")
+	io_stub("(delay 1)", "Promise:")
 }
