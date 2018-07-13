@@ -28,21 +28,25 @@ scheme.go>  (quit)
 --- PASS: Test_err_case (0.00s)
 === RUN   Test_interactive
 --- PASS: Test_interactive (0.00s)
-	lisp_test.go:568: 3.5
-	lisp_test.go:568: 30
-	lisp_test.go:568: a
-	lisp_test.go:568: #t
-	lisp_test.go:568: "ABC"
-	lisp_test.go:568: (1 2 3 (4 5))
-	lisp_test.go:568: (1 . 2)
+	lisp_test.go:569: 3.5
+	lisp_test.go:569: 30
+	lisp_test.go:569: a
+	lisp_test.go:569: #t
+	lisp_test.go:569: "ABC"
+	lisp_test.go:569: (1 2 3 (4 5))
+	lisp_test.go:569: (1 . 2)
+	lisp_test.go:569: Function:
+	lisp_test.go:569: Operatotion or Builtin:
+	lisp_test.go:569: Special Functon ex. if:
+	lisp_test.go:569: Promise:
 PASS
-ok  	command-line-arguments	0.014s
+ok  	command-line-arguments	0.010s
 [kunohi@centos7-dev-docker src]
 ```
 
 ## ビルド方法
 ```
-[kunohi@centos7-dev-docker src]$ go build lisp.go
+[kunohi@centos7-dev-docker src]$ go build  -ldflags '-w -s' lisp.go
 [kunohi@centos7-dev-docker src]$ 
 ```
 

@@ -16,7 +16,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -535,16 +534,10 @@ func (self *Promise) Print() {
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
-
 	string_mode := false
 	symbol_name := make([]byte, 0, 1024)
-
-	rep := regexp.MustCompile(`^ *`)
-	s = rep.ReplaceAllString(s, "")
-	rep = regexp.MustCompile(` *$`)
-	s = rep.ReplaceAllString(s, "")
-
 	from := 0
+
 	for i, c := range s {
 		if string_mode {
 			if c == '"' {
