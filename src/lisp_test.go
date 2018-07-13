@@ -392,6 +392,15 @@ func Test_basic_opration(t *testing.T) {
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: or")
 	}
+	// (force ((lambda (a) (delay (* 10 a))) 3))
+	// Undefine variable: a (lisp.go:679)
+	//(define stream-car (lambda (l)(car l)))
+	//(define stream-cdr (lambda (l)(force (cdr l))))
+	//(define stream-cons (lambda (a b) (cons a (delay b))))
+	//(define make-list (lambda (limit)
+	//  (let loop ((l (list))(c limit))
+	//    (if (>= 0 c) l
+	//        (loop (stream-cons c l)(- c 1))))))
 }
 func Test_err_case(t *testing.T) {
 	var (
