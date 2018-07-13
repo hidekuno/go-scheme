@@ -48,6 +48,8 @@ var (
 		"E1007": "Not Enough Parameter Counts",
 		"E1008": "Undefine variable",
 		"E1009": "Not Enough Data Type",
+		"E1010": "Not Promise",
+		"E1011": "Not Enough List Length",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -513,6 +515,23 @@ func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error)
 	return eval(self.Body, env)
 }
 
+type Promise struct {
+	Expression
+	Body Expression
+	Env  *SimpleEnv
+}
+
+func NewPromise(parent *SimpleEnv, body Expression) *Promise {
+	fn := new(Promise)
+	fn.Body = body
+	fn.Env = NewSimpleEnv(parent, nil)
+	return fn
+}
+
+func (self *Promise) Print() {
+	fmt.Print("Promise: ", self)
+}
+
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
@@ -936,7 +955,7 @@ func build_func() {
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
 			}
 			return l.Value[0], nil
 		} else if p, ok := exp[0].(*Pair); ok {
@@ -957,6 +976,19 @@ func build_func() {
 			return NewList(l.Value[1:]), nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Cdr, nil
+		} else {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+		}
+	}
+	builtin_func["cadr"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) < 2 {
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
+			}
+			return l.Value[1], nil
 		} else {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
@@ -992,7 +1024,7 @@ func build_func() {
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("E1007")
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
 			}
 			return l.Value[len(l.Value)-1], nil
 		} else if p, ok := exp[0].(*Pair); ok {
@@ -1297,6 +1329,26 @@ func build_func() {
 	}
 	special_func["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 		return op_logical(env, exp, true, false)
+	}
+	special_func["delay"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return NewPromise(env, exp[0]), nil
+	}
+	special_func["force"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		e, err := eval(exp[0], env)
+		if err != nil {
+			return nil, err
+		}
+		p, ok := e.(*Promise)
+		if !ok {
+			return nil, NewRuntimeError("E1010", reflect.TypeOf(e).String())
+		}
+		return eval(p.Body, p.Env)
 	}
 }
 
