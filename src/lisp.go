@@ -513,6 +513,23 @@ func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error)
 	return eval(self.Body, env)
 }
 
+type Promise struct {
+	Expression
+	Body Expression
+	Env  *SimpleEnv
+}
+
+func NewPromise(parent *SimpleEnv, body Expression) *Promise {
+	fn := new(Promise)
+	fn.Body = body
+	fn.Env = NewSimpleEnv(parent, nil)
+	return fn
+}
+
+func (self *Promise) Print() {
+	fmt.Print("Promise: ", self)
+}
+
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
@@ -1297,6 +1314,26 @@ func build_func() {
 	}
 	special_func["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 		return op_logical(env, exp, true, false)
+	}
+	special_func["delay"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return NewPromise(env, exp[0]), nil
+	}
+	special_func["force"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		e, err := eval(exp[0], env)
+		if err != nil {
+			return nil, err
+		}
+		p, ok := e.(*Promise)
+		if !ok {
+			return nil, NewRuntimeError("E1001", reflect.TypeOf(e).String())
+		}
+		return eval(p.Body, p.Env)
 	}
 }
 
