@@ -99,7 +99,11 @@ var (
 		"(define merge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(merge (cdr a) b))(cons (car b) (merge a (cdr b)))))))",
 		"(define take (lambda (l n)(if (>= 0 n) (list)(cons (car l)(take (cdr l)(- n 1))))))",
 		"(define drop (lambda (l n)(if (>= 0 n) l (drop (cdr l)(- n 1)))))",
-		"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(car (cdr l))) l (reverse l))(let ((mid (quotient n 2)))(merge (msort (take l mid))(msort (drop l mid)))))))))",
+		"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(cadr l)) l (reverse l))(let ((mid (quotient n 2)))(merge (msort (take l mid))(msort (drop l mid)))))))))",
+		"(define stream-car (lambda (l)(car l)))",
+		"(define stream-cdr (lambda (l)(force (cdr l))))",
+		"(define make-generator (lambda (generator inits)(cons (car inits)(delay (make-generator generator (generator inits))))))",
+		"(define inf-list (lambda (generator inits limit)(let loop ((l (make-generator generator inits))(c limit)) (if (>= 0 c) (list)(cons (stream-car l)(loop (stream-cdr l)(- c 1)))))))",
 	}
 )
 
@@ -184,6 +188,11 @@ func Test_lisp_sample_program(t *testing.T) {
 	if !check_logic_list(exp, test_sort_data) {
 		t.Fatal("failed test: bsort")
 	}
+	fibonacci := []int{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}
+	exp, _ = do_core_logic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", root_env)
+	if !check_logic_list(exp, fibonacci) {
+		t.Fatal("failed test: fibonacci")
+	}
 }
 func Test_math_func(t *testing.T) {
 	var (
@@ -248,6 +257,10 @@ func Test_list_func(t *testing.T) {
 	if !check_logic_int(exp, 20) {
 		t.Fatal("failed test: cdr")
 	}
+	exp, _ = do_core_logic("(cadr (list 1 2 3 4))", root_env)
+	if !check_logic_int(exp, 2) {
+		t.Fatal("failed test: cadr")
+	}
 	exp, _ = do_core_logic("(car (cons 100 200))", root_env)
 	if !check_logic_int(exp, 100) {
 		t.Fatal("failed test: cons")
@@ -285,7 +298,7 @@ func Test_list_func(t *testing.T) {
 		t.Fatal("failed test: ()")
 	}
 }
-func Test_basic_opration(t *testing.T) {
+func Test_basic_operation(t *testing.T) {
 	var (
 		exp Expression
 	)
@@ -392,15 +405,10 @@ func Test_basic_opration(t *testing.T) {
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: or")
 	}
-	// (force ((lambda (a) (delay (* 10 a))) 3))
-	// Undefine variable: a (lisp.go:679)
-	//(define stream-car (lambda (l)(car l)))
-	//(define stream-cdr (lambda (l)(force (cdr l))))
-	//(define stream-cons (lambda (a b) (cons a (delay b))))
-	//(define make-list (lambda (limit)
-	//  (let loop ((l (list))(c limit))
-	//    (if (>= 0 c) l
-	//        (loop (stream-cons c l)(- c 1))))))
+	exp, _ = do_core_logic("(force ((lambda (a) (delay (* 10 a))) 3))", root_env)
+	if !check_logic_int(exp, 30) {
+		t.Fatal("failed test: force, delay")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -461,15 +469,18 @@ func Test_err_case(t *testing.T) {
 		{"(length)", "E1007"},
 		{"(car (list 1)(list 2))", "E1007"},
 		{"(car)", "E1007"},
-		{"(car (list))", "E1007"},
+		{"(car (list))", "E1011"},
 		{"(cdr (list 1)(list 2))", "E1007"},
 		{"(cdr)", "E1007"},
+		{"(cadr (list 1)(list 2))", "E1007"},
+		{"(cadr)", "E1007"},
+		{"(cadr (list 1))", "E1011"},
 		{"(cons 1 (list 1)(list 2))", "E1007"},
 		{"(cons 1)", "E1007"},
 		{"(append (list 1))", "E1007"},
 		{"(last (list 1)(list 2))", "E1007"},
 		{"(last)", "E1007"},
-		{"(last (list))", "E1007"},
+		{"(last (list))", "E1011"},
 		{"(reverse (list 1)(list 2))", "E1007"},
 		{"(reverse)", "E1007"},
 		{"(iota)", "E1007"},
@@ -496,6 +507,11 @@ func Test_err_case(t *testing.T) {
 		{"(let ((a))(+ 1 1))", "E1007"},
 		{"hoge", "E1008"},
 		{"(set! hoge 10)", "E1008"},
+		{"(delay)", "E1007"},
+		{"(delay 1 2)", "E1007"},
+		{"(force)", "E1007"},
+		{"(force 1 2)", "E1007"},
+		{"(force 1)", "E1010"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
@@ -509,7 +525,6 @@ func Test_err_case(t *testing.T) {
 		t.Fatal("failed test: " + "E1009")
 	}
 }
-
 func Test_interactive(t *testing.T) {
 	var io_stub func(program string, ret string)
 

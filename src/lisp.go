@@ -48,6 +48,8 @@ var (
 		"E1007": "Not Enough Parameter Counts",
 		"E1008": "Undefine variable",
 		"E1009": "Not Enough Data Type",
+		"E1010": "Not Promise",
+		"E1011": "Not Enough List Length",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -953,7 +955,7 @@ func build_func() {
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
 			}
 			return l.Value[0], nil
 		} else if p, ok := exp[0].(*Pair); ok {
@@ -974,6 +976,19 @@ func build_func() {
 			return NewList(l.Value[1:]), nil
 		} else if p, ok := exp[0].(*Pair); ok {
 			return p.Cdr, nil
+		} else {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+		}
+	}
+	builtin_func["cadr"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		if l, ok := exp[0].(*List); ok {
+			if len(l.Value) < 2 {
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
+			}
+			return l.Value[1], nil
 		} else {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
@@ -1009,7 +1024,7 @@ func build_func() {
 		}
 		if l, ok := exp[0].(*List); ok {
 			if len(l.Value) <= 0 {
-				return nil, NewRuntimeError("E1007")
+				return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
 			}
 			return l.Value[len(l.Value)-1], nil
 		} else if p, ok := exp[0].(*Pair); ok {
@@ -1331,7 +1346,7 @@ func build_func() {
 		}
 		p, ok := e.(*Promise)
 		if !ok {
-			return nil, NewRuntimeError("E1001", reflect.TypeOf(e).String())
+			return nil, NewRuntimeError("E1010", reflect.TypeOf(e).String())
 		}
 		return eval(p.Body, p.Env)
 	}
