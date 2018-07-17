@@ -531,6 +531,20 @@ func (self *Promise) Print() {
 	fmt.Print("Promise: ", self)
 }
 
+type Continuation struct {
+	Expression
+	Body Expression
+}
+
+func NewContinuation(body Expression) *Continuation {
+	k := new(Continuation)
+	k.Body = body
+	return k
+}
+func (self *Continuation) Print() {
+	fmt.Print("Continuation: ", self)
+}
+
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
@@ -703,6 +717,9 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 				// (let loop ((a (list 1 2 3))(b 0))
 				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
 				return let.Execute(env, v[1:])
+			} else if _, ok := proc.(*Continuation); ok {
+				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
+				return eval(v[1], env)
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -1342,6 +1359,28 @@ func build_func() {
 			return nil, NewRuntimeError("E1010", reflect.TypeOf(e).String())
 		}
 		return eval(p.Body, p.Env)
+	}
+	special_func["identity"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		return eval(v[0], env)
+	}
+	special_func["call/cc"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		e, err := eval(v[0], env)
+		if err != nil {
+			return nil, err
+		}
+		lambda, ok := e.(*Function)
+		if !ok {
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(e).String())
+		}
+		param := make([]Expression, 1)
+		param[0] = NewContinuation(v[0])
+		return lambda.Execute(nil, param)
 	}
 }
 
