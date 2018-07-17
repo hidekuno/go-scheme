@@ -399,7 +399,15 @@ func (self *SpecialFunc) Print() {
 	fmt.Print("Special Functon ex. if: ", self)
 }
 func (self *SpecialFunc) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
-	return self.Impl(env, exps)
+	e, err := self.Impl(env, exps)
+	if err != nil {
+		return nil, err
+	}
+	if k, ok := e.(*Continuation); ok {
+		return eval(k.Body, env)
+	} else {
+		return e, nil
+	}
 }
 
 type Operator struct {
@@ -424,6 +432,9 @@ func (self *Operator) Execute(env *SimpleEnv, exps []Expression) (Expression, er
 		e, err := eval(exp, env)
 		if err != nil {
 			return exp, err
+		}
+		if k, ok := e.(*Continuation); ok {
+			return eval(k.Body, env)
 		}
 		args = append(args, e)
 	}
@@ -463,6 +474,10 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 				if err != nil {
 					return nil, err
 				}
+				if k, ok := v.(*Continuation); ok {
+					return eval(k.Body, env)
+				}
+
 				local_env[sym.Value] = v
 			} else {
 				local_env[sym.Value] = values[idx]
@@ -536,9 +551,8 @@ type Continuation struct {
 	Body Expression
 }
 
-func NewContinuation(body Expression) *Continuation {
+func NewContinuation() *Continuation {
 	k := new(Continuation)
-	k.Body = body
 	return k
 }
 func (self *Continuation) Print() {
@@ -717,9 +731,10 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 				// (let loop ((a (list 1 2 3))(b 0))
 				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
 				return let.Execute(env, v[1:])
-			} else if _, ok := proc.(*Continuation); ok {
+			} else if k, ok := proc.(*Continuation); ok {
 				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
-				return eval(v[1], env)
+				k.Body = v[1]
+				return k, nil
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -1379,7 +1394,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1006", reflect.TypeOf(e).String())
 		}
 		param := make([]Expression, 1)
-		param[0] = NewContinuation(v[0])
+		param[0] = NewContinuation()
 		return lambda.Execute(nil, param)
 	}
 }
