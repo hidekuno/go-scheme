@@ -548,6 +548,8 @@ func Test_err_case(t *testing.T) {
 		{"(identity 100 200)", "E1007"},
 		{"(identity)", "E1007"},
 		{"(call/cc)", "E1007"},
+		{"(call/cc (lambda () #t))", "E1007"},
+		{"(call/cc (lambda (n) #t)(lambda (n) #t))", "E1007"},
 		{"(call/cc 10)", "E1006"},
 	}
 	for _, e := range test_code {
