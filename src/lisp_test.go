@@ -442,6 +442,10 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 6) {
 		t.Fatal("failed test: force, call/cc")
 	}
+	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", root_env)
+	if !check_logic_int(exp, 9) {
+		t.Fatal("failed test: force, call/cc")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
