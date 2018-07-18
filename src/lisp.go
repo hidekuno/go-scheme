@@ -49,6 +49,7 @@ var (
 		"E1009": "Not Enough Data Type",
 		"E1010": "Not Promise",
 		"E1011": "Not Enough List Length",
+		"E1012": "Not Cond Gramar",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -1417,6 +1418,40 @@ func build_func() {
 		} else {
 			return exp, nil
 		}
+	}
+	special_func["cond"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		for _, e := range v {
+			l, ok := e.(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
+			}
+			if len(l.Value) != 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
+			}
+			if _, ok := l.Value[0].(*List); ok {
+				exp, err := eval(l.Value[0], env)
+				if err != nil {
+					return nil, err
+				}
+				if b, ok := exp.(*Boolean); ok {
+					if b.Value {
+						return eval(l.Value[1], env)
+					}
+				}
+			} else if sym, ok := l.Value[0].(*Symbol); ok {
+				if sym.Value == "else" {
+					return eval(l.Value[1], env)
+				} else {
+					return nil, NewRuntimeError("E1012")
+				}
+			} else {
+				return nil, NewRuntimeError("E1012")
+			}
+		}
+		return nil, NewRuntimeError("E1012")
 	}
 }
 
