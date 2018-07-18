@@ -487,7 +487,14 @@ func Test_basic_operation(t *testing.T) {
 	if (exp.(*String)).Value != "sankaku" {
 		t.Fatal("failed test: cond")
 	}
-
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) #t)))", root_env)
+	if _, ok := exp.(*Nil); !ok {
+		t.Fatal("failed test: NilClass")
+	}
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(if (= a b) #t))", root_env)
+	if _, ok := exp.(*Nil); !ok {
+		t.Fatal("failed test: NilClass")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -574,8 +581,8 @@ func Test_err_case(t *testing.T) {
 		{"(sqrt)", "E1007"},
 		{"(rand-integer 11 9)", "E1007"},
 		{"(rand-integer)", "E1007"},
-		{"(if (= 10 10) 1 2 3)", "E1007"},
-		{"(if (= 10 10) 1)", "E1007"},
+		{"(if 10 1 2)", "E1001"},
+		{"(if (= 10 10))", "E1007"},
 		{"(define a)", "E1007"},
 		{"(define a 10 11)", "E1007"},
 		{"(set! a)", "E1007"},
@@ -602,7 +609,6 @@ func Test_err_case(t *testing.T) {
 		{"(cond (10))", "E1007"},
 		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
 		{"(cond (10 10))", "E1012"},
-		{"(let ((a 10)(b 20))(cond ((= a b) #t)))", "E1012"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
