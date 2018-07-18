@@ -404,7 +404,7 @@ func (self *SpecialFunc) Execute(env *SimpleEnv, exps []Expression) (Expression,
 		return nil, err
 	}
 	if k, ok := e.(*Continuation); ok {
-		return eval(k.Body, env)
+		return k, nil
 	} else {
 		return e, nil
 	}
@@ -434,7 +434,7 @@ func (self *Operator) Execute(env *SimpleEnv, exps []Expression) (Expression, er
 			return exp, err
 		}
 		if k, ok := e.(*Continuation); ok {
-			return eval(k.Body, env)
+			return k, nil
 		}
 		args = append(args, e)
 	}
@@ -475,7 +475,7 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 					return nil, err
 				}
 				if k, ok := v.(*Continuation); ok {
-					return eval(k.Body, env)
+					return k, nil
 				}
 
 				local_env[sym.Value] = v
@@ -549,6 +549,7 @@ func (self *Promise) Print() {
 type Continuation struct {
 	Expression
 	Body Expression
+	Env  *SimpleEnv
 }
 
 func NewContinuation() *Continuation {
@@ -734,6 +735,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			} else if k, ok := proc.(*Continuation); ok {
 				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
 				k.Body = v[1]
+				k.Env = env
 				return k, nil
 			}
 		} else if slf, ok := v[0].(*List); ok {
@@ -1120,6 +1122,9 @@ func build_func() {
 			if err != nil {
 				return nil, err
 			}
+			if k, ok := result.(*Continuation); ok {
+				return k, nil
+			}
 
 			va_list, err = lambda(result, param[0], va_list)
 			if err != nil {
@@ -1177,6 +1182,10 @@ func build_func() {
 			if err != nil {
 				return nil, err
 			}
+			if k, ok := result.(*Continuation); ok {
+				return k, nil
+			}
+
 		}
 		return result, nil
 	}
@@ -1398,7 +1407,16 @@ func build_func() {
 		}
 		param := make([]Expression, 1)
 		param[0] = NewContinuation()
-		return lambda.Execute(nil, param)
+
+		exp, err := lambda.Execute(nil, param)
+		if err != nil {
+			return nil, err
+		}
+		if k, ok := exp.(*Continuation); ok {
+			return eval(k.Body, k.Env)
+		} else {
+			return exp, nil
+		}
 	}
 }
 
