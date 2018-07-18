@@ -436,28 +436,28 @@ func Test_basic_operation(t *testing.T) {
 	}
 	exp, _ = do_core_logic("(identity 100)", root_env)
 	if !check_logic_int(exp, 100) {
-		t.Fatal("failed test: force, identity")
+		t.Fatal("failed test: identity")
 	}
 	exp, _ = do_core_logic("(identity \"ABC\")", root_env)
 	if (exp.(*String)).Value != "ABC" {
-		t.Fatal("failed test: force, identity")
+		t.Fatal("failed test: identity")
 	}
 	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (- 1 (k 2)))))", root_env)
 	if !check_logic_int(exp, 6) {
-		t.Fatal("failed test: force, call/cc")
+		t.Fatal("failed test: call/cc")
 	}
 	do_core_logic("(define hoge (lambda (a b) a))", root_env)
 	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (hoge 1 (k 2)))))", root_env)
 	if !check_logic_int(exp, 6) {
-		t.Fatal("failed test: force, call/cc")
+		t.Fatal("failed test: call/cc")
 	}
 	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", root_env)
 	if !check_logic_int(exp, 9) {
-		t.Fatal("failed test: force, call/cc")
+		t.Fatal("failed test: call/cc")
 	}
 	exp, _ = do_core_logic("(call/cc (lambda (k) 10))", root_env)
 	if !check_logic_int(exp, 10) {
-		t.Fatal("failed test: force, call/cc")
+		t.Fatal("failed test: call/cc")
 	}
 
 	exp, _ = do_core_logic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", root_env)
@@ -467,8 +467,27 @@ func Test_basic_operation(t *testing.T) {
 
 	exp, _ = do_core_logic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", root_env)
 	if !check_logic_int(exp, 3) {
-		t.Fatal("failed test: force, call/cc")
+		t.Fatal("failed test: call/cc")
 	}
+	exp, _ = do_core_logic("(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", root_env)
+	exp, _ = do_core_logic("(foo)", root_env)
+	if !check_logic_int(exp, 11) {
+		t.Fatal("failed test: nested define")
+	}
+
+	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
+	if (exp.(*String)).Value != "ok" {
+		t.Fatal("failed test: cond")
+	}
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
+	if (exp.(*String)).Value != "ng" {
+		t.Fatal("failed test: cond")
+	}
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", root_env)
+	if (exp.(*String)).Value != "sankaku" {
+		t.Fatal("failed test: cond")
+	}
+
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -578,6 +597,12 @@ func Test_err_case(t *testing.T) {
 		{"(call/cc (lambda () #t))", "E1007"},
 		{"(call/cc (lambda (n) #t)(lambda (n) #t))", "E1007"},
 		{"(call/cc 10)", "E1006"},
+		{"(cond)", "E1007"},
+		{"(cond 10)", "E1005"},
+		{"(cond (10))", "E1007"},
+		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
+		{"(cond (10 10))", "E1012"},
+		{"(let ((a 10)(b 20))(cond ((= a b) #t)))", "E1012"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
