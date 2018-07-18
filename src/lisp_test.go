@@ -594,6 +594,7 @@ func Test_err_case(t *testing.T) {
 		{"(set! a)", "E1007"},
 		{"(set! a 10 11)", "E1007"},
 		{"(lambda (+ n m))", "E1007"},
+		{"(lambda 10 11)", "E1005"},
 		{"(let ((a 10)))", "E1007"},
 		{"(let loop ((a 10)))", "E1007"},
 		{"(let ((a))(+ 1 1))", "E1007"},
