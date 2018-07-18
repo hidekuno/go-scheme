@@ -83,11 +83,11 @@ func check_error_code(err error, error_code string) bool {
 var (
 	program = []string{
 		"(define test_list (list 36 27 14 19 2 8 7 6 0 9 3))",
-		"(define counter (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c)) c))))",
+		"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))",
 		"(define a (counter))",
 		"(define b (counter))",
-		"(define gcm (lambda (n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod)))))",
-		"(define lcm (lambda (n m) (/(* n m)(gcm n m))))",
+		"(define (gcm n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod))))",
+		"(define (lcm n m) (/(* n m)(gcm n m)))",
 		"(define hanoi (lambda (from to work n) (if (>= 0 n)(list)(append (hanoi from work to (- n 1))(list (list (cons from to) n))(hanoi work to from (- n 1))))))",
 		"(define prime (lambda (l) (if (> (car l)(sqrt (last l))) l (cons (car l)(prime (filter (lambda (n) (not (= 0 (modulo n (car l))))) (cdr l)))))))",
 		"(define qsort (lambda (l pred) (if (null? l) l (append (qsort (filter (lambda (n) (pred n (car l))) (cdr l)) pred) (cons (car l) (qsort (filter (lambda (n) (not (pred n (car l))))(cdr l)) pred))))))",
@@ -474,7 +474,11 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 11) {
 		t.Fatal("failed test: nested define")
 	}
-
+	exp, _ = do_core_logic("(define a 100)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 100) {
+		t.Fatal("failed test: simple define")
+	}
 	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
 	if (exp.(*String)).Value != "ok" {
 		t.Fatal("failed test: cond")
@@ -585,6 +589,8 @@ func Test_err_case(t *testing.T) {
 		{"(if (= 10 10))", "E1007"},
 		{"(define a)", "E1007"},
 		{"(define a 10 11)", "E1007"},
+		{"(define (a))", "E1007"},
+		{"(define 10 11)", "E1004"},
 		{"(set! a)", "E1007"},
 		{"(set! a 10 11)", "E1007"},
 		{"(lambda (+ n m))", "E1007"},
