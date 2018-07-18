@@ -1269,13 +1269,26 @@ func build_func() {
 		if len(v) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
-		key, ok := v[0].(*Symbol)
-		if !ok {
+		var (
+			key *Symbol
+			err error
+			ok bool
+			exp Expression
+		)
+		if key, ok = v[0].(*Symbol); ok {
+			exp, err = eval(v[1], env)
+			if err != nil {
+				return nil, err
+			}
+
+		} else if l, ok := v[0].(*List); ok {
+			if len(l.Value) < 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+			}
+			key = l.Value[0].(*Symbol)
+			exp = NewFunction(env, NewList(l.Value[1:]), v[1:])
+		} else {
 			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
-		}
-		exp, err := eval(v[1], env)
-		if err != nil {
-			return nil, err
 		}
 		(*env).Regist(key.Value, exp)
 		return key, nil
