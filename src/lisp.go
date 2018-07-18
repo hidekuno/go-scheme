@@ -1272,7 +1272,7 @@ func build_func() {
 		var (
 			key *Symbol
 			err error
-			ok bool
+			ok  bool
 			exp Expression
 		)
 		if key, ok = v[0].(*Symbol); ok {
@@ -1280,7 +1280,6 @@ func build_func() {
 			if err != nil {
 				return nil, err
 			}
-
 		} else if l, ok := v[0].(*List); ok {
 			if len(l.Value) < 1 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
