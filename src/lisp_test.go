@@ -110,6 +110,15 @@ var (
 	}
 )
 
+func Test_check_funclist(t *testing.T) {
+	build_func()
+	for key, _ := range builtin_func {
+		t.Log(key)
+	}
+	for key, _ := range special_func {
+		t.Log(key)
+	}
+}
 func Test_lisp_sample_program(t *testing.T) {
 	var (
 		exp Expression
@@ -444,6 +453,20 @@ func Test_basic_operation(t *testing.T) {
 	}
 	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", root_env)
 	if !check_logic_int(exp, 9) {
+		t.Fatal("failed test: force, call/cc")
+	}
+	exp, _ = do_core_logic("(call/cc (lambda (k) 10))", root_env)
+	if !check_logic_int(exp, 10) {
+		t.Fatal("failed test: force, call/cc")
+	}
+
+	exp, _ = do_core_logic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", root_env)
+	if !check_logic_int(exp, 6) {
+		t.Fatal("failed test: force, call/cc")
+	}
+
+	exp, _ = do_core_logic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", root_env)
+	if !check_logic_int(exp, 3) {
 		t.Fatal("failed test: force, call/cc")
 	}
 }
