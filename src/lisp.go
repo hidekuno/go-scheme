@@ -1117,6 +1117,9 @@ func build_func() {
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
 			result, err := fn.Execute(nil, param)
+			if err != nil {
+				return nil, err
+			}
 
 			va_list, err = lambda(result, param[0], va_list)
 			if err != nil {
