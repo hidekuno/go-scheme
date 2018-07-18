@@ -561,6 +561,18 @@ func (self *Continuation) Print() {
 	fmt.Print("Continuation: ", self)
 }
 
+type Nil struct {
+	Expression
+}
+
+func NewNil() *Nil {
+	return &Nil{}
+
+}
+func (self *Nil) Print() {
+	fmt.Print("nil")
+}
+
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
@@ -1234,7 +1246,7 @@ func build_func() {
 	}
 	// syntax keyword implements
 	special_func["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 3 {
+		if len(v) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		exp, err := eval(v[0], env)
@@ -1248,9 +1260,10 @@ func build_func() {
 		}
 		if b.Value {
 			return eval(v[1], env)
-		} else {
+		} else if 3 <= len(v) {
 			return eval(v[2], env)
 		}
+		return NewNil(), nil
 	}
 	special_func["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
@@ -1451,7 +1464,7 @@ func build_func() {
 				return nil, NewRuntimeError("E1012")
 			}
 		}
-		return nil, NewRuntimeError("E1012")
+		return NewNil(), nil
 	}
 }
 
