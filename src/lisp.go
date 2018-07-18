@@ -399,7 +399,15 @@ func (self *SpecialFunc) Print() {
 	fmt.Print("Special Functon ex. if: ", self)
 }
 func (self *SpecialFunc) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
-	return self.Impl(env, exps)
+	e, err := self.Impl(env, exps)
+	if err != nil {
+		return nil, err
+	}
+	if k, ok := e.(*Continuation); ok {
+		return k, nil
+	} else {
+		return e, nil
+	}
 }
 
 type Operator struct {
@@ -424,6 +432,9 @@ func (self *Operator) Execute(env *SimpleEnv, exps []Expression) (Expression, er
 		e, err := eval(exp, env)
 		if err != nil {
 			return exp, err
+		}
+		if k, ok := e.(*Continuation); ok {
+			return k, nil
 		}
 		args = append(args, e)
 	}
@@ -463,6 +474,10 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 				if err != nil {
 					return nil, err
 				}
+				if k, ok := v.(*Continuation); ok {
+					return k, nil
+				}
+
 				local_env[sym.Value] = v
 			} else {
 				local_env[sym.Value] = values[idx]
@@ -529,6 +544,20 @@ func NewPromise(parent *SimpleEnv, body Expression) *Promise {
 
 func (self *Promise) Print() {
 	fmt.Print("Promise: ", self)
+}
+
+type Continuation struct {
+	Expression
+	Body Expression
+	Env  *SimpleEnv
+}
+
+func NewContinuation() *Continuation {
+	k := new(Continuation)
+	return k
+}
+func (self *Continuation) Print() {
+	fmt.Print("Continuation: ", self)
 }
 
 // lex support  for  string
@@ -703,6 +732,11 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 				// (let loop ((a (list 1 2 3))(b 0))
 				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
 				return let.Execute(env, v[1:])
+			} else if k, ok := proc.(*Continuation); ok {
+				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
+				k.Body = v[1]
+				k.Env = env
+				return k, nil
 			}
 		} else if slf, ok := v[0].(*List); ok {
 			// ((lambda (a b) (+ a b)) 10 20)
@@ -1085,6 +1119,12 @@ func build_func() {
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
 			result, err := fn.Execute(nil, param)
+			if err != nil {
+				return nil, err
+			}
+			if k, ok := result.(*Continuation); ok {
+				return k, nil
+			}
 
 			va_list, err = lambda(result, param[0], va_list)
 			if err != nil {
@@ -1142,6 +1182,10 @@ func build_func() {
 			if err != nil {
 				return nil, err
 			}
+			if k, ok := result.(*Continuation); ok {
+				return k, nil
+			}
+
 		}
 		return result, nil
 	}
@@ -1342,6 +1386,37 @@ func build_func() {
 			return nil, NewRuntimeError("E1010", reflect.TypeOf(e).String())
 		}
 		return eval(p.Body, p.Env)
+	}
+	special_func["identity"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		return eval(v[0], env)
+	}
+	special_func["call/cc"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		e, err := eval(v[0], env)
+		if err != nil {
+			return nil, err
+		}
+		lambda, ok := e.(*Function)
+		if !ok {
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(e).String())
+		}
+		param := make([]Expression, 1)
+		param[0] = NewContinuation()
+
+		exp, err := lambda.Execute(nil, param)
+		if err != nil {
+			return nil, err
+		}
+		if k, ok := exp.(*Continuation); ok {
+			return eval(k.Body, k.Env)
+		} else {
+			return exp, nil
+		}
 	}
 }
 

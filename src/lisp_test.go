@@ -104,9 +104,21 @@ var (
 		"(define stream-cdr (lambda (l)(force (cdr l))))",
 		"(define make-generator (lambda (generator inits)(cons (car inits)(delay (make-generator generator (generator inits))))))",
 		"(define inf-list (lambda (generator inits limit)(let loop ((l (make-generator generator inits))(c limit)) (if (>= 0 c) (list)(cons (stream-car l)(loop (stream-cdr l)(- c 1)))))))",
+		"(define fact/cps (lambda (n cont)(if (= n 0)(cont 1)(fact/cps (- n 1) (lambda (a) (cont (* n a)))))))",
+		"(define fact (lambda (n) (fact/cps n identity)))",
+		"(define fact/cont (lambda (n)  (call/cc (lambda (cont)  (if (= n 3) (cont n) (if (>= 1 n) 1 (* n (fact/cont (- n 1)))))))))",
 	}
 )
 
+func Test_check_funclist(t *testing.T) {
+	build_func()
+	for key, _ := range builtin_func {
+		t.Log(key)
+	}
+	for key, _ := range special_func {
+		t.Log(key)
+	}
+}
 func Test_lisp_sample_program(t *testing.T) {
 	var (
 		exp Expression
@@ -192,6 +204,19 @@ func Test_lisp_sample_program(t *testing.T) {
 	exp, _ = do_core_logic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", root_env)
 	if !check_logic_list(exp, fibonacci) {
 		t.Fatal("failed test: fibonacci")
+	}
+
+	exp, _ = do_core_logic("(fact/cps 5 (lambda (a) (+ 80 a)))", root_env)
+	if !check_logic_int(exp, 200) {
+		t.Fatal("failed test: fact/cps")
+	}
+	exp, _ = do_core_logic("(fact 5)", root_env)
+	if !check_logic_int(exp, 120) {
+		t.Fatal("failed test: fact")
+	}
+	exp, _ = do_core_logic("(fact/cont 5)", root_env)
+	if !check_logic_int(exp, 60) {
+		t.Fatal("failed test: fact/cont")
 	}
 }
 func Test_math_func(t *testing.T) {
@@ -409,6 +434,41 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 30) {
 		t.Fatal("failed test: force, delay")
 	}
+	exp, _ = do_core_logic("(identity 100)", root_env)
+	if !check_logic_int(exp, 100) {
+		t.Fatal("failed test: force, identity")
+	}
+	exp, _ = do_core_logic("(identity \"ABC\")", root_env)
+	if (exp.(*String)).Value != "ABC" {
+		t.Fatal("failed test: force, identity")
+	}
+	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (- 1 (k 2)))))", root_env)
+	if !check_logic_int(exp, 6) {
+		t.Fatal("failed test: force, call/cc")
+	}
+	do_core_logic("(define hoge (lambda (a b) a))", root_env)
+	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (hoge 1 (k 2)))))", root_env)
+	if !check_logic_int(exp, 6) {
+		t.Fatal("failed test: force, call/cc")
+	}
+	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", root_env)
+	if !check_logic_int(exp, 9) {
+		t.Fatal("failed test: force, call/cc")
+	}
+	exp, _ = do_core_logic("(call/cc (lambda (k) 10))", root_env)
+	if !check_logic_int(exp, 10) {
+		t.Fatal("failed test: force, call/cc")
+	}
+
+	exp, _ = do_core_logic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", root_env)
+	if !check_logic_int(exp, 6) {
+		t.Fatal("failed test: force, call/cc")
+	}
+
+	exp, _ = do_core_logic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", root_env)
+	if !check_logic_int(exp, 3) {
+		t.Fatal("failed test: force, call/cc")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -512,6 +572,12 @@ func Test_err_case(t *testing.T) {
 		{"(force)", "E1007"},
 		{"(force 1 2)", "E1007"},
 		{"(force 1)", "E1010"},
+		{"(identity 100 200)", "E1007"},
+		{"(identity)", "E1007"},
+		{"(call/cc)", "E1007"},
+		{"(call/cc (lambda () #t))", "E1007"},
+		{"(call/cc (lambda (n) #t)(lambda (n) #t))", "E1007"},
+		{"(call/cc 10)", "E1006"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
