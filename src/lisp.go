@@ -1493,6 +1493,12 @@ func build_func() {
 		}
 		return NewNil(), nil
 	}
+	special_func["quote"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		return v[0], nil
+	}
 }
 
 // Main
