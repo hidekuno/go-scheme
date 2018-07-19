@@ -50,6 +50,7 @@ var (
 		"E1010": "Not Promise",
 		"E1011": "Not Enough List Length",
 		"E1012": "Not Cond Gramar",
+		"E1013": "Calculate A Division By Zero",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -209,6 +210,9 @@ func (self *Integer) Mul(p Number) Number {
 }
 func (self *Integer) Div(p Number) Number {
 	v, _ := p.(*Integer)
+	if v.Value == 0 {
+		panic(NewRuntimeError("E1013"))
+	}
 	self.Value /= v.Value
 	return self
 }
@@ -567,7 +571,6 @@ type Nil struct {
 
 func NewNil() *Nil {
 	return &Nil{}
-
 }
 func (self *Nil) Print() {
 	fmt.Print("nil")
@@ -894,7 +897,16 @@ func build_func() {
 	builtin_func["*"] = func(exp ...Expression) (Expression, error) {
 		return iter_calc(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 	}
-	builtin_func["/"] = func(exp ...Expression) (Expression, error) {
+	builtin_func["/"] = func(exp ...Expression) (sexp Expression, e error) {
+		// Not the best. But, Better than before.
+		defer func() {
+			if err := recover(); err != nil {
+				if zero_error, ok := err.(*RuntimeError); ok {
+					sexp = nil
+					e = zero_error
+				}
+			}
+		}()
 		return iter_calc(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 	}
 	builtin_func["quotient"] = builtin_func["/"]
@@ -909,6 +921,9 @@ func build_func() {
 				return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
 			}
 			prm = append(prm, v)
+		}
+		if prm[1].Value == 0 {
+			return nil, NewRuntimeError("E1013")
 		}
 		return NewInteger(prm[0].Value % prm[1].Value), nil
 	}
@@ -1269,13 +1284,25 @@ func build_func() {
 		if len(v) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
-		key, ok := v[0].(*Symbol)
-		if !ok {
+		var (
+			key *Symbol
+			err error
+			ok  bool
+			exp Expression
+		)
+		if key, ok = v[0].(*Symbol); ok {
+			exp, err = eval(v[1], env)
+			if err != nil {
+				return nil, err
+			}
+		} else if l, ok := v[0].(*List); ok {
+			if len(l.Value) < 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+			}
+			key = l.Value[0].(*Symbol)
+			exp = NewFunction(env, NewList(l.Value[1:]), v[1:])
+		} else {
 			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
-		}
-		exp, err := eval(v[1], env)
-		if err != nil {
-			return nil, err
 		}
 		(*env).Regist(key.Value, exp)
 		return key, nil
@@ -1465,6 +1492,12 @@ func build_func() {
 			}
 		}
 		return NewNil(), nil
+	}
+	special_func["quote"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		return v[0], nil
 	}
 }
 
