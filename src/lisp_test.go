@@ -499,6 +499,14 @@ func Test_basic_operation(t *testing.T) {
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
 	}
+	exp, _ = do_core_logic("(quote a)", root_env)
+	if _, ok := exp.(*Symbol); !ok {
+		t.Fatal("failed test: quote")
+	}
+	exp, _ = do_core_logic("(quote (a b c))", root_env)
+	if _, ok := exp.(*List); !ok {
+		t.Fatal("failed test: quote")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -701,6 +709,9 @@ func Test_err_case(t *testing.T) {
 		{"(cond (10))", "E1007"},
 		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
 		{"(cond (10 10))", "E1012"},
+
+		{"(quote)", "E1007"},
+		{"(quote 1 2)", "E1007"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
