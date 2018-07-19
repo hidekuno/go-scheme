@@ -83,11 +83,11 @@ func check_error_code(err error, error_code string) bool {
 var (
 	program = []string{
 		"(define test_list (list 36 27 14 19 2 8 7 6 0 9 3))",
-		"(define counter (lambda () (let ((c 0)) (lambda () (set! c (+ 1 c)) c))))",
+		"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))",
 		"(define a (counter))",
 		"(define b (counter))",
-		"(define gcm (lambda (n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod)))))",
-		"(define lcm (lambda (n m) (/(* n m)(gcm n m))))",
+		"(define (gcm n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod))))",
+		"(define (lcm n m) (/(* n m)(gcm n m)))",
 		"(define hanoi (lambda (from to work n) (if (>= 0 n)(list)(append (hanoi from work to (- n 1))(list (list (cons from to) n))(hanoi work to from (- n 1))))))",
 		"(define prime (lambda (l) (if (> (car l)(sqrt (last l))) l (cons (car l)(prime (filter (lambda (n) (not (= 0 (modulo n (car l))))) (cdr l)))))))",
 		"(define qsort (lambda (l pred) (if (null? l) l (append (qsort (filter (lambda (n) (pred n (car l))) (cdr l)) pred) (cons (car l) (qsort (filter (lambda (n) (not (pred n (car l))))(cdr l)) pred))))))",
@@ -474,7 +474,11 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 11) {
 		t.Fatal("failed test: nested define")
 	}
-
+	exp, _ = do_core_logic("(define a 100)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 100) {
+		t.Fatal("failed test: simple define")
+	}
 	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
 	if (exp.(*String)).Value != "ok" {
 		t.Fatal("failed test: cond")
@@ -495,6 +499,14 @@ func Test_basic_operation(t *testing.T) {
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
 	}
+	exp, _ = do_core_logic("(quote a)", root_env)
+	if _, ok := exp.(*Symbol); !ok {
+		t.Fatal("failed test: quote")
+	}
+	exp, _ = do_core_logic("(quote (a b c))", root_env)
+	if _, ok := exp.(*List); !ok {
+		t.Fatal("failed test: quote")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -507,108 +519,199 @@ func Test_err_case(t *testing.T) {
 		{"(", "E0001"},
 		{"(a (b", "E0002"},
 		{"(a))", "E0003"},
-		{"(not 10)", "E1001"},
-		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
-		{"(if 10.2 0 1)", "E1001"},
-		{"(and 10.2 0 1)", "E1001"},
-		{"(or 10.2 0 1)", "E1001"},
-		{"(modulo 10.2 1)", "E1002"},
-		{"(iota 10.2 1)", "E1002"},
-		{"(iota 1 10.2)", "E1002"},
-		{"(rand-integer 10.2)", "E1002"},
+
+		{"(+ 10.2)", "E1007"},
+		{"(+ )", "E1007"},
 		{"(+ #t 10.2)", "E1003"},
+
 		{"(- 10.2 #f)", "E1003"},
-		{"(< 10.2 #f)", "E1003"},
-		{"(= #t 10.2)", "E1003"},
-		{"(sqrt #t)", "E1003"},
-		{"(define 10 10)", "E1004"},
-		{"(set! 10 10)", "E1004"},
-		{"(null? 10)", "E1005"},
-		{"(length 10)", "E1005"},
-		{"(car 10)", "E1005"},
-		{"(cdr 10)", "E1005"},
-		{"(append 10 10)", "E1005"},
-		{"(last 10)", "E1005"},
-		{"(reverse 10)", "E1005"},
-		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
-		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
-		{"(reduce (lambda (a b) (+ a b)) 20)", "E1005"},
-		{"(lambda a (+ a b))", "E1005"},
-		{"(let loop 10 19)", "E1005"},
-		{"((list 1 12) 10)", "E1006"},
-		{"(map (list 1 12) (list 10))", "E1006"},
-		{"(filter (list 1 12) (list 10))", "E1006"},
-		{"(reduce (list 1 12) (list 10))", "E1006"},
-		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
-		{"((lambda (n m) (+ n m)) 1)", "E1007"},
-		{"(+ 1)", "E1007"},
-		{"(- 1)", "E1007"},
+		{"(- 10.2)", "E1007"},
+		{"(-)", "E1007"},
+
+		{"(* 10.2 #f)", "E1003"},
+		{"(* 10.2)", "E1007"},
+		{"(*)", "E1007"},
+
+		{"(/ 10.2 #f)", "E1003"},
+		{"(/ 10.2)", "E1007"},
+		{"(/)", "E1007"},
+		{"(/ 10 0)", "E1013"},
+		{"(/ 10 2 0 3)", "E1013"},
+
 		{"(modulo 1)", "E1007"},
 		{"(modulo 10 3 2)", "E1007"},
+		{"(modulo 10 2.5)", "E1002"},
+		{"(modulo 10 0)", "E1013"},
+
+		{"(> 10 3 2)", "E1007"},
+		{"(> 10.2 #f)", "E1003"},
+		{"(> 10.2)", "E1007"},
+
+		{"(< 10.2 #f)", "E1003"},
 		{"(< 10 3 2)", "E1007"},
-		{"(< 10)", "E1007"},
+		{"(< 10.2)", "E1007"},
+
+		{"(>= 10 3 2)", "E1007"},
+		{"(>= 10.2 #f)", "E1003"},
+		{"(>= 10.2)", "E1007"},
+
+		{"(<= 10.2 #f)", "E1003"},
+		{"(<= 10 3 2)", "E1007"},
+		{"(<= 10.2)", "E1007"},
+
+		{"(= 10.2 #f)", "E1003"},
+		{"(= 10 3 2)", "E1007"},
+		{"(= 10.2)", "E1007"},
+
+		{"(not 10)", "E1001"},
 		{"(not #t #f)", "E1007"},
 		{"(not)", "E1007"},
+
+		{"((list 1 12) 10)", "E1006"},
+		{"(null? 10)", "E1005"},
 		{"(null? (list 1)(list 2))", "E1007"},
 		{"(null?)", "E1007"},
+
+		{"(length 10)", "E1005"},
 		{"(length (list 1)(list 2))", "E1007"},
 		{"(length)", "E1007"},
+
+		{"(car 10)", "E1005"},
 		{"(car (list 1)(list 2))", "E1007"},
 		{"(car)", "E1007"},
 		{"(car (list))", "E1011"},
+
 		{"(cdr (list 1)(list 2))", "E1007"},
 		{"(cdr)", "E1007"},
+		{"(cdr 10)", "E1005"},
+
 		{"(cadr (list 1)(list 2))", "E1007"},
 		{"(cadr)", "E1007"},
 		{"(cadr (list 1))", "E1011"},
+
 		{"(cons 1 (list 1)(list 2))", "E1007"},
 		{"(cons 1)", "E1007"},
+
+		{"(append 10 10)", "E1005"},
 		{"(append (list 1))", "E1007"},
+
+		{"(last 10)", "E1005"},
 		{"(last (list 1)(list 2))", "E1007"},
 		{"(last)", "E1007"},
 		{"(last (list))", "E1011"},
+
+		{"(reverse 10)", "E1005"},
 		{"(reverse (list 1)(list 2))", "E1007"},
 		{"(reverse)", "E1007"},
+
+		{"(iota 10.2 1)", "E1002"},
+		{"(iota 1 10.2)", "E1002"},
 		{"(iota)", "E1007"},
 		{"(iota 1 2 3)", "E1007"},
+
+		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(map (list 1 12) (list 10))", "E1006"},
 		{"(map (lambda (n) (* n 10)))", "E1007"},
-		{"(filter (lambda (n) (* n 10)))", "E1007"},
-		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
 		{"(map (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+
+		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(filter (list 1 12) (list 10))", "E1006"},
+		{"(filter (lambda (n) (* n 10)))", "E1007"},
 		{"(filter (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
+
+		{"(reduce (lambda (a b) (+ a b)) 20)", "E1005"},
+		{"(reduce (list 1 12) (list 10))", "E1006"},
+		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
 		{"(reduce (lambda (a b) (+ a b))(list 1)(list 1))", "E1007"},
+
+		{"(sqrt #t)", "E1003"},
 		{"(sqrt 11 10)", "E1007"},
 		{"(sqrt)", "E1007"},
-		{"(rand-integer 11 9)", "E1007"},
+
+		{"(sin #t)", "E1003"},
+		{"(sin 11 10)", "E1007"},
+		{"(sin)", "E1007"},
+
+		{"(cos #t)", "E1003"},
+		{"(cos 11 10)", "E1007"},
+		{"(cos)", "E1007"},
+
+		{"(tan #t)", "E1003"},
+		{"(tan 11 10)", "E1007"},
+		{"(tan)", "E1007"},
+
+		{"(atan #t)", "E1003"},
+		{"(atan 11 10)", "E1007"},
+		{"(atan)", "E1007"},
+
+		{"(log #t)", "E1003"},
+		{"(log 11 10)", "E1007"},
+		{"(log)", "E1007"},
+
+		{"(exp #t)", "E1003"},
+		{"(exp 11 10)", "E1007"},
+		{"(exp)", "E1007"},
+
+		{"(rand-integer 10.2)", "E1002"},
 		{"(rand-integer)", "E1007"},
+		{"(rand-integer 11 9)", "E1007"},
+
 		{"(if 10 1 2)", "E1001"},
 		{"(if (= 10 10))", "E1007"},
+
+		{"(define 10 10)", "E1004"},
 		{"(define a)", "E1007"},
 		{"(define a 10 11)", "E1007"},
+		{"(define (a))", "E1007"},
+		{"(define 10 11)", "E1004"},
+
+		{"(set! 10 10)", "E1004"},
 		{"(set! a)", "E1007"},
 		{"(set! a 10 11)", "E1007"},
-		{"(lambda (+ n m))", "E1007"},
-		{"(let ((a 10)))", "E1007"},
-		{"(let loop ((a 10)))", "E1007"},
-		{"(let ((a))(+ 1 1))", "E1007"},
-		{"hoge", "E1008"},
 		{"(set! hoge 10)", "E1008"},
+		{"hoge", "E1008"},
+
+		{"(lambda a (+ a b))", "E1005"},
+		{"(lambda (+ n m))", "E1007"},
+		{"(lambda 10 11)", "E1005"},
+		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
+		{"((lambda (n m) (+ n m)) 1)", "E1007"},
+
+		{"(let ((a 10)))", "E1007"},
+		{"(let 10 ((a 10)))", "E1004"},
+		{"(let loop ((a 10)))", "E1007"},
+		{"(let loop 10 19)", "E1005"},
+		{"(let ((a))(+ 1 1))", "E1007"},
+
+		{"(and #t)", "E1007"},
+		{"(and 10.2 0 1)", "E1001"},
+		{"(or #t)", "E1007"},
+		{"(or 10.2 0 1)", "E1001"},
+
 		{"(delay)", "E1007"},
 		{"(delay 1 2)", "E1007"},
+
 		{"(force)", "E1007"},
 		{"(force 1 2)", "E1007"},
 		{"(force 1)", "E1010"},
+
 		{"(identity 100 200)", "E1007"},
 		{"(identity)", "E1007"},
+
 		{"(call/cc)", "E1007"},
 		{"(call/cc (lambda () #t))", "E1007"},
 		{"(call/cc (lambda (n) #t)(lambda (n) #t))", "E1007"},
 		{"(call/cc 10)", "E1006"},
+
 		{"(cond)", "E1007"},
 		{"(cond 10)", "E1005"},
 		{"(cond (10))", "E1007"},
 		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
 		{"(cond (10 10))", "E1012"},
+
+		{"(quote)", "E1007"},
+		{"(quote 1 2)", "E1007"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)
