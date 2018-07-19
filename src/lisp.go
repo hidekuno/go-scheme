@@ -210,6 +210,9 @@ func (self *Integer) Mul(p Number) Number {
 }
 func (self *Integer) Div(p Number) Number {
 	v, _ := p.(*Integer)
+	if v.Value == 0 {
+		panic(NewRuntimeError("E1013"))
+	}
 	self.Value /= v.Value
 	return self
 }
@@ -895,11 +898,13 @@ func build_func() {
 		return iter_calc(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 	}
 	builtin_func["/"] = func(exp ...Expression) (sexp Expression, e error) {
+		// Not the best. But, Better than before.
 		defer func() {
-			err := recover()
-			if err != nil {
-				sexp = nil
-				e = NewRuntimeError("E1013")
+			if err := recover(); err != nil {
+				if zero_error, ok := err.(*RuntimeError); ok {
+					sexp = nil
+					e = zero_error
+				}
 			}
 		}()
 		return iter_calc(func(a Number, b Number) Number { return a.Div(b) }, exp...)
