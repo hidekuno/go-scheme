@@ -50,6 +50,7 @@ var (
 		"E1010": "Not Promise",
 		"E1011": "Not Enough List Length",
 		"E1012": "Not Cond Gramar",
+		"E1013": "Calculate A Division By Zero",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -567,7 +568,6 @@ type Nil struct {
 
 func NewNil() *Nil {
 	return &Nil{}
-
 }
 func (self *Nil) Print() {
 	fmt.Print("nil")
@@ -894,7 +894,14 @@ func build_func() {
 	builtin_func["*"] = func(exp ...Expression) (Expression, error) {
 		return iter_calc(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 	}
-	builtin_func["/"] = func(exp ...Expression) (Expression, error) {
+	builtin_func["/"] = func(exp ...Expression) (sexp Expression, e error) {
+		defer func() {
+			err := recover()
+			if err != nil {
+				sexp = nil
+				e = NewRuntimeError("E1013")
+			}
+		}()
 		return iter_calc(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 	}
 	builtin_func["quotient"] = builtin_func["/"]
@@ -909,6 +916,9 @@ func build_func() {
 				return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
 			}
 			prm = append(prm, v)
+		}
+		if prm[1].Value == 0 {
+			return nil, NewRuntimeError("E1013")
 		}
 		return NewInteger(prm[0].Value % prm[1].Value), nil
 	}
