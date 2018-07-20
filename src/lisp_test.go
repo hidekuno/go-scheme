@@ -507,6 +507,11 @@ func Test_basic_operation(t *testing.T) {
 	if _, ok := exp.(*List); !ok {
 		t.Fatal("failed test: quote")
 	}
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(+ a b)(* a b))", root_env)
+	if !check_logic_int(exp, 200) {
+		t.Fatal("failed test: call/cc")
+	}
+
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -683,6 +688,7 @@ func Test_err_case(t *testing.T) {
 		{"(let loop ((a 10)))", "E1007"},
 		{"(let loop 10 19)", "E1005"},
 		{"(let ((a))(+ 1 1))", "E1007"},
+		{"(let ((a 10)) b a)", "E1008"},
 
 		{"(and #t)", "E1007"},
 		{"(and 10.2 0 1)", "E1001"},
