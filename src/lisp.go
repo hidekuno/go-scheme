@@ -1381,7 +1381,17 @@ func build_func() {
 		if letsym != nil {
 			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body]))
 		}
-		return eval(v[body], NewSimpleEnv(env, &local_env))
+
+		nse := NewSimpleEnv(env, &local_env)
+		var last_exp Expression
+		for idx := body; idx < len(v); idx += 1 {
+			if exp, err := eval(v[idx], nse); err == nil {
+				last_exp = exp
+			} else {
+				return nil, err
+			}
+		}
+		return last_exp, nil
 	}
 	// and or not
 	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
