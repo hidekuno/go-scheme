@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gtk"
-	"runtime"
+	_ "runtime"
 	"time"
 )
 
@@ -25,6 +25,9 @@ const (
 	TREE_MAX       = 20
 	SIERPINSKI_MAX = 16
 )
+
+var draw_line_reentrant func(x0, y0, x1, y1 int)
+var draw_clear func()
 
 func build_gtk_app() {
 
@@ -48,34 +51,16 @@ func build_gtk_app() {
 	//--------------------------------------------------------
 	// GtkMenuBar
 	//--------------------------------------------------------
-	var draw_line_reentrant = func(x0, y0, x1, y1 int) {
-
+	draw_line_reentrant = func(x0, y0, x1, y1 int) {
 		gdk.ThreadsEnter()
-
 		pixmap.GetDrawable().DrawLine(fg_gc, x0, y0, x1, y1)
-
-		var rec gdk.Rectangle
-		rec.Height = y1 - y0
-		rec.Width = x1 - x0
-		rec.X = x0
-		rec.Y = y0
-
-		if rec.Height < 0 {
-			rec.Height = rec.Height * -1
-		}
-		if rec.Width < 0 {
-			rec.Width = rec.Width * -1
-		}
-		rec.Height += 2
-		rec.Width += 2
-		if x1 < x0 {
-			rec.X = x1
-		}
-		if y1 < y0 {
-			rec.Y = y1
-		}
+		gdkwin.Invalidate(nil, false)
 		// gdkwin.Invalidate(&rec, false)
 		gdk.ThreadsLeave()
+	}
+	draw_clear = func() {
+		pixmap.GetDrawable().DrawRectangle(bg_gc, true, 0, 0, -1, -1)
+		gdkwin.Invalidate(nil, false)
 	}
 	var draw_reentrant = func(paint func()) {
 		pixmap.GetDrawable().DrawRectangle(bg_gc, true, 0, 0, -1, -1)
@@ -200,8 +185,7 @@ func build_gtk_app() {
 	gdkwin = canvas.GetWindow()
 
 }
-func main() {
-	runtime.GOMAXPROCS(1)
+func run_draw_app() {
 
 	gdk.ThreadsInit()
 	gtk.Init(nil)
@@ -210,3 +194,8 @@ func main() {
 
 	gtk.Main()
 }
+
+//func main() {
+//	runtime.GOMAXPROCS(1)
+//	run_draw_app()
+//}
