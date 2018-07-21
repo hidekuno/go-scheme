@@ -194,8 +194,3 @@ func run_draw_app() {
 
 	gtk.Main()
 }
-
-//func main() {
-//	runtime.GOMAXPROCS(1)
-//	run_draw_app()
-//}
