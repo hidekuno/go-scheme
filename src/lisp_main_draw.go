@@ -39,7 +39,18 @@ func build_gtk_func() {
 					return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
-			draw_line_reentrant(point[0], point[1], point[2], point[3])
+			draw_line_reentrant_lisp(point[0], point[1], point[2], point[3])
+			return NewNil(), nil
+		}
+		special_func["draw_imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+			if len(v) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+			}
+			if s, ok := v[0].(*String); ok {
+				draw_imagefile(s.Value)
+			} else {
+				return nil, NewRuntimeError("E1003", reflect.TypeOf(v[0]).String())
+			}
 			return NewNil(), nil
 		}
 		return NewNil(), nil

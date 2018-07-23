@@ -15,6 +15,7 @@ import (
 	"./fractal"
 	"fmt"
 	"github.com/mattn/go-gtk/gdk"
+	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
 	_ "runtime"
 	"time"
@@ -26,8 +27,9 @@ const (
 	SIERPINSKI_MAX = 16
 )
 
-var draw_line_reentrant func(x0, y0, x1, y1 int)
+var draw_line_reentrant_lisp func(x0, y0, x1, y1 int)
 var draw_clear func()
+var draw_imagefile func(filename string)
 
 func build_gtk_app() {
 
@@ -38,7 +40,7 @@ func build_gtk_app() {
 		gdkwin *gdk.Window
 	)
 	win := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	win.SetTitle("フラクタル図サンプル")
+	win.SetTitle("scheme.go")
 	win.SetPosition(gtk.WIN_POS_CENTER)
 	win.Connect("destroy", gtk.MainQuit)
 
@@ -51,16 +53,30 @@ func build_gtk_app() {
 	//--------------------------------------------------------
 	// GtkMenuBar
 	//--------------------------------------------------------
-	draw_line_reentrant = func(x0, y0, x1, y1 int) {
+	draw_line_reentrant_lisp = func(x0, y0, x1, y1 int) {
 		gdk.ThreadsEnter()
 		pixmap.GetDrawable().DrawLine(fg_gc, x0, y0, x1, y1)
 		gdkwin.Invalidate(nil, false)
-		// gdkwin.Invalidate(&rec, false)
 		gdk.ThreadsLeave()
 	}
 	draw_clear = func() {
 		pixmap.GetDrawable().DrawRectangle(bg_gc, true, 0, 0, -1, -1)
 		gdkwin.Invalidate(nil, false)
+	}
+	draw_imagefile = func(filename string) {
+		pixbuf, err := gdkpixbuf.NewPixbufFromFile(filename)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		pixmap.GetDrawable().DrawPixbuf(fg_gc, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+		gdkwin.Invalidate(nil, false)
+		gdkwin.GetDrawable().DrawDrawable(fg_gc, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+	}
+	var draw_line_reentrant = func(x0, y0, x1, y1 int) {
+		gdk.ThreadsEnter()
+		pixmap.GetDrawable().DrawLine(fg_gc, x0, y0, x1, y1)
+		gdk.ThreadsLeave()
 	}
 	var draw_reentrant = func(paint func()) {
 		pixmap.GetDrawable().DrawRectangle(bg_gc, true, 0, 0, -1, -1)
@@ -115,7 +131,7 @@ func build_gtk_app() {
 	})
 	submenu.Append(menuitem)
 
-	cascademenu = gtk.NewMenuItemWithMnemonic("_View")
+	cascademenu = gtk.NewMenuItemWithMnemonic("_Fractal")
 	menubar.Append(cascademenu)
 	submenu = gtk.NewMenu()
 	cascademenu.SetSubmenu(submenu)
@@ -138,6 +154,24 @@ func build_gtk_app() {
 	sierpinski := fractal.CreateSierpinski(SIERPINSKI_MAX, draw_line_reentrant)
 	menuitem = gtk.NewMenuItemWithMnemonic("_Sierpinski")
 	menuitem.Connect("activate", func() { draw_reentrant(sierpinski) })
+	submenu.Append(menuitem)
+
+	cascademenu = gtk.NewMenuItemWithMnemonic("_Image")
+	menubar.Append(cascademenu)
+	submenu = gtk.NewMenu()
+	cascademenu.SetSubmenu(submenu)
+
+	menuitem = gtk.NewMenuItemWithMnemonic("_Duke")
+	menuitem.Connect("activate", func() {
+		pixmap.GetDrawable().DrawRectangle(bg_gc, true, 0, 0, -1, -1)
+		pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/duke.png")
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		pixmap.GetDrawable().DrawPixbuf(fg_gc, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+		gdkwin.GetDrawable().DrawDrawable(fg_gc, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+	})
 	submenu.Append(menuitem)
 
 	//--------------------------------------------------------
@@ -171,8 +205,7 @@ func build_gtk_app() {
 		if pixmap == nil {
 			return
 		}
-		gdkwin.GetDrawable().DrawDrawable(fg_gc,
-			pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+		gdkwin.GetDrawable().DrawDrawable(fg_gc, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
 	})
 	//--------------------------------------------------------
 	// Setting Layout
