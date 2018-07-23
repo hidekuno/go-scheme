@@ -6,6 +6,11 @@
 */
 package main
 
+import (
+	"reflect"
+	"strconv"
+)
+
 func build_gtk_func() {
 
 	special_func["draw_init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
@@ -17,6 +22,10 @@ func build_gtk_func() {
 		}
 		special_func["draw_line"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			var point [4]int
+			if len(v) != 4 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+			}
+
 			for i, sexp := range v {
 				e, err := eval(sexp, env)
 				if err != nil {
@@ -27,7 +36,7 @@ func build_gtk_func() {
 				} else if p, ok := e.(*Float); ok {
 					point[i] = int(p.Value)
 				} else {
-					NewRuntimeError("E1003", reflect.TypeOf(e).String())
+					return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
 			draw_line_reentrant(point[0], point[1], point[2], point[3])
@@ -36,6 +45,7 @@ func build_gtk_func() {
 		return NewNil(), nil
 	}
 }
+
 // Main
 func main() {
 
