@@ -1,3 +1,9 @@
+;
+; this is a sample program, and this is drawing sierpinski
+;
+; hidekuno@gmail.com
+;
+
 (define (sierpinski x0 y0 x1 y1 x2 y2 c)
   (if (> c 1) (let ((xx0 (/ (+ x0 x1) 2))
                     (yy0 (/ (+ y0 y1) 2))

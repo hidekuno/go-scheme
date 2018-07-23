@@ -1,3 +1,9 @@
+;
+; this is a sample program, and this is drawing tree curve
+;
+; hidekuno@gmail.com
+;
+
 (define tcos (cs 15))
 (define tsin (sn 45))
 (define alpha 0.6)

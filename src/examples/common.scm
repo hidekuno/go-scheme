@@ -1,3 +1,8 @@
+;
+; this is a common parts for sample program
+;
+; hidekuno@gmail.com
+;
 (draw_init)
 (define pi (*(atan 1)4))
 (define (cs angle)(cos (/(* pi angle)180)))

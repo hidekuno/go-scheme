@@ -1,3 +1,9 @@
+;
+; this is a sample program, and this is drawing koch
+;
+; hidekuno@gmail.com
+;
+
 (define kcos (cs 60))
 (define ksin (sn 60))
 
