@@ -8,6 +8,7 @@ package main
 
 import (
 	"reflect"
+	"runtime"
 	"strconv"
 )
 
@@ -59,6 +60,7 @@ func build_gtk_func() {
 
 // Main
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	build_func()
 	build_gtk_func()

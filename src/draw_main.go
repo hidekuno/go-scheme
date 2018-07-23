@@ -6,7 +6,12 @@
 */
 package main
 
+import (
+	"runtime"
+)
+
 // Main
 func main() {
+	runtime.GOMAXPROCS(1)
 	run_draw_app()
 }
