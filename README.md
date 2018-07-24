@@ -72,6 +72,28 @@ ok  	command-line-arguments	0.002s
 ```
 
 
+## グラフィックス関連の使用方法
+### 描画用Windowの起動
+```
+[kunohi@centos7-dev-docker src]$ ./lisp 
+scheme.go>  (draw_init)
+nil
+scheme.go>  
+```
+### 描画用Windowのクリア
+```
+scheme.go>  (draw_clear)
+nil
+scheme.go>  
+```
+
+### 線を引く
+```
+scheme.go>  (draw_line 100 100 200 200)
+nil
+scheme.go>  
+```
+
 ## emacsでの設定(例)
 ```
 (setq scheme-program-name "~/bin/lisp") 
