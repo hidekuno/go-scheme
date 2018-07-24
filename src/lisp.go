@@ -1510,9 +1510,3 @@ func build_func() {
 		return v[0], nil
 	}
 }
-
-// Main
-func main() {
-	build_func()
-	do_interactive()
-}
