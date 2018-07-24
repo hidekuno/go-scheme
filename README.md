@@ -2,9 +2,19 @@ Go言語によるScheme(subset版)の実装
 =================
 
 ## 起動方法
+### scheme単体
 ```
-[kunohi@centos7-dev-docker src]$ go run lisp.go
+[kunohi@centos7-dev-docker src]$ go run lisp_main.go lisp.go 
 scheme.go>
+```
+### scheme(グラフィックス処理付き)
+```
+[kunohi@centos7-dev-docker src]$ go run lisp_main_draw.go lisp.go draw.go
+scheme.go>
+```
+### グラフィックス単体
+```
+[kunohi@centos7-dev-docker src]$ go run draw_main.go  draw.go
 ```
 
 ## 終了方法
@@ -14,8 +24,9 @@ scheme.go>  (quit)
 ```
 
 ## テスト方法
+### scheme単体
 ```
-[kunohi@centos7-dev-docker src]$ go test -v lisp.go lisp_test.go 
+[kunohi@centos7-dev-docker src]$ go test -v lisp.go lisp_test.go
 === RUN   Test_lisp_sample_program
 --- PASS: Test_lisp_sample_program (0.01s)
 === RUN   Test_math_func
@@ -28,27 +39,38 @@ scheme.go>  (quit)
 --- PASS: Test_err_case (0.00s)
 === RUN   Test_interactive
 --- PASS: Test_interactive (0.00s)
-	lisp_test.go:569: 3.5
-	lisp_test.go:569: 30
-	lisp_test.go:569: a
-	lisp_test.go:569: #t
-	lisp_test.go:569: "ABC"
-	lisp_test.go:569: (1 2 3 (4 5))
-	lisp_test.go:569: (1 . 2)
-	lisp_test.go:569: Function:
-	lisp_test.go:569: Operatotion or Builtin:
-	lisp_test.go:569: Special Functon ex. if:
-	lisp_test.go:569: Promise:
 PASS
 ok  	command-line-arguments	0.010s
 [kunohi@centos7-dev-docker src]
 ```
-
-## ビルド方法
+### scheme グラフィックス単体
 ```
-[kunohi@centos7-dev-docker src]$ go build  -ldflags '-w -s' lisp.go
+[kunohi@centos7-dev-docker src]$ go test -v lisp_main_draw.go lisp_main_draw_test.go  lisp.go
+=== RUN   Test_draw
+--- PASS: Test_draw (0.00s)
+PASS
+ok  	command-line-arguments	0.002s
 [kunohi@centos7-dev-docker src]$ 
 ```
+
+## ビルド方法
+### scheme単体
+```
+[kunohi@centos7-dev-docker src]$ go build  -ldflags '-w -s' lisp.go lisp_main.go
+[kunohi@centos7-dev-docker src]$ 
+```
+### scheme(グラフィックス処理付き)
+```
+[kunohi@centos7-dev-docker src]$ go build  -ldflags '-w -s'  lisp.go draw.go lisp_main_draw.go 
+[kunohi@centos7-dev-docker src]$ 
+```
+
+### グラフィックス単体
+```
+[kunohi@centos7-dev-docker src]$ go build  -ldflags '-w -s'  lisp.go draw.go lisp_main_draw.go 
+[kunohi@centos7-dev-docker src]$ 
+```
+
 
 ## emacsでの設定(例)
 ```
