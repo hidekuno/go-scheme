@@ -71,7 +71,6 @@ ok  	command-line-arguments	0.002s
 [kunohi@centos7-dev-docker src]$ 
 ```
 
-
 ## グラフィックス関連の使用方法
 ### 描画用Windowの起動
 ```
@@ -93,6 +92,57 @@ scheme.go>  (draw_line 100 100 200 200)
 nil
 scheme.go>  
 ```
+
+### コッホ曲線を描画するプログラム
+```
+(define pi (*(atan 1)4))
+(define cos60 (cos (/(* pi 60)180)))
+(define sin60 (sin (/(* pi 60)180)))
+(define draw (lambda (x0 y0 x1 y1 c)
+  (if (> c 1)
+      (let (
+            (xa (/ (+ (* x0 2) x1) 3))
+            (ya (/ (+ (* y0 2) y1) 3))
+            (xb (/ (+ (* x1 2) x0) 3))
+            (yb (/ (+ (* y1 2) y0) 3)))
+        (let ((yc (+ ya (+ (* (- xb xa) sin60) (* (- yb ya) cos60))))
+              (xc (+ xa (- (* (- xb xa) cos60) (* (- yb ya) sin60)))))
+        (draw x0 y0 xa  ya (- c 1))
+        (draw xa ya xc  yc (- c 1))
+        (draw xc yc xb  yb (- c 1))
+        (draw xb yb x1  y1 (- c 1))))
+      (draw_line x0 y0 x1 y1))))
+```
+#### 実行例
+```
+(draw 259 0 34 390 4)
+(draw 34 390 483 390 4)
+(draw 483 390 259 0 4)
+```
+
+![image](https://user-images.githubusercontent.com/4899700/42983927-89247a4c-8c24-11e8-82e7-5c2ac3f47e37.png)
+
+### ツリーカーブ曲線を描画するプログラム
+```
+(define cos15 (cos (/(* pi 15)180)))
+(define sin45 (sin (/(* pi 45)180)))
+(define alpha 0.6)
+(define (draw x0 y0 x1 y1 c)
+  (let ((ya (+ y1  (*    sin45 (- x1 x0) alpha) (*    cos15 (- y1 y0) alpha)))
+        (xa (+ x1  (*    cos15 (- x1 x0) alpha) (* -1 sin45 (- y1 y0) alpha)))
+        (yb (+ y1  (* -1 sin45 (- x1 x0) alpha) (*    cos15 (- y1 y0) alpha)))
+        (xb (+ x1  (*    cos15 (- x1 x0) alpha) (*    sin45 (- y1 y0) alpha))))
+    (draw_line x0 y0 x1 y1)
+    (if (>= 0 c )
+        ((lambda () (draw_line x1 y1 xa ya) (draw_line x1 y1 xb yb)))
+        ((lambda () (draw x1 y1 xa ya (- c 1))(draw x1  y1  xb  yb (- c 1)))))))
+```
+#### 実行例
+```
+(draw 300 400 300 300 8)
+```
+
+![image](https://user-images.githubusercontent.com/4899700/42988528-dfc3149a-8c37-11e8-8b72-0d8afe921ac3.png)
 
 ## emacsでの設定(例)
 ```
