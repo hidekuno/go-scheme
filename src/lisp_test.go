@@ -479,6 +479,21 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 100) {
 		t.Fatal("failed test: simple define")
 	}
+	exp, _ = do_core_logic("(define\ta\t200)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 200) {
+		t.Fatal("failed test: tab define")
+	}
+	exp, _ = do_core_logic("(define\na\n300)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 300) {
+		t.Fatal("failed test: newline define")
+	}
+	exp, _ = do_core_logic("(define\r\na\r\n400)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 400) {
+		t.Fatal("failed test: newline define")
+	}
 	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
 	if (exp.(*String)).Value != "ok" {
 		t.Fatal("failed test: cond")
@@ -511,7 +526,26 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 200) {
 		t.Fatal("failed test: call/cc")
 	}
-
+	exp, _ = do_core_logic("#\\tab", root_env)
+	if (exp.(*Char)).Value != 0x09 {
+		t.Fatal("failed test: char tab")
+	}
+	exp, _ = do_core_logic("#\\space", root_env)
+	if (exp.(*Char)).Value != 0x20 {
+		t.Fatal("failed test: char space")
+	}
+	exp, _ = do_core_logic("#\\newline", root_env)
+	if (exp.(*Char)).Value != 0x0A {
+		t.Fatal("failed test: char newline")
+	}
+	exp, _ = do_core_logic("#\\return", root_env)
+	if (exp.(*Char)).Value != 0x0D {
+		t.Fatal("failed test: char return")
+	}
+	exp, _ = do_core_logic("#\\A", root_env)
+	if (exp.(*Char)).Value != 0x41 {
+		t.Fatal("failed test: char A")
+	}
 }
 func Test_err_case(t *testing.T) {
 	var (
@@ -524,6 +558,7 @@ func Test_err_case(t *testing.T) {
 		{"(", "E0001"},
 		{"(a (b", "E0002"},
 		{"(a))", "E0003"},
+		{"#\\abc", "E0004"},
 
 		{"(+ 10.2)", "E1007"},
 		{"(+ )", "E1007"},
@@ -785,4 +820,9 @@ func Test_interactive(t *testing.T) {
 	io_stub("+", "Operatotion or Builtin:")
 	io_stub("if", "Special Functon ex. if:")
 	io_stub("(delay 1)", "Promise:")
+	io_stub("#\\space", "#\\space")
+	io_stub("#\\newline", "#\\newline")
+	io_stub("#\\tab", "#\\tab")
+	io_stub("#\\return", "#\\return")
+	io_stub("#\\A", "#\\A")
 }
