@@ -38,6 +38,7 @@ var (
 		"E0001": "Unexpected EOF while reading",
 		"E0002": "Unexpected ')' while reading",
 		"E0003": "Extra close parenthesis `)'",
+		"E0004": "Charactor syntax error",
 		"E1001": "Not Boolean",
 		"E1002": "Not Integer",
 		"E1003": "Not Number",
@@ -241,22 +242,39 @@ func (self *Integer) LessEqual(p Number) bool {
 type Boolean struct {
 	Atom
 	Value bool
-	name  string
+	exp   string
 }
 
 func NewBoolean(v bool) *Boolean {
 	b := new(Boolean)
 	b.Value = v
 	if v {
-		b.name = "#t"
+		b.exp = "#t"
 	} else {
-		b.name = "#f"
+		b.exp = "#f"
 	}
 	return b
 }
 
 func (self *Boolean) Print() {
-	fmt.Print(self.name)
+	fmt.Print(self.exp)
+}
+
+type Char struct {
+	Atom
+	Value byte
+	exp   string
+}
+
+func NewChar(v string) *Char {
+	b := new(Char)
+	b.exp = v
+	b.Value = v[2]
+	return b
+}
+
+func (self *Char) Print() {
+	fmt.Print(self.exp)
 }
 
 type Float struct {
@@ -583,6 +601,7 @@ func tokenize(s string) []string {
 	symbol_name := make([]byte, 0, 1024)
 	from := 0
 
+	s = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s)
 	for i, c := range s {
 		if string_mode {
 			if c == '"' {
@@ -668,12 +687,13 @@ func parse(tokens []string) (Expression, int, error) {
 	} else if ")" == token {
 		return nil, 0, NewSyntaxError("E0002")
 	} else {
-		return atom(token), 1, nil
+		atom_type, err := atom(token)
+		return atom_type, 1, err
 	}
 }
 
 // Atom To "Integer, Float, Symbol"
-func atom(token string) Atom {
+func atom(token string) (Atom, error) {
 	var (
 		atom Atom
 	)
@@ -691,7 +711,23 @@ func atom(token string) Atom {
 			case "#f":
 				atom = NewBoolean(false)
 			default:
-				if (len(token) > 1) && (token[0] == '"') && (token[len(token)-1] == '"') {
+				if strings.Index(token, "#\\") == 0 {
+					whitespace_char := map[string]byte{
+						"#\\tab":     0x09,
+						"#\\space":   0x20,
+						"#\\newline": 0x0A,
+						"#\\return":  0x0D,
+					}
+					if v, ok := whitespace_char[token]; ok {
+						char := NewChar(token)
+						char.Value = v
+						atom = char
+					} else if len(token) == 3 {
+						atom = NewChar(token)
+					} else {
+						return nil, NewSyntaxError("E0004")
+					}
+				} else if (len(token) > 1) && (token[0] == '"') && (token[len(token)-1] == '"') {
 					atom = NewString(token)
 				} else {
 					atom = NewSymbol(token)
@@ -699,7 +735,7 @@ func atom(token string) Atom {
 			}
 		}
 	}
-	return atom
+	return atom, nil
 }
 
 // Evaluate an expression in an environment.
