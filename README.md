@@ -1,6 +1,32 @@
 Go言語によるScheme(subset版)の実装
 =================
 
+## 開発環境
+| Item   | Ver. |備考|
+|--------|--------|--------|
+| OS     | CentOS | draw系を使わなければ特になし|
+| Gtk+   | 2.24.31||
+| go-gtk | release-0.1|https://github.com/mattn/go-gtk|
+
+## インストール手順
+### 環境変数のsetup
+```
+export GOARCH="amd64"
+export GOOS="linux"
+export GOPATH=${HOME}/go
+export PATH=${GOPATH}/bin:$PATH
+```
+### go-gtkのinstall
+```
+go get github.com/mattn/go-gtk/gtk
+go install github.com/mattn/go-gtk/gtk
+```
+### 本体のinstall
+```
+cd ${dokoka}
+git clone https://github.com/hidekuno/go-scheme.git  go-scheme
+```
+
 ## 起動方法
 ### scheme単体
 ```
