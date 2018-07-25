@@ -102,27 +102,27 @@ ok  	command-line-arguments	0.002s
 ### 描画用Windowの起動
 ```
 [kunohi@centos7-dev-docker src]$ ./lisp 
-scheme.go>  (draw_init)
+scheme.go>  (draw-init)
 nil
 scheme.go>  
 ```
 ### 描画用Windowのクリア
 ```
-scheme.go>  (draw_clear)
+scheme.go>  (draw-clear)
 nil
 scheme.go>  
 ```
 
 ### 線を引く
 ```
-scheme.go>  (draw_line 100 100 200 200)
+scheme.go>  (draw-line 100 100 200 200)
 nil
 scheme.go>  
 ```
 
 ### コッホ曲線を描画するプログラム
 ```
-(draw_init)
+(draw-init)
 (define pi (*(atan 1)4))
 (define (cs angle)(cos (/(* pi angle)180)))
 (define (sn angle)(sin (/(* pi angle)180)))
@@ -142,7 +142,7 @@ scheme.go>
               (koch xa ya xc  yc (- c 1))
               (koch xc yc xb  yb (- c 1))
               (koch xb yb x1  y1 (- c 1))))
-          (draw_line x0 y0 x1 y1)))))
+          (draw-line x0 y0 x1 y1)))))
 ```
 #### 実行例
 ```
@@ -163,9 +163,9 @@ scheme.go>
           (xa (+ x1  (*    tcos (- x1 x0) alpha) (* -1 tsin (- y1 y0) alpha)))
           (yb (+ y1  (* -1 tsin (- x1 x0) alpha) (*    tcos (- y1 y0) alpha)))
           (xb (+ x1  (*    tcos (- x1 x0) alpha) (*    tsin (- y1 y0) alpha))))
-      (draw_line x0 y0 x1 y1)
+      (draw-line x0 y0 x1 y1)
       (if (>= 0 c)
-          ((lambda () (draw_line x1 y1 xa ya) (draw_line x1 y1 xb yb)))
+          ((lambda () (draw-line x1 y1 xa ya) (draw-line x1 y1 xb yb)))
           ((lambda () (tree x1 y1 xa ya (- c 1))(tree x1  y1  xb  yb (- c 1))))))))
 ```
 #### 実行例
