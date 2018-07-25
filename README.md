@@ -6,6 +6,7 @@ Go言語によるScheme(subset版)の実装
 |--------|--------|--------|
 | OS     | CentOS | draw系を使わなければ特になし|
 | Gtk+   | 2.24.31||
+| golang   | 1.9.4||
 | go-gtk | release-0.1|https://github.com/mattn/go-gtk|
 
 ## インストール手順
