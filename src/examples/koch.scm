@@ -19,7 +19,7 @@
               (koch xa ya xc  yc (- c 1))
               (koch xc yc xb  yb (- c 1))
               (koch xb yb x1  y1 (- c 1))))
-          (draw_line x0 y0 x1 y1)))))
+          (draw-line x0 y0 x1 y1)))))
 
 (koch 259 0 34 390 4)
 (koch 34 390 483 390 4)

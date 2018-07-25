@@ -14,14 +14,14 @@ import (
 
 func build_gtk_func() {
 
-	special_func["draw_init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	special_func["draw-init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		go run_draw_app()
 
-		special_func["draw_clear"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		special_func["draw-clear"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			draw_clear()
 			return NewNil(), nil
 		}
-		special_func["draw_line"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		special_func["draw-line"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			var point [4]int
 			if len(v) != 4 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
@@ -43,7 +43,7 @@ func build_gtk_func() {
 			draw_line_reentrant_lisp(point[0], point[1], point[2], point[3])
 			return NewNil(), nil
 		}
-		special_func["draw_imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		special_func["draw-imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			if len(v) != 1 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 			}
