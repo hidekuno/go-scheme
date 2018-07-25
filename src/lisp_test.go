@@ -489,6 +489,11 @@ func Test_basic_operation(t *testing.T) {
 	if !check_logic_int(exp, 300) {
 		t.Fatal("failed test: newline define")
 	}
+	exp, _ = do_core_logic("(define\r\na\r\n400)", root_env)
+	exp, _ = do_core_logic("a", root_env)
+	if !check_logic_int(exp, 400) {
+		t.Fatal("failed test: newline define")
+	}
 	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
 	if (exp.(*String)).Value != "ok" {
 		t.Fatal("failed test: cond")
@@ -817,4 +822,7 @@ func Test_interactive(t *testing.T) {
 	io_stub("(delay 1)", "Promise:")
 	io_stub("#\\space", "#\\space")
 	io_stub("#\\newline", "#\\newline")
+	io_stub("#\\tab", "#\\tab")
+	io_stub("#\\return", "#\\return")
+	io_stub("#\\A", "#\\A")
 }
