@@ -508,6 +508,7 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 			idx = idx + 1
 		}
 	}
+	saveEnv := self.Env
 	self.Env = NewSimpleEnv(self.Env, &local_env)
 	var (
 		result Expression
@@ -519,6 +520,8 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 			return exp, err
 		}
 	}
+	// https://github.com/hidekuno/go-scheme/issues/46
+	self.Env = saveEnv
 	return result, nil
 }
 
