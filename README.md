@@ -181,8 +181,9 @@ scheme.go>
 ```
 go test -v -bench=. -benchmem -memprofile=lisp.mprof -cpuprofile=lisp.cprof lisp.go lisp_test.go
 go tool pprof lisp.cprof
+go tool pprof  -alloc_objects  main lisp.mprof
 ```
-### 出力結果(例)
+### 出力結果(例1)
 ```
 [kunohi@centos7-dev-docker src]$ go tool pprof lisp.cprof
 File: main.test
@@ -207,6 +208,32 @@ Showing top 10 nodes out of 16
          0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*SpecialFunc).Execute /home/kunohi/go-scheme/src/lisp.go
 (pprof) quit
 [kunohi@centos7-dev-docker src]$ 
+```
+### 出力結果(例2)
+```
+[kunohi@centos7-dev-docker src]$ go tool pprof  -alloc_objects  main lisp.mprof 
+main: open main: no such file or directory
+fetched 1 profiles out of 2
+File: main.test
+Type: alloc_objects
+Time: Jul 26, 2018 at 3:03pm (JST)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top
+Showing nodes accounting for 61860410, 98.45% of 62837528 total
+Dropped 38 nodes (cum <= 314187)
+Showing top 10 nodes out of 18
+      flat  flat%   sum%        cum   cum%
+  19988271 31.81% 31.81%   62716098 99.81%  command-line-arguments.(*Function).Execute /home/kunohi/go-scheme/src/lisp.go
+  17531196 27.90% 59.71%   62814431   100%  command-line-arguments.(*Operator).Execute /home/kunohi/go-scheme/src/lisp.go
+  11944284 19.01% 78.72%   62814431   100%  command-line-arguments.eval /home/kunohi/go-scheme/src/lisp.go
+   4729726  7.53% 86.24%    8711156 13.86%  command-line-arguments.build_func.func7 /home/kunohi/go-scheme/src/lisp.go
+   3981430  6.34% 92.58%    3981430  6.34%  command-line-arguments.CreateNumber /home/kunohi/go-scheme/src/lisp.go
+   2392170  3.81% 96.39%    2392170  3.81%  command-line-arguments.build_func.func13 /home/kunohi/go-scheme/src/lisp.go
+    682691  1.09% 97.47%     682691  1.09%  command-line-arguments.build_func.func40 /home/kunohi/go-scheme/src/lisp.go
+    414027  0.66% 98.13%     414027  0.66%  command-line-arguments.build_func.func27.1 /home/kunohi/go-scheme/src/lisp.go
+    196615  0.31% 98.45%   57678737 91.79%  command-line-arguments.build_func.func25 /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.45%   62814431   100%  command-line-arguments.(*SpecialFunc).Execute /home/kunohi/go-scheme/src/lisp.go
+(pprof) 
 ```
 ## emacsでの設定(例)
 ```
