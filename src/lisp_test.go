@@ -753,6 +753,9 @@ func Test_err_case(t *testing.T) {
 
 		{"(quote)", "E1007"},
 		{"(quote 1 2)", "E1007"},
+
+		{"(time)", "E1007"},
+		{"(time #\\abc)", "E0004"},
 	}
 	for _, e := range test_code {
 		_, err = do_core_logic(e[0], root_env)

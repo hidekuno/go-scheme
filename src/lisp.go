@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type (
@@ -1547,5 +1548,17 @@ func build_func() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		return v[0], nil
+	}
+	special_func["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		t0 := time.Now()
+		if exp, err := eval(v[0], env); err != nil {
+			return exp, err
+		}
+		t1 := time.Now()
+		fmt.Println(t1.Sub(t0))
+		return NewNil(), nil
 	}
 }
