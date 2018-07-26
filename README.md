@@ -175,6 +175,39 @@ scheme.go>
 
 ![image](https://user-images.githubusercontent.com/4899700/42988528-dfc3149a-8c37-11e8-8b72-0d8afe921ac3.png)
 
+
+## プロファイラの簡単な使い方
+### コマンドライン
+```
+go test -v -bench=. -benchmem -memprofile=lisp.mprof -cpuprofile=lisp.cprof lisp.go lisp_test.go
+go tool pprof lisp.cprof
+```
+### 出力結果(例)
+```
+[kunohi@centos7-dev-docker src]$ go tool pprof lisp.cprof
+File: main.test
+Type: cpu
+Time: Jul 26, 2018 at 1:21pm (JST)
+Duration: 7.91s, Total samples = 7.74s (97.88%)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top
+Showing nodes accounting for 7.63s, 98.58% of 7.74s total
+Dropped 17 nodes (cum <= 0.04s)
+Showing top 10 nodes out of 16
+      flat  flat%   sum%        cum   cum%
+     5.75s 74.29% 74.29%      6.25s 80.75%  runtime.mapaccess2_faststr /usr/lib/golang/src/runtime/hashmap_fast.go
+     1.25s 16.15% 90.44%      7.59s 98.06%  command-line-arguments.(*SimpleEnv).Find /home/kunohi/go-scheme/src/lisp.go
+     0.33s  4.26% 94.70%      0.33s  4.26%  runtime.memeqbody /usr/lib/golang/src/runtime/asm_amd64.s
+     0.17s  2.20% 96.90%      0.17s  2.20%  runtime.memequal /usr/lib/golang/src/runtime/asm_amd64.s
+     0.09s  1.16% 98.06%      0.09s  1.16%  runtime.mapaccess2_faststr /usr/lib/golang/src/runtime/stubs.go
+     0.03s  0.39% 98.45%      0.05s  0.65%  runtime.mallocgc /usr/lib/golang/src/runtime/malloc.go
+     0.01s  0.13% 98.58%      7.71s 99.61%  command-line-arguments.eval /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*Function).Execute /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*Operator).Execute /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*SpecialFunc).Execute /home/kunohi/go-scheme/src/lisp.go
+(pprof) quit
+[kunohi@centos7-dev-docker src]$ 
+```
 ## emacsでの設定(例)
 ```
 (setq scheme-program-name "~/bin/lisp") 
