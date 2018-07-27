@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type (
@@ -508,6 +509,7 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 			idx = idx + 1
 		}
 	}
+	saveEnv := self.Env
 	self.Env = NewSimpleEnv(self.Env, &local_env)
 	var (
 		result Expression
@@ -519,6 +521,8 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 			return exp, err
 		}
 	}
+	// https://github.com/hidekuno/go-scheme/issues/46
+	self.Env = saveEnv
 	return result, nil
 }
 
@@ -1544,5 +1548,17 @@ func build_func() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		return v[0], nil
+	}
+	special_func["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		t0 := time.Now()
+		if exp, err := eval(v[0], env); err != nil {
+			return exp, err
+		}
+		t1 := time.Now()
+		fmt.Println(t1.Sub(t0))
+		return NewNil(), nil
 	}
 }
