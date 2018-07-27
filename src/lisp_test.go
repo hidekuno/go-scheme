@@ -848,7 +848,7 @@ func Test_performance2(t *testing.T) {
 	build_func()
 	root_env := NewSimpleEnv(nil, nil)
 
-	do_core_logic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 100000)))", root_env)
+	do_core_logic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 10000)))", root_env)
 	do_core_logic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", root_env)
 	do_core_logic("(qsort test-list)", root_env)
 }
