@@ -175,6 +175,66 @@ scheme.go>
 
 ![image](https://user-images.githubusercontent.com/4899700/42988528-dfc3149a-8c37-11e8-8b72-0d8afe921ac3.png)
 
+
+## プロファイラの簡単な使い方
+### コマンドライン
+```
+go test -v -bench=. -benchmem -memprofile=lisp.mprof -cpuprofile=lisp.cprof lisp.go lisp_test.go
+go tool pprof lisp.cprof
+go tool pprof  -alloc_objects  main lisp.mprof
+```
+### 出力結果(例1)
+```
+[kunohi@centos7-dev-docker src]$ go tool pprof lisp.cprof
+File: main.test
+Type: cpu
+Time: Jul 26, 2018 at 1:21pm (JST)
+Duration: 7.91s, Total samples = 7.74s (97.88%)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top
+Showing nodes accounting for 7.63s, 98.58% of 7.74s total
+Dropped 17 nodes (cum <= 0.04s)
+Showing top 10 nodes out of 16
+      flat  flat%   sum%        cum   cum%
+     5.75s 74.29% 74.29%      6.25s 80.75%  runtime.mapaccess2_faststr /usr/lib/golang/src/runtime/hashmap_fast.go
+     1.25s 16.15% 90.44%      7.59s 98.06%  command-line-arguments.(*SimpleEnv).Find /home/kunohi/go-scheme/src/lisp.go
+     0.33s  4.26% 94.70%      0.33s  4.26%  runtime.memeqbody /usr/lib/golang/src/runtime/asm_amd64.s
+     0.17s  2.20% 96.90%      0.17s  2.20%  runtime.memequal /usr/lib/golang/src/runtime/asm_amd64.s
+     0.09s  1.16% 98.06%      0.09s  1.16%  runtime.mapaccess2_faststr /usr/lib/golang/src/runtime/stubs.go
+     0.03s  0.39% 98.45%      0.05s  0.65%  runtime.mallocgc /usr/lib/golang/src/runtime/malloc.go
+     0.01s  0.13% 98.58%      7.71s 99.61%  command-line-arguments.eval /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*Function).Execute /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*Operator).Execute /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.58%      7.71s 99.61%  command-line-arguments.(*SpecialFunc).Execute /home/kunohi/go-scheme/src/lisp.go
+(pprof) quit
+[kunohi@centos7-dev-docker src]$ 
+```
+### 出力結果(例2)
+```
+[kunohi@centos7-dev-docker src]$ go tool pprof  -alloc_objects  main lisp.mprof 
+main: open main: no such file or directory
+fetched 1 profiles out of 2
+File: main.test
+Type: alloc_objects
+Time: Jul 26, 2018 at 3:03pm (JST)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top
+Showing nodes accounting for 61860410, 98.45% of 62837528 total
+Dropped 38 nodes (cum <= 314187)
+Showing top 10 nodes out of 18
+      flat  flat%   sum%        cum   cum%
+  19988271 31.81% 31.81%   62716098 99.81%  command-line-arguments.(*Function).Execute /home/kunohi/go-scheme/src/lisp.go
+  17531196 27.90% 59.71%   62814431   100%  command-line-arguments.(*Operator).Execute /home/kunohi/go-scheme/src/lisp.go
+  11944284 19.01% 78.72%   62814431   100%  command-line-arguments.eval /home/kunohi/go-scheme/src/lisp.go
+   4729726  7.53% 86.24%    8711156 13.86%  command-line-arguments.build_func.func7 /home/kunohi/go-scheme/src/lisp.go
+   3981430  6.34% 92.58%    3981430  6.34%  command-line-arguments.CreateNumber /home/kunohi/go-scheme/src/lisp.go
+   2392170  3.81% 96.39%    2392170  3.81%  command-line-arguments.build_func.func13 /home/kunohi/go-scheme/src/lisp.go
+    682691  1.09% 97.47%     682691  1.09%  command-line-arguments.build_func.func40 /home/kunohi/go-scheme/src/lisp.go
+    414027  0.66% 98.13%     414027  0.66%  command-line-arguments.build_func.func27.1 /home/kunohi/go-scheme/src/lisp.go
+    196615  0.31% 98.45%   57678737 91.79%  command-line-arguments.build_func.func25 /home/kunohi/go-scheme/src/lisp.go
+         0     0% 98.45%   62814431   100%  command-line-arguments.(*SpecialFunc).Execute /home/kunohi/go-scheme/src/lisp.go
+(pprof) 
+```
 ## emacsでの設定(例)
 ```
 (setq scheme-program-name "~/bin/lisp") 
