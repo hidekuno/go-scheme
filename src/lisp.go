@@ -525,6 +525,20 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 	self.Env = saveEnv
 	return result, nil
 }
+func tail_recursion(env *SimpleEnv, body *List) []Expression {
+	if last, ok := (body.Value[len(body.Value)-1]).(*List); ok {
+		if sym, ok := last.Value[0].(*Symbol); ok {
+			if let, ok := env.Find(sym.Value); ok {
+				if _, ok := let.(*LetLoop); ok {
+					return last.Value[1:]
+				} else if _, ok := let.(*Function); ok {
+					return last.Value[1:]
+				}
+			}
+		}
+	}
+	return nil
+}
 
 type LetLoop struct {
 	Expression
@@ -544,14 +558,35 @@ func (self *LetLoop) Print() {
 }
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
-	for i, c := range self.ParamName.Value {
-		pname := c.(*Symbol)
-		data, err := eval(v[i], env)
-		if err != nil {
-			return nil, err
+	var set_param = func(prm []Expression) error {
+		for i, c := range self.ParamName.Value {
+			pname := c.(*Symbol)
+			data, err := eval(prm[i], env)
+			if err != nil {
+				return err
+			}
+			(*env).Set(pname.Value, data)
 		}
-		(*env).Set(pname.Value, data)
-
+		return nil
+	}
+	body := self.Body.(*List)
+	if tail_param := tail_recursion(env, body); tail_param != nil {
+		for {
+			body.Value[len(body.Value)-1] = NewNil()
+			ret, err := eval(body, env)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := ret.(*Nil); !ok {
+				return ret, nil
+			}
+			if err := set_param(tail_param); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if err := set_param(v); err != nil {
+		return nil, err
 	}
 	return eval(self.Body, env)
 }
@@ -807,6 +842,8 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			// execute
 			return fn.Execute(env, v[1:])
 		}
+	} else if _, ok := sexp.(*Nil); ok {
+		return sexp, nil
 	}
 	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
