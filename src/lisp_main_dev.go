@@ -18,13 +18,19 @@ func build_go_func() {
 		var append_list []Expression
 		var exp1 Expression
 		var exp2 Expression
-		var err error
+
 		go func() {
-			exp1, err = eval(v[0], env)
+			t0 := time.Now()
+			exp1, _ = eval(v[0], env)
+			t1 := time.Now()
+			fmt.Println("go-1", t1.Sub(t0))
 			finish_ch <- true
 		}()
 		go func() {
-			exp2, err = eval(v[1], env)
+			t0 := time.Now()
+			exp2, _ = eval(v[1], env)
+			t1 := time.Now()
+			fmt.Println("go-2", t1.Sub(t0))
 			finish_ch <- true
 		}()
 		<-finish_ch
@@ -33,14 +39,10 @@ func build_go_func() {
 		append_list = append(append_list, (exp2.(*List)).Value...)
 		return NewList(append_list), nil
 	}
-	special_func["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		t0 := time.Now()
-		if exp, err := eval(v[0], env); err != nil {
-			return exp, err
-		}
-		t1 := time.Now()
-		fmt.Println(t1.Sub(t0))
-		return NewNil(), nil
+	special_func["test-list"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		time.Sleep(5 * time.Second)
+		var append_list []Expression
+		return NewList(append_list), nil
 	}
 }
 
