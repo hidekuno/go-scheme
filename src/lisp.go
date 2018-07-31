@@ -525,70 +525,80 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 	self.Env = saveEnv
 	return result, nil
 }
-func tail_recursion(env *SimpleEnv, body *List) []Expression {
-	if last, ok := (body.Value[len(body.Value)-1]).(*List); ok {
-		if sym, ok := last.Value[0].(*Symbol); ok {
-			if let, ok := env.Find(sym.Value); ok {
-				if _, ok := let.(*LetLoop); ok {
-					return last.Value[1:]
-				} else if _, ok := let.(*Function); ok {
-					return last.Value[1:]
-				}
-			}
-		}
-	}
-	return nil
-}
 
 type LetLoop struct {
 	Expression
 	ParamName List
 	Body      Expression
+	Name      string
 }
 
-func NewLetLoop(param *List, body Expression) *LetLoop {
+func NewLetLoop(param *List, body Expression, name string) *LetLoop {
 	let := new(LetLoop)
 	let.ParamName = *param
 	let.Body = body
+	let.Name = name
 	return let
 }
 
 func (self *LetLoop) Print() {
 	fmt.Print("Let Macro: ", self)
 }
+
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
-	var set_param = func(prm []Expression) error {
+	var set_param = func(env *SimpleEnv, prm []Expression) (Expression, error) {
 		for i, c := range self.ParamName.Value {
 			pname := c.(*Symbol)
 			data, err := eval(prm[i], env)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			(*env).Set(pname.Value, data)
 		}
-		return nil
+		return NewNil(), nil
 	}
-	body := self.Body.(*List)
-	if tail_param := tail_recursion(env, body); tail_param != nil {
-		for {
-			body.Value[len(body.Value)-1] = NewNil()
-			ret, err := eval(body, env)
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := ret.(*Nil); !ok {
-				return ret, nil
-			}
-			if err := set_param(tail_param); err != nil {
-				return nil, err
+	var tail_recursion func(*SimpleEnv, *List, string) error
+	tail_recursion = func(env *SimpleEnv, body *List, label string) error {
+		if len(body.Value) == 0 {
+			return nil
+		}
+		v := body.Value
+		for i := 0; i < len(body.Value); i += 1 {
+			if l, ok := v[i].(*List); ok {
+				if sym, ok := l.Value[0].(*Symbol); ok {
+					proc, err := eval(l.Value[0], env)
+					if err != nil {
+						return err
+					}
+					if let, ok := proc.(*LetLoop); ok && label == let.Name {
+						v[i] = NewTailRecursion(set_param, l.Value[1:])
+						continue
+					}
+					if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
+						tail_recursion(env, l, label)
+					}
+				}
 			}
 		}
+		return nil
 	}
-	if err := set_param(v); err != nil {
+
+	body := self.Body.(*List)
+	tail_recursion(env, body, self.Name)
+
+	if _, err := set_param(env, v); err != nil {
 		return nil, err
 	}
-	return eval(self.Body, env)
+	for {
+		ret, err := eval(body, env)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := ret.(*Nil); !ok {
+			return ret, nil
+		}
+	}
 }
 
 type Promise struct {
@@ -631,6 +641,22 @@ func NewNil() *Nil {
 }
 func (self *Nil) Print() {
 	fmt.Print("nil")
+}
+
+type TailRecursion struct {
+	Expression
+	LoopExpression func(*SimpleEnv, []Expression) (Expression, error)
+	param          []Expression
+}
+
+func NewTailRecursion(le func(*SimpleEnv, []Expression) (Expression, error), param []Expression) *TailRecursion {
+	t := new(TailRecursion)
+	t.LoopExpression = le
+	t.param = param
+	return t
+}
+func (self *TailRecursion) Print() {
+	fmt.Print("TailRecursion", self)
 }
 
 // lex support  for  string
@@ -844,6 +870,8 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		}
 	} else if _, ok := sexp.(*Nil); ok {
 		return sexp, nil
+	} else if te, ok := sexp.(*TailRecursion); ok {
+		return te.LoopExpression(env, te.param)
 	}
 	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
@@ -1456,7 +1484,7 @@ func build_func() {
 			local_env[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body]))
+			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body], letsym.Value))
 		}
 
 		nse := NewSimpleEnv(env, &local_env)
