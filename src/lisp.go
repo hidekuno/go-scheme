@@ -486,11 +486,13 @@ func (self *Function) Print() {
 
 // Bind lambda function' parameters.
 func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
-	local_env := Environment{}
-	idx := 0
+
 	if len(self.ParamName.Value) != len(values) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
 	}
+	saveEnv := self.Env
+	self.Env = NewSimpleEnv(self.Env, nil)
+	idx := 0
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
 			if env != nil {
@@ -502,15 +504,13 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 					return k, nil
 				}
 
-				local_env[sym.Value] = v
+				self.Env.Regist(sym.Value, v)
 			} else {
-				local_env[sym.Value] = values[idx]
+				self.Env.Regist(sym.Value, values[idx])
 			}
 			idx = idx + 1
 		}
 	}
-	saveEnv := self.Env
-	self.Env = NewSimpleEnv(self.Env, &local_env)
 	var (
 		result Expression
 		err    error
@@ -524,6 +524,43 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 	// https://github.com/hidekuno/go-scheme/issues/46
 	self.Env = saveEnv
 	return result, nil
+}
+
+func setParam(env *SimpleEnv, prm []Expression, nameList []Expression) (Expression, error) {
+	for i, c := range nameList {
+		pname := c.(*Symbol)
+		data, err := eval(prm[i], env)
+		if err != nil {
+			return nil, err
+		}
+		(*env).Set(pname.Value, data)
+	}
+	return NewNil(), nil
+}
+func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) error {
+
+	if len(body.Value) == 0 {
+		return nil
+	}
+	v := body.Value
+	for i := 0; i < len(body.Value); i += 1 {
+		if l, ok := v[i].(*List); ok {
+			if sym, ok := l.Value[0].(*Symbol); ok {
+				proc, err := eval(l.Value[0], env)
+				if err != nil {
+					return err
+				}
+				if let, ok := proc.(*LetLoop); ok && label == let.Name {
+					v[i] = NewTailRecursion(setParam, l.Value[1:], nameList)
+					continue
+				}
+				if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
+					evalTailRecursion(env, l, label, nameList)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 type LetLoop struct {
@@ -547,47 +584,9 @@ func (self *LetLoop) Print() {
 
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
-	var set_param = func(env *SimpleEnv, prm []Expression) (Expression, error) {
-		for i, c := range self.ParamName.Value {
-			pname := c.(*Symbol)
-			data, err := eval(prm[i], env)
-			if err != nil {
-				return nil, err
-			}
-			(*env).Set(pname.Value, data)
-		}
-		return NewNil(), nil
-	}
-	var tail_recursion func(*SimpleEnv, *List, string) error
-	tail_recursion = func(env *SimpleEnv, body *List, label string) error {
-		if len(body.Value) == 0 {
-			return nil
-		}
-		v := body.Value
-		for i := 0; i < len(body.Value); i += 1 {
-			if l, ok := v[i].(*List); ok {
-				if sym, ok := l.Value[0].(*Symbol); ok {
-					proc, err := eval(l.Value[0], env)
-					if err != nil {
-						return err
-					}
-					if let, ok := proc.(*LetLoop); ok && label == let.Name {
-						v[i] = NewTailRecursion(set_param, l.Value[1:])
-						continue
-					}
-					if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
-						tail_recursion(env, l, label)
-					}
-				}
-			}
-		}
-		return nil
-	}
-
 	body := self.Body.(*List)
-	tail_recursion(env, body, self.Name)
-
-	if _, err := set_param(env, v); err != nil {
+	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
+	if _, err := setParam(env, v, self.ParamName.Value); err != nil {
 		return nil, err
 	}
 	for {
@@ -645,15 +644,17 @@ func (self *Nil) Print() {
 
 type TailRecursion struct {
 	Expression
-	LoopExpression func(*SimpleEnv, []Expression) (Expression, error)
+	LoopExpression func(*SimpleEnv, []Expression, []Expression) (Expression, error)
 	param          []Expression
+	nameList       []Expression
 }
 
-func NewTailRecursion(le func(*SimpleEnv, []Expression) (Expression, error), param []Expression) *TailRecursion {
-	t := new(TailRecursion)
-	t.LoopExpression = le
-	t.param = param
-	return t
+func NewTailRecursion(le func(*SimpleEnv, []Expression, []Expression) (Expression, error), param []Expression, nameList []Expression) *TailRecursion {
+	self := new(TailRecursion)
+	self.LoopExpression = le
+	self.param = param
+	self.nameList = nameList
+	return self
 }
 func (self *TailRecursion) Print() {
 	fmt.Print("TailRecursion", self)
@@ -871,7 +872,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	} else if _, ok := sexp.(*Nil); ok {
 		return sexp, nil
 	} else if te, ok := sexp.(*TailRecursion); ok {
-		return te.LoopExpression(env, te.param)
+		return te.LoopExpression(env, te.param, te.nameList)
 	}
 	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
