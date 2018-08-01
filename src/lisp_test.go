@@ -764,7 +764,7 @@ func Test_err_case(t *testing.T) {
 		}
 	}
 	// Impossible absolute, But Program bug is except
-	_, err = eval(NewFunction(root_env, NewList(nil), nil), root_env)
+	_, err = eval(NewFunction(root_env, NewList(nil), nil, "lambda"), root_env)
 	if !check_error_code(err, "E1009") {
 		t.Fatal("failed test: " + "E1009")
 	}
