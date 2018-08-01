@@ -636,8 +636,8 @@ func NewTailRecursion(param []Expression, nameList []Expression) *TailRecursion 
 
 func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 
-	for i, c := range self.nameList {
-		pname := c.(*Symbol)
+	values := make([]Expression, 0, 8)
+	for i, _ := range self.nameList {
 		v, err := eval(self.param[i], env)
 		if err != nil {
 			return nil, err
@@ -645,7 +645,12 @@ func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 		if k, ok := v.(*Continuation); ok {
 			return k, nil
 		}
-		(*env).Set(pname.Value, v)
+		values = append(values, v)
+	}
+
+	for i, c := range self.nameList {
+		pname := c.(*Symbol)
+		(*env).Set(pname.Value, values[i])
 	}
 	return self, nil
 }
