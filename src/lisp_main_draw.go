@@ -12,16 +12,16 @@ import (
 	"strconv"
 )
 
-func build_gtk_func() {
+func buildGtkFunc() {
 
-	special_func["draw-init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		go run_draw_app()
+	specialFuncTbl["draw-init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		go runDrawApp()
 
-		special_func["draw-clear"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-			draw_clear()
+		specialFuncTbl["draw-clear"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+			drawClear()
 			return NewNil(), nil
 		}
-		special_func["draw-line"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		specialFuncTbl["draw-line"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			var point [4]int
 			if len(v) != 4 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
@@ -40,15 +40,15 @@ func build_gtk_func() {
 					return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
-			draw_line_reentrant_lisp(point[0], point[1], point[2], point[3])
+			drawLineLisp(point[0], point[1], point[2], point[3])
 			return NewNil(), nil
 		}
-		special_func["draw-imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		specialFuncTbl["draw-imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 			if len(v) != 1 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 			}
 			if s, ok := v[0].(*String); ok {
-				draw_imagefile(s.Value)
+				drawImageFile(s.Value)
 			} else {
 				return nil, NewRuntimeError("E1003", reflect.TypeOf(v[0]).String())
 			}
@@ -62,13 +62,13 @@ func build_gtk_func() {
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	build_func()
-	build_gtk_func()
+	buildFunc()
+	buildGtkFunc()
 
-	cui_ch := make(chan bool)
+	cui := make(chan bool)
 	go func() {
-		do_interactive()
-		cui_ch <- true
+		doInteractive()
+		cui <- true
 	}()
-	<-cui_ch
+	<-cui
 }

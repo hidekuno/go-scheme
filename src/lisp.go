@@ -27,15 +27,15 @@ type (
 )
 
 const (
-	MAX_LINE_SIZE = 1024
-	DEBUG         = false
-	PROMPT        = "scheme.go> "
+	MaxLineSize = 1024
+	DEBUG       = false
+	PROMPT      = "scheme.go> "
 )
 
 var (
-	builtin_func map[string]func(...Expression) (Expression, error)
-	special_func map[string]func(*SimpleEnv, []Expression) (Expression, error)
-	error_msg    = map[string]string{
+	builtinFuncTbl map[string]func(...Expression) (Expression, error)
+	specialFuncTbl map[string]func(*SimpleEnv, []Expression) (Expression, error)
+	errorMsg       = map[string]string{
 		"E0001": "Unexpected EOF while reading",
 		"E0002": "Unexpected ')' while reading",
 		"E0003": "Extra close parenthesis `)'",
@@ -109,7 +109,7 @@ type SyntaxError struct {
 }
 
 func (err *SyntaxError) Error() string {
-	return error_msg[err.MsgCode] + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
+	return errorMsg[err.MsgCode] + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
 }
 
 func NewSyntaxError(text string) error {
@@ -133,7 +133,7 @@ func (err *RuntimeError) Error() string {
 		}
 		args = args + e
 	}
-	return error_msg[err.MsgCode] + ": " + args + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
+	return errorMsg[err.MsgCode] + ": " + args + " (" + path.Base(err.SourceFileName) + ":" + strconv.Itoa(err.SourceFileLineNum) + ")"
 }
 
 func NewRuntimeError(text string, args ...string) error {
@@ -691,21 +691,21 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 // lex support  for  string
 func tokenize(s string) []string {
 	var token []string
-	string_mode := false
-	symbol_name := make([]byte, 0, 1024)
+	stringMode := false
+	symbolName := make([]byte, 0, 1024)
 	from := 0
 
 	s = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s)
 	for i, c := range s {
-		if string_mode {
+		if stringMode {
 			if c == '"' {
 				token = append(token, s[from:i+1])
-				string_mode = false
+				stringMode = false
 			}
 		} else {
 			if c == '"' {
 				from = i
-				string_mode = true
+				stringMode = true
 			} else if c == '(' {
 				token = append(token, "(")
 			} else if c == ')' {
@@ -713,14 +713,14 @@ func tokenize(s string) []string {
 			} else if c == ' ' {
 				// Nop
 			} else {
-				symbol_name = append(symbol_name, s[i])
+				symbolName = append(symbolName, s[i])
 				if len(s)-1 == i {
-					token = append(token, string(symbol_name))
+					token = append(token, string(symbolName))
 				} else {
 					switch s[i+1] {
 					case '(', ')', ' ':
-						token = append(token, string(symbol_name))
-						symbol_name = make([]byte, 0, 1024)
+						token = append(token, string(symbolName))
+						symbolName = make([]byte, 0, 1024)
 					}
 				}
 			}
@@ -735,7 +735,7 @@ func tokenize(s string) []string {
 }
 
 // Tenuki lex.
-func tokenize_easy(s string) []string {
+func tokenizeEasy(s string) []string {
 	s = strings.Replace(s, "(", " ( ", -1)
 	s = strings.Replace(s, ")", " ) ", -1)
 	token := strings.Fields(s)
@@ -781,8 +781,8 @@ func parse(tokens []string) (Expression, int, error) {
 	} else if ")" == token {
 		return nil, 0, NewSyntaxError("E0002")
 	} else {
-		atom_type, err := atom(token)
-		return atom_type, 1, err
+		atomType, err := atom(token)
+		return atomType, 1, err
 	}
 }
 
@@ -806,13 +806,13 @@ func atom(token string) (Atom, error) {
 				atom = NewBoolean(false)
 			default:
 				if strings.Index(token, "#\\") == 0 {
-					whitespace_char := map[string]byte{
+					whitespaceChar := map[string]byte{
 						"#\\tab":     0x09,
 						"#\\space":   0x20,
 						"#\\newline": 0x0A,
 						"#\\return":  0x0D,
 					}
-					if v, ok := whitespace_char[token]; ok {
+					if v, ok := whitespaceChar[token]; ok {
 						char := NewChar(token)
 						char.Value = v
 						atom = char
@@ -841,9 +841,9 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env).Find(sym.Value); ok {
 				return v, nil
-			} else if v, ok := builtin_func[sym.Value]; ok {
+			} else if v, ok := builtinFuncTbl[sym.Value]; ok {
 				return NewOperator(v), nil
-			} else if v, ok := special_func[sym.Value]; ok {
+			} else if v, ok := specialFuncTbl[sym.Value]; ok {
 				return NewSpecialFunc(v), nil
 			} else {
 				return sexp, NewRuntimeError("E1008", sym.Value)
@@ -906,7 +906,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 }
 
 // main logic
-func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
+func doCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
 
 	token := tokenize(program)
 	ast, c, err := parse(token)
@@ -918,7 +918,7 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 		return nil, NewSyntaxError("E0003")
 	}
 
-	val, err := eval(ast, root_env)
+	val, err := eval(ast, rootEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -926,34 +926,34 @@ func do_core_logic(program string, root_env *SimpleEnv) (Expression, error) {
 }
 
 // CUI desu.
-func count_parenthesis(program string) bool {
-	left_parenthesis := 0
-	right_parenthesis := 0
-	search_mode := true
+func countParenthesis(program string) bool {
+	left := 0
+	right := 0
+	search := true
 
 	for _, c := range program {
-		if c == '"' && search_mode {
-			search_mode = false
-		} else if c == '"' && !search_mode {
-			search_mode = true
+		if c == '"' && search {
+			search = false
+		} else if c == '"' && !search {
+			search = true
 		}
-		if c == '(' && search_mode {
-			left_parenthesis = left_parenthesis + 1
+		if c == '(' && search {
+			left = left + 1
 		}
-		if c == ')' && search_mode {
-			right_parenthesis = right_parenthesis + 1
+		if c == ')' && search {
+			right = right + 1
 		}
 	}
-	return left_parenthesis <= right_parenthesis
+	return left <= right
 }
 
 // CUI desu.
-func do_interactive() {
+func doInteractive() {
 	program := make([]string, 0, 64)
 
 	prompt := PROMPT
-	reader := bufio.NewReaderSize(os.Stdin, MAX_LINE_SIZE)
-	root_env := NewSimpleEnv(nil, nil)
+	reader := bufio.NewReaderSize(os.Stdin, MaxLineSize)
+	rootEnv := NewSimpleEnv(nil, nil)
 	for {
 		fmt.Print(prompt + " ")
 
@@ -968,11 +968,11 @@ func do_interactive() {
 			break
 		}
 		program = append(program, line)
-		if !count_parenthesis(strings.Join(program, " ")) {
+		if !countParenthesis(strings.Join(program, " ")) {
 			prompt = ""
 			continue
 		}
-		val, err := do_core_logic(strings.Join(program, " "), root_env)
+		val, err := doCoreLogic(strings.Join(program, " "), rootEnv)
 		if err != nil {
 			fmt.Println(err.Error())
 			goto FINISH
@@ -989,12 +989,12 @@ func do_interactive() {
 }
 
 // Build Global environement.
-func build_func() {
-	builtin_func = map[string]func(...Expression) (Expression, error){}
-	special_func = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
+func buildFunc() {
+	builtinFuncTbl = map[string]func(...Expression) (Expression, error){}
+	specialFuncTbl = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
 
 	// addl, subl,imul,idiv,modulo
-	iter_calc := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
+	calcOperate := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
 		if 1 >= len(exp) {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1022,29 +1022,29 @@ func build_func() {
 		}
 		return result, nil
 	}
-	builtin_func["+"] = func(exp ...Expression) (Expression, error) {
-		return iter_calc(func(a Number, b Number) Number { return a.Add(b) }, exp...)
+	builtinFuncTbl["+"] = func(exp ...Expression) (Expression, error) {
+		return calcOperate(func(a Number, b Number) Number { return a.Add(b) }, exp...)
 	}
-	builtin_func["-"] = func(exp ...Expression) (Expression, error) {
-		return iter_calc(func(a Number, b Number) Number { return a.Sub(b) }, exp...)
+	builtinFuncTbl["-"] = func(exp ...Expression) (Expression, error) {
+		return calcOperate(func(a Number, b Number) Number { return a.Sub(b) }, exp...)
 	}
-	builtin_func["*"] = func(exp ...Expression) (Expression, error) {
-		return iter_calc(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
+	builtinFuncTbl["*"] = func(exp ...Expression) (Expression, error) {
+		return calcOperate(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 	}
-	builtin_func["/"] = func(exp ...Expression) (sexp Expression, e error) {
+	builtinFuncTbl["/"] = func(exp ...Expression) (sexp Expression, e error) {
 		// Not the best. But, Better than before.
 		defer func() {
 			if err := recover(); err != nil {
-				if zero_error, ok := err.(*RuntimeError); ok {
+				if zero, ok := err.(*RuntimeError); ok {
 					sexp = nil
-					e = zero_error
+					e = zero
 				}
 			}
 		}()
-		return iter_calc(func(a Number, b Number) Number { return a.Div(b) }, exp...)
+		return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 	}
-	builtin_func["quotient"] = builtin_func["/"]
-	builtin_func["modulo"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["quotient"] = builtinFuncTbl["/"]
+	builtinFuncTbl["modulo"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1062,7 +1062,7 @@ func build_func() {
 		return NewInteger(prm[0].Value % prm[1].Value), nil
 	}
 	// gt,lt,ge,le
-	op_cmp := func(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, error) {
+	cmpOperate := func(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, error) {
 		if 2 != len(exp) {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1088,22 +1088,22 @@ func build_func() {
 		}
 		return NewBoolean(cmp(result, prm)), nil
 	}
-	builtin_func[">"] = func(exp ...Expression) (Expression, error) {
-		return op_cmp(func(a Number, b Number) bool { return a.Greater(b) }, exp...)
+	builtinFuncTbl[">"] = func(exp ...Expression) (Expression, error) {
+		return cmpOperate(func(a Number, b Number) bool { return a.Greater(b) }, exp...)
 	}
-	builtin_func["<"] = func(exp ...Expression) (Expression, error) {
-		return op_cmp(func(a Number, b Number) bool { return a.Less(b) }, exp...)
+	builtinFuncTbl["<"] = func(exp ...Expression) (Expression, error) {
+		return cmpOperate(func(a Number, b Number) bool { return a.Less(b) }, exp...)
 	}
-	builtin_func[">="] = func(exp ...Expression) (Expression, error) {
-		return op_cmp(func(a Number, b Number) bool { return a.GreaterEqual(b) }, exp...)
+	builtinFuncTbl[">="] = func(exp ...Expression) (Expression, error) {
+		return cmpOperate(func(a Number, b Number) bool { return a.GreaterEqual(b) }, exp...)
 	}
-	builtin_func["<="] = func(exp ...Expression) (Expression, error) {
-		return op_cmp(func(a Number, b Number) bool { return a.LessEqual(b) }, exp...)
+	builtinFuncTbl["<="] = func(exp ...Expression) (Expression, error) {
+		return cmpOperate(func(a Number, b Number) bool { return a.LessEqual(b) }, exp...)
 	}
-	builtin_func["="] = func(exp ...Expression) (Expression, error) {
-		return op_cmp(func(a Number, b Number) bool { return a.Equal(b) }, exp...)
+	builtinFuncTbl["="] = func(exp ...Expression) (Expression, error) {
+		return cmpOperate(func(a Number, b Number) bool { return a.Equal(b) }, exp...)
 	}
-	builtin_func["not"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["not"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1114,11 +1114,11 @@ func build_func() {
 	}
 
 	// list operator
-	builtin_func["list"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["list"] = func(exp ...Expression) (Expression, error) {
 		var l []Expression
 		return NewList(append(l, exp...)), nil
 	}
-	builtin_func["null?"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["null?"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1128,7 +1128,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["length"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["length"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1138,7 +1138,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["car"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["car"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1153,7 +1153,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["cdr"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["cdr"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1169,7 +1169,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["cadr"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["cadr"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1182,7 +1182,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["cons"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["cons"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1193,21 +1193,21 @@ func build_func() {
 		}
 		return NewPair(exp[0], exp[1]), nil
 	}
-	builtin_func["append"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["append"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		var append_list []Expression
+		var expList []Expression
 		for _, e := range exp {
 			if v, ok := e.(*List); ok {
-				append_list = append(append_list, v.Value...)
+				expList = append(expList, v.Value...)
 			} else {
 				return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
 			}
 		}
-		return NewList(append_list), nil
+		return NewList(expList), nil
 	}
-	builtin_func["last"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["last"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1222,7 +1222,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["reverse"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["reverse"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1241,7 +1241,7 @@ func build_func() {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
 	}
-	builtin_func["iota"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["iota"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 && len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1265,7 +1265,7 @@ func build_func() {
 		return NewList(l), nil
 	}
 	// map,filter,reduce
-	iter_func := func(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
+	listFunc := func(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1277,7 +1277,7 @@ func build_func() {
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 		}
-		var va_list []Expression
+		var vaList []Expression
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
 			result, err := fn.Execute(nil, param)
@@ -1288,39 +1288,39 @@ func build_func() {
 				return k, nil
 			}
 
-			va_list, err = lambda(result, param[0], va_list)
+			vaList, err = lambda(result, param[0], vaList)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return NewList(va_list), nil
+		return NewList(vaList), nil
 	}
-	builtin_func["map"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["map"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
-			return append(va_list, result), nil
+		lambda := func(result Expression, item Expression, vaList []Expression) ([]Expression, error) {
+			return append(vaList, result), nil
 		}
-		return iter_func(lambda, exp...)
+		return listFunc(lambda, exp...)
 	}
-	builtin_func["filter"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["filter"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		lambda := func(result Expression, item Expression, va_list []Expression) ([]Expression, error) {
+		lambda := func(result Expression, item Expression, vaList []Expression) ([]Expression, error) {
 			b, ok := result.(*Boolean)
 			if !ok {
 				return nil, NewRuntimeError("E1001", reflect.TypeOf(result).String())
 			}
 			if b.Value {
-				return append(va_list, item), nil
+				return append(vaList, item), nil
 			}
-			return va_list, nil
+			return vaList, nil
 		}
-		return iter_func(lambda, exp...)
+		return listFunc(lambda, exp...)
 	}
-	builtin_func["reduce"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["reduce"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1352,39 +1352,39 @@ func build_func() {
 		return result, nil
 	}
 	// math skelton
-	math_impl := func(math_func func(float64) float64, exp ...Expression) (Expression, error) {
+	mathImpl := func(mathFunc func(float64) float64, exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if v, ok := exp[0].(*Float); ok {
-			return NewFloat(math_func(v.Value)), nil
+			return NewFloat(mathFunc(v.Value)), nil
 		} else if v, ok := exp[0].(*Integer); ok {
-			return NewFloat(math_func((float64)(v.Value))), nil
+			return NewFloat(mathFunc((float64)(v.Value))), nil
 		}
 		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 	}
-	builtin_func["sqrt"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Sqrt, exp...)
+	builtinFuncTbl["sqrt"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Sqrt, exp...)
 	}
-	builtin_func["sin"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Sin, exp...)
+	builtinFuncTbl["sin"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Sin, exp...)
 	}
-	builtin_func["cos"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Cos, exp...)
+	builtinFuncTbl["cos"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Cos, exp...)
 	}
-	builtin_func["tan"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Tan, exp...)
+	builtinFuncTbl["tan"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Tan, exp...)
 	}
-	builtin_func["atan"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Atan, exp...)
+	builtinFuncTbl["atan"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Atan, exp...)
 	}
-	builtin_func["log"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Log, exp...)
+	builtinFuncTbl["log"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Log, exp...)
 	}
-	builtin_func["exp"] = func(exp ...Expression) (Expression, error) {
-		return math_impl(math.Exp, exp...)
+	builtinFuncTbl["exp"] = func(exp ...Expression) (Expression, error) {
+		return mathImpl(math.Exp, exp...)
 	}
-	builtin_func["rand-integer"] = func(exp ...Expression) (Expression, error) {
+	builtinFuncTbl["rand-integer"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1394,7 +1394,7 @@ func build_func() {
 		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 	}
 	// syntax keyword implements
-	special_func["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1414,7 +1414,7 @@ func build_func() {
 		}
 		return NewNil(), nil
 	}
-	special_func["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1441,7 +1441,7 @@ func build_func() {
 		(*env).Regist(key.Value, exp)
 		return key, nil
 	}
-	special_func["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1452,7 +1452,7 @@ func build_func() {
 		}
 		return NewFunction(env, l, v[1:], "lambda"), nil
 	}
-	special_func["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1471,7 +1471,7 @@ func build_func() {
 		(*env).Set(s.Value, exp)
 		return exp, nil
 	}
-	special_func["let"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["let"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
 		body := 1
@@ -1495,7 +1495,7 @@ func build_func() {
 			body = 2
 		}
 
-		local_env := Environment{}
+		localEnv := Environment{}
 		for _, let := range l.Value {
 			r, ok := let.(*List)
 			if !ok {
@@ -1510,25 +1510,26 @@ func build_func() {
 				return nil, err
 			}
 			pname = append(pname, sym)
-			local_env[sym.Value] = v
+			localEnv[sym.Value] = v
 		}
 		if letsym != nil {
 			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body], letsym.Value))
 		}
 
-		nse := NewSimpleEnv(env, &local_env)
-		var last_exp Expression
+		nse := NewSimpleEnv(env, &localEnv)
+		var lastExp Expression
 		for idx := body; idx < len(v); idx += 1 {
 			if exp, err := eval(v[idx], nse); err == nil {
-				last_exp = exp
+				lastExp = exp
 			} else {
 				return nil, err
 			}
 		}
-		return last_exp, nil
+		return lastExp, nil
+
 	}
 	// and or not
-	op_logical := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
+	logicalOperate := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1546,19 +1547,19 @@ func build_func() {
 		}
 		return NewBoolean(bret), nil
 	}
-	special_func["and"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
-		return op_logical(env, exp, false, true)
+	specialFuncTbl["and"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		return logicalOperate(env, exp, false, true)
 	}
-	special_func["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
-		return op_logical(env, exp, true, false)
+	specialFuncTbl["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		return logicalOperate(env, exp, true, false)
 	}
-	special_func["delay"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["delay"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return NewPromise(env, exp[0]), nil
 	}
-	special_func["force"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["force"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1572,13 +1573,13 @@ func build_func() {
 		}
 		return eval(p.Body, p.Env)
 	}
-	special_func["identity"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["identity"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		return eval(v[0], env)
 	}
-	special_func["call/cc"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["call/cc"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1603,7 +1604,7 @@ func build_func() {
 			return exp, nil
 		}
 	}
-	special_func["cond"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["cond"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) < 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
@@ -1637,13 +1638,13 @@ func build_func() {
 		}
 		return NewNil(), nil
 	}
-	special_func["quote"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["quote"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
 		return v[0], nil
 	}
-	special_func["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 		}
