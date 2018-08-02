@@ -557,6 +557,9 @@ func (self *LetLoop) Print() {
 
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
+	if len(self.ParamName.Value) != len(v) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	}
 	body := self.Body.(*List)
 	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
 

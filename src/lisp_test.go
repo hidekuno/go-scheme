@@ -756,6 +756,7 @@ func TestErrCase(t *testing.T) {
 
 		{"(time)", "E1007"},
 		{"(time #\\abc)", "E0004"},
+		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
 	}
 	for _, e := range testCode {
 		_, err = doCoreLogic(e[0], rootEnv)
