@@ -19,9 +19,9 @@ type (
 )
 
 const (
-	TEST_DATA_COUNT = 80000000
-	THRESHOLD       = 1024
-	INT_MAX_VALUE   = 10000000
+	TestDataCount = 80000000
+	THRESHOLD     = 1024
+	IntMaxValue   = 10000000
 )
 
 var (
@@ -51,21 +51,21 @@ func qsort(data Nums, low, high int) {
 			qsort(data, l, high)
 		}
 	} else {
-		finish_ch := make(chan bool, 2)
+		finish := make(chan bool, 2)
 		go func() {
 			if low < r {
 				qsort(data, low, r)
 			}
-			finish_ch <- true
+			finish <- true
 		}()
 		go func() {
 			if l < high {
 				qsort(data, l, high)
 			}
-			finish_ch <- true
+			finish <- true
 		}()
-		<-finish_ch
-		<-finish_ch
+		<-finish
+		<-finish
 	}
 }
 
@@ -74,9 +74,9 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
 
-	data := make(Nums, TEST_DATA_COUNT)
+	data := make(Nums, TestDataCount)
 	for i, _ := range data {
-		data[i] = rand.Intn(INT_MAX_VALUE)
+		data[i] = rand.Intn(IntMaxValue)
 	}
 	fmt.Println(len(data), "counts data generate done.")
 	t0 := time.Now()
