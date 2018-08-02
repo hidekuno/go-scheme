@@ -6,7 +6,7 @@
 */
 package fractal
 
-func CreateSierpinski(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
+func CreateSierpinski(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 
 	var draw func(x0, y0, x1, y1, x2, y2, c int)
 
@@ -24,9 +24,9 @@ func CreateSierpinski(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
 			draw(x2, y2, xx2, yy2, xx1, yy1, c-1)
 
 		} else {
-			draw_line(x0, y0, x1, y1)
-			draw_line(x1, y1, x2, y2)
-			draw_line(x2, y2, x0, y0)
+			drawLine(x0, y0, x1, y1)
+			drawLine(x1, y1, x2, y2)
+			drawLine(x2, y2, x0, y0)
 		}
 	}
 	return func() {

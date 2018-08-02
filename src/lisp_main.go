@@ -8,6 +8,6 @@ package main
 
 // Main
 func main() {
-	build_func()
-	do_interactive()
+	buildFunc()
+	doInteractive()
 }
