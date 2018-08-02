@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	MAX_LINE_SIZE  = 1024
-	DELIMITER_CHAR = "."
+	MaxLineSize   = 1024
+	DelimiterChar = "."
 )
 
 type Item struct {
@@ -39,7 +39,7 @@ func (self *Item) Add(c *Item) {
 
 func (self *Item) LastName() string {
 	str := self.Name
-	idx := strings.LastIndex(self.Name, DELIMITER_CHAR)
+	idx := strings.LastIndex(self.Name, DelimiterChar)
 	if idx > 0 {
 		str = self.Name[idx+1:]
 	}
@@ -118,7 +118,7 @@ func NewVisitorLine() *VisitorLine {
 
 func CreateTreeOrdered(stream *os.File) *Item {
 
-	var reader = bufio.NewReaderSize(stream, MAX_LINE_SIZE)
+	var reader = bufio.NewReaderSize(stream, MaxLineSize)
 	cache := map[string]*Item{}
 	var top string
 
@@ -130,7 +130,7 @@ func CreateTreeOrdered(stream *os.File) *Item {
 			panic(err)
 		}
 		s := string(line)
-		idx := strings.LastIndex(s, DELIMITER_CHAR)
+		idx := strings.LastIndex(s, DelimiterChar)
 		if idx == -1 {
 			top = s
 			cache[s] = NewItem(s, nil)
@@ -144,7 +144,7 @@ func CreateTreeOrdered(stream *os.File) *Item {
 
 func CreateTree(stream *os.File) *Item {
 
-	var reader = bufio.NewReaderSize(stream, MAX_LINE_SIZE)
+	var reader = bufio.NewReaderSize(stream, MaxLineSize)
 	cache := map[string]*Item{}
 	var top string
 
@@ -156,24 +156,24 @@ func CreateTree(stream *os.File) *Item {
 			panic(err)
 		}
 
-		item_name := ""
+		itemName := ""
 		for _, s := range strings.Split(string(line), ".") {
-			if item_name == "" {
-				item_name = s
+			if itemName == "" {
+				itemName = s
 			} else {
-				item_name = item_name + "." + s
+				itemName = itemName + "." + s
 			}
-			if _, ok := cache[item_name]; ok {
+			if _, ok := cache[itemName]; ok {
 				continue
 			}
-			idx := strings.LastIndex(item_name, DELIMITER_CHAR)
+			idx := strings.LastIndex(itemName, DelimiterChar)
 			if idx == -1 {
-				top = item_name
-				cache[item_name] = NewItem(item_name, nil)
+				top = itemName
+				cache[itemName] = NewItem(itemName, nil)
 
 			} else {
-				cache[item_name] = NewItem(s, cache[item_name[:idx]])
-				cache[item_name[:idx]].Add(cache[item_name])
+				cache[itemName] = NewItem(s, cache[itemName[:idx]])
+				cache[itemName[:idx]].Add(cache[itemName])
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func ArgInit() (Visitor, *os.File, func(*os.File) *Item, error) {
 		ret error
 	)
 	file := os.Stdin
-	create_tree := CreateTree
+	createTree := CreateTree
 	v = NewDefaultVisitor()
 	ret = nil
 
@@ -210,20 +210,20 @@ func ArgInit() (Visitor, *os.File, func(*os.File) *Item, error) {
 		v = NewVisitorLine()
 	}
 	if *o {
-		create_tree = CreateTreeOrdered
+		createTree = CreateTreeOrdered
 	}
 FINISH:
-	return v, file, create_tree, ret
+	return v, file, createTree, ret
 }
 
 func main() {
-	v, fd, create_tree, err := ArgInit()
+	v, fd, createTree, err := ArgInit()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer fd.Close()
 
-	fj := create_tree(fd)
+	fj := createTree(fd)
 	fj.Accept(v)
 }
