@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-func check_hanoi(exp Expression) bool {
+func checkHanoi(exp Expression) bool {
 	if l, ok := exp.(*List); ok {
 		if len(l.Value) == 7 {
 			return true
@@ -24,14 +24,14 @@ func check_hanoi(exp Expression) bool {
 	}
 	return false
 }
-func check_logic_matrix(exp Expression, items [][]int) bool {
+func checkLogicMatrix(exp Expression, items [][]int) bool {
 	if l, ok := exp.(*List); ok {
 		for i, e := range l.Value {
 			if _, ok := e.(*List); !ok {
 				return false
 			}
 			for j, r := range (e.(*List)).Value {
-				if !check_logic_int(r, items[i][j]) {
+				if !checkLogicInt(r, items[i][j]) {
 					return false
 				}
 			}
@@ -41,11 +41,11 @@ func check_logic_matrix(exp Expression, items [][]int) bool {
 		return false
 	}
 }
-func check_logic_list(exp Expression, items []int) bool {
+func checkLogicList(exp Expression, items []int) bool {
 
 	if l, ok := exp.(*List); ok {
 		for i, e := range l.Value {
-			if !check_logic_int(e, items[i]) {
+			if !checkLogicInt(e, items[i]) {
 				return false
 			}
 		}
@@ -55,7 +55,7 @@ func check_logic_list(exp Expression, items []int) bool {
 	}
 }
 
-func check_logic_int(exp Expression, v int) bool {
+func checkLogicInt(exp Expression, v int) bool {
 	if i, ok := exp.(*Integer); ok {
 		if i.Value != v {
 			return false
@@ -66,14 +66,14 @@ func check_logic_int(exp Expression, v int) bool {
 	return true
 }
 
-func check_error_code(err error, error_code string) bool {
+func checkErrorCode(err error, errCode string) bool {
 	if e, ok := err.(*SyntaxError); ok {
-		if e.MsgCode == error_code {
+		if e.MsgCode == errCode {
 			return true
 		}
 	}
 	if e, ok := err.(*RuntimeError); ok {
-		if e.MsgCode == error_code {
+		if e.MsgCode == errCode {
 			return true
 		}
 	}
@@ -82,7 +82,7 @@ func check_error_code(err error, error_code string) bool {
 
 var (
 	program = []string{
-		"(define test_list (list 36 27 14 19 2 8 7 6 0 9 3))",
+		"(define test-list (list 36 27 14 19 2 8 7 6 0 9 3))",
 		"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))",
 		"(define a (counter))",
 		"(define b (counter))",
@@ -110,7 +110,7 @@ var (
 	}
 )
 
-func Test_check_funclist(t *testing.T) {
+func TestCheckFunclist(t *testing.T) {
 	build_func()
 	for key, _ := range builtin_func {
 		t.Log(key)
@@ -119,442 +119,442 @@ func Test_check_funclist(t *testing.T) {
 		t.Log(key)
 	}
 }
-func Test_lisp_sample_program(t *testing.T) {
+func TestLispSampleProgram(t *testing.T) {
 	var (
 		exp Expression
 	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 	for _, p := range program {
-		exp, _ = do_core_logic(p, root_env)
+		exp, _ = do_core_logic(p, rootEnv)
 	}
 
-	exp, _ = do_core_logic("(let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))", root_env)
-	if !check_logic_int(exp, 6) {
+	exp, _ = do_core_logic("(let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))", rootEnv)
+	if !checkLogicInt(exp, 6) {
 		t.Fatal("failed test: let loop")
 	}
-	exp, _ = do_core_logic("(a)", root_env)
-	exp, _ = do_core_logic("(a)", root_env)
-	exp, _ = do_core_logic("(a)", root_env)
-	if !check_logic_int(exp, 3) {
+	exp, _ = do_core_logic("(a)", rootEnv)
+	exp, _ = do_core_logic("(a)", rootEnv)
+	exp, _ = do_core_logic("(a)", rootEnv)
+	if !checkLogicInt(exp, 3) {
 		t.Fatal("failed test: closure")
 	}
-	exp, _ = do_core_logic("(b)", root_env)
-	exp, _ = do_core_logic("(b)", root_env)
-	if !check_logic_int(exp, 2) {
+	exp, _ = do_core_logic("(b)", rootEnv)
+	exp, _ = do_core_logic("(b)", rootEnv)
+	if !checkLogicInt(exp, 2) {
 		t.Fatal("failed test: closure")
 	}
-	exp, _ = do_core_logic("(gcm 36 27)", root_env)
-	if !check_logic_int(exp, 9) {
+	exp, _ = do_core_logic("(gcm 36 27)", rootEnv)
+	if !checkLogicInt(exp, 9) {
 		t.Fatal("failed test: gcm")
 	}
-	exp, _ = do_core_logic("(lcm 36 27)", root_env)
-	if !check_logic_int(exp, 108) {
+	exp, _ = do_core_logic("(lcm 36 27)", rootEnv)
+	if !checkLogicInt(exp, 108) {
 		t.Fatal("failed test: lcm")
 	}
 
 	test_sort_data := []int{0, 2, 3, 6, 7, 8, 9, 14, 19, 27, 36}
-	exp, _ = do_core_logic("(qsort test_list (lambda (a b)(< a b)))", root_env)
-	if !check_logic_list(exp, test_sort_data) {
+	exp, _ = do_core_logic("(qsort test-list (lambda (a b)(< a b)))", rootEnv)
+	if !checkLogicList(exp, test_sort_data) {
 		t.Fatal("failed test: qsort")
 	}
-	exp, _ = do_core_logic("(bsort test_list)", root_env)
-	if !check_logic_list(exp, test_sort_data) {
+	exp, _ = do_core_logic("(bsort test-list)", rootEnv)
+	if !checkLogicList(exp, test_sort_data) {
 		t.Fatal("failed test: bsort")
 	}
 
 	prime_data := []int{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
-	exp, _ = do_core_logic("(prime (iota 30 2))", root_env)
-	if !check_logic_list(exp, prime_data) {
+	exp, _ = do_core_logic("(prime (iota 30 2))", rootEnv)
+	if !checkLogicList(exp, prime_data) {
 		t.Fatal("failed test: prime")
 	}
 
 	perm_data := [][]int{{1, 2}, {1, 3}, {2, 1}, {2, 3}, {3, 1}, {3, 2}}
-	exp, _ = do_core_logic("(perm (list 1 2 3) 2)", root_env)
-	if !check_logic_matrix(exp, perm_data) {
+	exp, _ = do_core_logic("(perm (list 1 2 3) 2)", rootEnv)
+	if !checkLogicMatrix(exp, perm_data) {
 		t.Fatal("failed test: perm")
 	}
 
 	comb := [][]int{{1, 2}, {1, 3}, {2, 3}}
-	exp, _ = do_core_logic("(comb (list 1 2 3) 2)", root_env)
-	if !check_logic_matrix(exp, comb) {
+	exp, _ = do_core_logic("(comb (list 1 2 3) 2)", rootEnv)
+	if !checkLogicMatrix(exp, comb) {
 		t.Fatal("failed test: comb")
 	}
-	exp, _ = do_core_logic("(hanoi \"a\" \"b\" \"c\" 3)", root_env)
-	if !check_hanoi(exp) {
+	exp, _ = do_core_logic("(hanoi \"a\" \"b\" \"c\" 3)", rootEnv)
+	if !checkHanoi(exp) {
 		t.Fatal("failed test: hanoi")
 	}
-	exp, _ = do_core_logic("(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", root_env)
-	if !check_logic_list(exp, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
+	exp, _ = do_core_logic("(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", rootEnv)
+	if !checkLogicList(exp, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
 		t.Fatal("failed test: merge")
 	}
-	exp, _ = do_core_logic("(take (list 2 4 6 8 10) 3)", root_env)
-	if !check_logic_list(exp, []int{2, 4, 6}) {
+	exp, _ = do_core_logic("(take (list 2 4 6 8 10) 3)", rootEnv)
+	if !checkLogicList(exp, []int{2, 4, 6}) {
 		t.Fatal("failed test: take")
 	}
-	exp, _ = do_core_logic("(drop (list 2 4 6 8 10) 3)", root_env)
-	if !check_logic_list(exp, []int{8, 10}) {
+	exp, _ = do_core_logic("(drop (list 2 4 6 8 10) 3)", rootEnv)
+	if !checkLogicList(exp, []int{8, 10}) {
 		t.Fatal("failed test: drop")
 	}
-	exp, _ = do_core_logic("(msort test_list)", root_env)
-	if !check_logic_list(exp, test_sort_data) {
+	exp, _ = do_core_logic("(msort test-list)", rootEnv)
+	if !checkLogicList(exp, test_sort_data) {
 		t.Fatal("failed test: bsort")
 	}
 	fibonacci := []int{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}
-	exp, _ = do_core_logic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", root_env)
-	if !check_logic_list(exp, fibonacci) {
+	exp, _ = do_core_logic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", rootEnv)
+	if !checkLogicList(exp, fibonacci) {
 		t.Fatal("failed test: fibonacci")
 	}
 
-	exp, _ = do_core_logic("(fact/cps 5 (lambda (a) (+ 80 a)))", root_env)
-	if !check_logic_int(exp, 200) {
+	exp, _ = do_core_logic("(fact/cps 5 (lambda (a) (+ 80 a)))", rootEnv)
+	if !checkLogicInt(exp, 200) {
 		t.Fatal("failed test: fact/cps")
 	}
-	exp, _ = do_core_logic("(fact 5)", root_env)
-	if !check_logic_int(exp, 120) {
+	exp, _ = do_core_logic("(fact 5)", rootEnv)
+	if !checkLogicInt(exp, 120) {
 		t.Fatal("failed test: fact")
 	}
-	exp, _ = do_core_logic("(fact/cont 5)", root_env)
-	if !check_logic_int(exp, 60) {
+	exp, _ = do_core_logic("(fact/cont 5)", rootEnv)
+	if !checkLogicInt(exp, 60) {
 		t.Fatal("failed test: fact/cont")
 	}
 }
-func Test_math_func(t *testing.T) {
+func TestMathFunc(t *testing.T) {
 	var (
 		exp Expression
 	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 
-	exp, _ = do_core_logic("(sqrt 9)", root_env)
+	exp, _ = do_core_logic("(sqrt 9)", rootEnv)
 	if exp.(*Float).Value != 3.0 {
 		t.Fatal("failed test: sqrt")
 	}
-	exp, _ = do_core_logic("(cos (/ (* 60 (* (atan 1) 4))180))", root_env)
+	exp, _ = do_core_logic("(cos (/ (* 60 (* (atan 1) 4))180))", rootEnv)
 	if exp.(*Float).Value != 0.5000000000000001 {
 		t.Fatal("failed test: cos")
 	}
-	exp, _ = do_core_logic("(sin (/ (* 30 (* (atan 1) 4)) 180))", root_env)
+	exp, _ = do_core_logic("(sin (/ (* 30 (* (atan 1) 4)) 180))", rootEnv)
 	if exp.(*Float).Value != 0.49999999999999994 {
 		t.Fatal("failed test: sin")
 	}
-	exp, _ = do_core_logic("(tan (/ (* 45 (* (atan 1) 4)) 180))", root_env)
+	exp, _ = do_core_logic("(tan (/ (* 45 (* (atan 1) 4)) 180))", rootEnv)
 	if exp.(*Float).Value != 1.0 {
 		t.Fatal("failed test: tan")
 	}
-	exp, _ = do_core_logic("(/ (log 8)(log 2))", root_env)
+	exp, _ = do_core_logic("(/ (log 8)(log 2))", rootEnv)
 	if exp.(*Float).Value != 3.0 {
 		t.Fatal("failed test: log")
 	}
-	exp, _ = do_core_logic("(exp (/ (log 8) 3))", root_env)
+	exp, _ = do_core_logic("(exp (/ (log 8) 3))", rootEnv)
 	if exp.(*Float).Value != 2.0 {
 		t.Fatal("failed test: exp")
 	}
 }
-func Test_list_func(t *testing.T) {
+func TestListFunc(t *testing.T) {
 	var (
 		exp Expression
 	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 
-	exp, _ = do_core_logic("(list 1 2 3)", root_env)
-	if !check_logic_list(exp, []int{1, 2, 3}) {
+	exp, _ = do_core_logic("(list 1 2 3)", rootEnv)
+	if !checkLogicList(exp, []int{1, 2, 3}) {
 		t.Fatal("failed test: list")
 	}
-	exp, _ = do_core_logic("(null? (list 1 2 3))", root_env)
+	exp, _ = do_core_logic("(null? (list 1 2 3))", rootEnv)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: null?")
 	}
-	exp, _ = do_core_logic("(null? (list))", root_env)
+	exp, _ = do_core_logic("(null? (list))", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: null?")
 	}
-	exp, _ = do_core_logic("(length (list 1 2 3 4))", root_env)
-	if !check_logic_int(exp, 4) {
+	exp, _ = do_core_logic("(length (list 1 2 3 4))", rootEnv)
+	if !checkLogicInt(exp, 4) {
 		t.Fatal("failed test: length")
 	}
-	exp, _ = do_core_logic("(car (list 10 20 30 40))", root_env)
-	if !check_logic_int(exp, 10) {
+	exp, _ = do_core_logic("(car (list 10 20 30 40))", rootEnv)
+	if !checkLogicInt(exp, 10) {
 		t.Fatal("failed test: car")
 	}
-	exp, _ = do_core_logic("(cdr (cons 10 20))", root_env)
-	if !check_logic_int(exp, 20) {
+	exp, _ = do_core_logic("(cdr (cons 10 20))", rootEnv)
+	if !checkLogicInt(exp, 20) {
 		t.Fatal("failed test: cdr")
 	}
-	exp, _ = do_core_logic("(cadr (list 1 2 3 4))", root_env)
-	if !check_logic_int(exp, 2) {
+	exp, _ = do_core_logic("(cadr (list 1 2 3 4))", rootEnv)
+	if !checkLogicInt(exp, 2) {
 		t.Fatal("failed test: cadr")
 	}
-	exp, _ = do_core_logic("(car (cons 100 200))", root_env)
-	if !check_logic_int(exp, 100) {
+	exp, _ = do_core_logic("(car (cons 100 200))", rootEnv)
+	if !checkLogicInt(exp, 100) {
 		t.Fatal("failed test: cons")
 	}
-	exp, _ = do_core_logic("(cdr (cons 100 200))", root_env)
-	if !check_logic_int(exp, 200) {
+	exp, _ = do_core_logic("(cdr (cons 100 200))", rootEnv)
+	if !checkLogicInt(exp, 200) {
 		t.Fatal("failed test: cons")
 	}
-	exp, _ = do_core_logic("(append (list 1 2)(list 3 4))", root_env)
-	if !check_logic_list(exp, []int{1, 2, 3, 4}) {
+	exp, _ = do_core_logic("(append (list 1 2)(list 3 4))", rootEnv)
+	if !checkLogicList(exp, []int{1, 2, 3, 4}) {
 		t.Fatal("failed test: append")
 	}
-	exp, _ = do_core_logic("(reverse (list 1 2 3))", root_env)
-	if !check_logic_list(exp, []int{3, 2, 1}) {
+	exp, _ = do_core_logic("(reverse (list 1 2 3))", rootEnv)
+	if !checkLogicList(exp, []int{3, 2, 1}) {
 		t.Fatal("failed test: list")
 	}
-	exp, _ = do_core_logic("(iota 5 2)", root_env)
-	if !check_logic_list(exp, []int{2, 3, 4, 5, 6}) {
+	exp, _ = do_core_logic("(iota 5 2)", rootEnv)
+	if !checkLogicList(exp, []int{2, 3, 4, 5, 6}) {
 		t.Fatal("failed test: iota")
 	}
-	exp, _ = do_core_logic("(map (lambda (n) (* n 10))(list 1 2 3))", root_env)
-	if !check_logic_list(exp, []int{10, 20, 30}) {
+	exp, _ = do_core_logic("(map (lambda (n) (* n 10))(list 1 2 3))", rootEnv)
+	if !checkLogicList(exp, []int{10, 20, 30}) {
 		t.Fatal("failed test: map")
 	}
-	exp, _ = do_core_logic("(filter (lambda (n) (= n 1))(list 1 2 3))", root_env)
-	if !check_logic_list(exp, []int{1}) {
+	exp, _ = do_core_logic("(filter (lambda (n) (= n 1))(list 1 2 3))", rootEnv)
+	if !checkLogicList(exp, []int{1}) {
 		t.Fatal("failed test: filter")
 	}
-	exp, _ = do_core_logic("(reduce (lambda (a b) (+ a b))(list 1 2 3))", root_env)
-	if !check_logic_int(exp, 6) {
+	exp, _ = do_core_logic("(reduce (lambda (a b) (+ a b))(list 1 2 3))", rootEnv)
+	if !checkLogicInt(exp, 6) {
 		t.Fatal("failed test: reduce")
 	}
-	exp, _ = do_core_logic("()", root_env)
+	exp, _ = do_core_logic("()", rootEnv)
 	if len((exp.(*List)).Value) != 0 {
 		t.Fatal("failed test: ()")
 	}
 }
-func Test_basic_operation(t *testing.T) {
+func TestBasicOperation(t *testing.T) {
 	var (
 		exp Expression
 	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 
-	exp, _ = do_core_logic("10", root_env)
-	if !check_logic_int(exp, 10) {
+	exp, _ = do_core_logic("10", rootEnv)
+	if !checkLogicInt(exp, 10) {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("10.5", root_env)
+	exp, _ = do_core_logic("10.5", rootEnv)
 	if (exp.(*Float)).Value != 10.5 {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("\"ABC\"", root_env)
+	exp, _ = do_core_logic("\"ABC\"", rootEnv)
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("\"(A B C)\"", root_env)
+	exp, _ = do_core_logic("\"(A B C)\"", rootEnv)
 	if (exp.(*String)).Value != "(A B C)" {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("\"(\"", root_env)
+	exp, _ = do_core_logic("\"(\"", rootEnv)
 	if (exp.(*String)).Value != "(" {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("\"  a  \"", root_env)
+	exp, _ = do_core_logic("\"  a  \"", rootEnv)
 	if (exp.(*String)).Value != "  a  " {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("#t", root_env)
+	exp, _ = do_core_logic("#t", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("#f", root_env)
+	exp, _ = do_core_logic("#f", rootEnv)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: atom")
 	}
-	exp, _ = do_core_logic("(+ 1 1.5 1.25)", root_env)
+	exp, _ = do_core_logic("(+ 1 1.5 1.25)", rootEnv)
 	if (exp.(*Float)).Value != 3.75 {
 		t.Fatal("failed test", (exp.(*Float)).Value)
 	}
-	exp, _ = do_core_logic("(- 3 1.5 0.25)", root_env)
+	exp, _ = do_core_logic("(- 3 1.5 0.25)", rootEnv)
 	if (exp.(*Float)).Value != 1.25 {
 		t.Fatal("failed test", (exp.(*Float)).Value)
 	}
-	exp, _ = do_core_logic("(* 2 0.5 1.25)", root_env)
+	exp, _ = do_core_logic("(* 2 0.5 1.25)", rootEnv)
 	if (exp.(*Float)).Value != 1.25 {
 		t.Fatal("failed test", (exp.(*Float)).Value)
 	}
-	exp, _ = do_core_logic("(/ 3 0.5 2)", root_env)
+	exp, _ = do_core_logic("(/ 3 0.5 2)", rootEnv)
 	if (exp.(*Float)).Value != 3 {
 		t.Fatal("failed test", (exp.(*Float)).Value)
 	}
-	exp, _ = do_core_logic("(modulo 18 12)", root_env)
+	exp, _ = do_core_logic("(modulo 18 12)", rootEnv)
 	if (exp.(*Integer)).Value != 6 {
 		t.Fatal("failed test", (exp.(*Integer)).Value)
 	}
-	exp, _ = do_core_logic("(> 3 0.5)", root_env)
+	exp, _ = do_core_logic("(> 3 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: >")
 	}
-	exp, _ = do_core_logic("(>= 3 0.5)", root_env)
+	exp, _ = do_core_logic("(>= 3 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: >=")
 	}
-	exp, _ = do_core_logic("(>= 0.5 0.5)", root_env)
+	exp, _ = do_core_logic("(>= 0.5 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: >=")
 	}
-	exp, _ = do_core_logic("(< 0.25 0.5)", root_env)
+	exp, _ = do_core_logic("(< 0.25 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: <")
 	}
-	exp, _ = do_core_logic("(<= 0.25 0.5)", root_env)
+	exp, _ = do_core_logic("(<= 0.25 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: <=")
 	}
-	exp, _ = do_core_logic("(<= 0.5 0.5)", root_env)
+	exp, _ = do_core_logic("(<= 0.5 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: <=")
 	}
-	exp, _ = do_core_logic("(= 0.75 0.75)", root_env)
+	exp, _ = do_core_logic("(= 0.75 0.75)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: =")
 	}
-	exp, _ = do_core_logic("(not (= 0.75 0.75))", root_env)
+	exp, _ = do_core_logic("(not (= 0.75 0.75))", rootEnv)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: not")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< a c)))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< a c)))", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: and")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< c a)))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< c a)))", rootEnv)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: and")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (or (= a b)(< b c)))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (or (= a b)(< b c)))", rootEnv)
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: or")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (or (= c a)(< c b)))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20)(c 30)) (or (= c a)(< c b)))", rootEnv)
 	if (exp.(*Boolean)).Value != false {
 		t.Fatal("failed test: or")
 	}
-	exp, _ = do_core_logic("(force ((lambda (a) (delay (* 10 a))) 3))", root_env)
-	if !check_logic_int(exp, 30) {
+	exp, _ = do_core_logic("(force ((lambda (a) (delay (* 10 a))) 3))", rootEnv)
+	if !checkLogicInt(exp, 30) {
 		t.Fatal("failed test: force, delay")
 	}
-	exp, _ = do_core_logic("(identity 100)", root_env)
-	if !check_logic_int(exp, 100) {
+	exp, _ = do_core_logic("(identity 100)", rootEnv)
+	if !checkLogicInt(exp, 100) {
 		t.Fatal("failed test: identity")
 	}
-	exp, _ = do_core_logic("(identity \"ABC\")", root_env)
+	exp, _ = do_core_logic("(identity \"ABC\")", rootEnv)
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: identity")
 	}
-	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (- 1 (k 2)))))", root_env)
-	if !check_logic_int(exp, 6) {
+	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (- 1 (k 2)))))", rootEnv)
+	if !checkLogicInt(exp, 6) {
 		t.Fatal("failed test: call/cc")
 	}
-	do_core_logic("(define hoge (lambda (a b) a))", root_env)
-	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (hoge 1 (k 2)))))", root_env)
-	if !check_logic_int(exp, 6) {
+	do_core_logic("(define hoge (lambda (a b) a))", rootEnv)
+	exp, _ = do_core_logic("(* 3 (call/cc (lambda (k)  (hoge 1 (k 2)))))", rootEnv)
+	if !checkLogicInt(exp, 6) {
 		t.Fatal("failed test: call/cc")
 	}
-	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", root_env)
-	if !check_logic_int(exp, 9) {
+	exp, _ = do_core_logic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", rootEnv)
+	if !checkLogicInt(exp, 9) {
 		t.Fatal("failed test: call/cc")
 	}
-	exp, _ = do_core_logic("(call/cc (lambda (k) 10))", root_env)
-	if !check_logic_int(exp, 10) {
+	exp, _ = do_core_logic("(call/cc (lambda (k) 10))", rootEnv)
+	if !checkLogicInt(exp, 10) {
 		t.Fatal("failed test: call/cc")
 	}
 
-	exp, _ = do_core_logic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", root_env)
-	if !check_logic_int(exp, 6) {
+	exp, _ = do_core_logic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", rootEnv)
+	if !checkLogicInt(exp, 6) {
 		t.Fatal("failed test: force, call/cc")
 	}
 
-	exp, _ = do_core_logic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", root_env)
-	if !check_logic_int(exp, 3) {
+	exp, _ = do_core_logic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", rootEnv)
+	if !checkLogicInt(exp, 3) {
 		t.Fatal("failed test: call/cc")
 	}
-	exp, _ = do_core_logic("(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", root_env)
-	exp, _ = do_core_logic("(foo)", root_env)
-	if !check_logic_int(exp, 11) {
+	exp, _ = do_core_logic("(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", rootEnv)
+	exp, _ = do_core_logic("(foo)", rootEnv)
+	if !checkLogicInt(exp, 11) {
 		t.Fatal("failed test: nested define")
 	}
-	exp, _ = do_core_logic("(define a 100)", root_env)
-	exp, _ = do_core_logic("a", root_env)
-	if !check_logic_int(exp, 100) {
+	exp, _ = do_core_logic("(define a 100)", rootEnv)
+	exp, _ = do_core_logic("a", rootEnv)
+	if !checkLogicInt(exp, 100) {
 		t.Fatal("failed test: simple define")
 	}
-	exp, _ = do_core_logic("(define\ta\t200)", root_env)
-	exp, _ = do_core_logic("a", root_env)
-	if !check_logic_int(exp, 200) {
+	exp, _ = do_core_logic("(define\ta\t200)", rootEnv)
+	exp, _ = do_core_logic("a", rootEnv)
+	if !checkLogicInt(exp, 200) {
 		t.Fatal("failed test: tab define")
 	}
-	exp, _ = do_core_logic("(define\na\n300)", root_env)
-	exp, _ = do_core_logic("a", root_env)
-	if !check_logic_int(exp, 300) {
+	exp, _ = do_core_logic("(define\na\n300)", rootEnv)
+	exp, _ = do_core_logic("a", rootEnv)
+	if !checkLogicInt(exp, 300) {
 		t.Fatal("failed test: newline define")
 	}
-	exp, _ = do_core_logic("(define\r\na\r\n400)", root_env)
-	exp, _ = do_core_logic("a", root_env)
-	if !check_logic_int(exp, 400) {
+	exp, _ = do_core_logic("(define\r\na\r\n400)", rootEnv)
+	exp, _ = do_core_logic("a", rootEnv)
+	if !checkLogicInt(exp, 400) {
 		t.Fatal("failed test: newline define")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", rootEnv)
 	if (exp.(*String)).Value != "ok" {
 		t.Fatal("failed test: cond")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", rootEnv)
 	if (exp.(*String)).Value != "ng" {
 		t.Fatal("failed test: cond")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", rootEnv)
 	if (exp.(*String)).Value != "sankaku" {
 		t.Fatal("failed test: cond")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) #t)))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(cond ((= a b) #t)))", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20))(if (= a b) #t))", root_env)
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(if (= a b) #t))", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
 	}
-	exp, _ = do_core_logic("(quote a)", root_env)
+	exp, _ = do_core_logic("(quote a)", rootEnv)
 	if _, ok := exp.(*Symbol); !ok {
 		t.Fatal("failed test: quote")
 	}
-	exp, _ = do_core_logic("(quote (a b c))", root_env)
+	exp, _ = do_core_logic("(quote (a b c))", rootEnv)
 	if _, ok := exp.(*List); !ok {
 		t.Fatal("failed test: quote")
 	}
-	exp, _ = do_core_logic("(let ((a 10)(b 20))(+ a b)(* a b))", root_env)
-	if !check_logic_int(exp, 200) {
+	exp, _ = do_core_logic("(let ((a 10)(b 20))(+ a b)(* a b))", rootEnv)
+	if !checkLogicInt(exp, 200) {
 		t.Fatal("failed test: call/cc")
 	}
-	exp, _ = do_core_logic("#\\tab", root_env)
+	exp, _ = do_core_logic("#\\tab", rootEnv)
 	if (exp.(*Char)).Value != 0x09 {
 		t.Fatal("failed test: char tab")
 	}
-	exp, _ = do_core_logic("#\\space", root_env)
+	exp, _ = do_core_logic("#\\space", rootEnv)
 	if (exp.(*Char)).Value != 0x20 {
 		t.Fatal("failed test: char space")
 	}
-	exp, _ = do_core_logic("#\\newline", root_env)
+	exp, _ = do_core_logic("#\\newline", rootEnv)
 	if (exp.(*Char)).Value != 0x0A {
 		t.Fatal("failed test: char newline")
 	}
-	exp, _ = do_core_logic("#\\return", root_env)
+	exp, _ = do_core_logic("#\\return", rootEnv)
 	if (exp.(*Char)).Value != 0x0D {
 		t.Fatal("failed test: char return")
 	}
-	exp, _ = do_core_logic("#\\A", root_env)
+	exp, _ = do_core_logic("#\\A", rootEnv)
 	if (exp.(*Char)).Value != 0x41 {
 		t.Fatal("failed test: char A")
 	}
 }
-func Test_err_case(t *testing.T) {
+func TestErrCase(t *testing.T) {
 	var (
 		err error
 	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 
-	test_code := [][]string{
+	testCode := [][]string{
 		{"(", "E0001"},
 		{"(a (b", "E0002"},
 		{"(a))", "E0003"},
@@ -757,22 +757,22 @@ func Test_err_case(t *testing.T) {
 		{"(time)", "E1007"},
 		{"(time #\\abc)", "E0004"},
 	}
-	for _, e := range test_code {
-		_, err = do_core_logic(e[0], root_env)
-		if !check_error_code(err, e[1]) {
+	for _, e := range testCode {
+		_, err = do_core_logic(e[0], rootEnv)
+		if !checkErrorCode(err, e[1]) {
 			t.Fatal("failed test: " + e[0])
 		}
 	}
 	// Impossible absolute, But Program bug is except
-	_, err = eval(NewFunction(root_env, NewList(nil), nil), root_env)
-	if !check_error_code(err, "E1009") {
+	_, err = eval(NewFunction(rootEnv, NewList(nil), nil, "lambda"), rootEnv)
+	if !checkErrorCode(err, "E1009") {
 		t.Fatal("failed test: " + "E1009")
 	}
 }
-func Test_interactive(t *testing.T) {
-	var io_stub func(program string, ret string)
+func TestInteractive(t *testing.T) {
+	var iostub func(program string, ret string)
 
-	io_stub = func(program string, ret string) {
+	iostub = func(program string, ret string) {
 		inr, inw, _ := os.Pipe()
 		outr, outw, _ := os.Pipe()
 		errr, errw, _ := os.Pipe()
@@ -812,43 +812,50 @@ func Test_interactive(t *testing.T) {
 		}
 		t.Log(s)
 	}
-	io_stub("(+ 1 2.5)", "3.5")
-	io_stub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
-	io_stub("(define a 1)", "a")
-	io_stub("(= 10 10)", "#t")
-	io_stub("\"ABC\"", "\"ABC\"")
-	io_stub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
-	io_stub("(cons 1 2)", "(1 . 2)")
-	io_stub("(lambda (n m) (+ n m))", "Function:")
-	io_stub("+", "Operatotion or Builtin:")
-	io_stub("if", "Special Functon ex. if:")
-	io_stub("(delay 1)", "Promise:")
-	io_stub("#\\space", "#\\space")
-	io_stub("#\\newline", "#\\newline")
-	io_stub("#\\tab", "#\\tab")
-	io_stub("#\\return", "#\\return")
-	io_stub("#\\A", "#\\A")
+	iostub("(+ 1 2.5)", "3.5")
+	iostub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
+	iostub("(define a 1)", "a")
+	iostub("(= 10 10)", "#t")
+	iostub("\"ABC\"", "\"ABC\"")
+	iostub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
+	iostub("(cons 1 2)", "(1 . 2)")
+	iostub("(lambda (n m) (+ n m))", "Function:")
+	iostub("+", "Operatotion or Builtin:")
+	iostub("if", "Special Functon ex. if:")
+	iostub("(delay 1)", "Promise:")
+	iostub("#\\space", "#\\space")
+	iostub("#\\newline", "#\\newline")
+	iostub("#\\tab", "#\\tab")
+	iostub("#\\return", "#\\return")
+	iostub("#\\A", "#\\A")
 }
 
 //https://github.com/hidekuno/go-scheme/issues/46
-func Test_performance(t *testing.T) {
-
+func TestPerformance(t *testing.T) {
+	var (
+		exp Expression
+	)
 	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	rootEnv := NewSimpleEnv(nil, nil)
 
-	do_core_logic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 600)))", root_env)
-	do_core_logic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", root_env)
-	do_core_logic("(qsort test-list)", root_env)
-	do_core_logic("(qsort test-list)", root_env)
-	do_core_logic("(qsort test-list)", root_env)
-}
+	do_core_logic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 600)))", rootEnv)
+	do_core_logic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", rootEnv)
+	do_core_logic("(qsort test-list)", rootEnv)
+	do_core_logic("(qsort test-list)", rootEnv)
+	do_core_logic("(qsort test-list)", rootEnv)
 
-//https://github.com/hidekuno/go-scheme/issues/48
-func Test_performance2(t *testing.T) {
-	build_func()
-	root_env := NewSimpleEnv(nil, nil)
+	do_core_logic("(define (fact n result)(if (>= 1 n) result(fact (- n 1) (* result n))))", rootEnv)
+	exp, _ = do_core_logic("(fact 5 1)", rootEnv)
+	if !checkLogicInt(exp, 120) {
+		t.Fatal("failed test: tail recursive")
+	}
+	exp, _ = do_core_logic("(let loop ((i 0)) (if (<= 1000000 i) i (loop (+ 1 i))))", rootEnv)
+	if !checkLogicInt(exp, 1000000) {
+		t.Fatal("failed test: tail recursive")
+	}
 
-	do_core_logic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 10000)))", root_env)
-	do_core_logic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", root_env)
-	do_core_logic("(qsort test-list)", root_env)
+	exp, _ = do_core_logic("(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 50 i) j k)(loop (+ 1 i) j k))))", rootEnv)
+	if !checkLogicInt(exp, 1000000) {
+		t.Fatal("failed test: tail recursive")
+	}
 }
