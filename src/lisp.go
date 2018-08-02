@@ -470,14 +470,16 @@ type Function struct {
 	ParamName List
 	Body      []Expression
 	Env       *SimpleEnv
+	Name      string
 }
 
-func NewFunction(parent *SimpleEnv, param *List, body []Expression) *Function {
-	fn := new(Function)
-	fn.ParamName = *param
-	fn.Body = body
-	fn.Env = NewSimpleEnv(parent, nil)
-	return fn
+func NewFunction(parent *SimpleEnv, param *List, body []Expression, name string) *Function {
+	self := new(Function)
+	self.ParamName = *param
+	self.Body = body
+	self.Env = NewSimpleEnv(parent, nil)
+	self.Name = name
+	return self
 }
 
 func (self *Function) Print() {
@@ -486,11 +488,13 @@ func (self *Function) Print() {
 
 // Bind lambda function' parameters.
 func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
-	local_env := Environment{}
-	idx := 0
+
 	if len(self.ParamName.Value) != len(values) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
 	}
+	saveEnv := self.Env
+	self.Env = NewSimpleEnv(self.Env, nil)
+	idx := 0
 	for _, i := range self.ParamName.Value {
 		if sym, ok := i.(*Symbol); ok {
 			if env != nil {
@@ -502,23 +506,29 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 					return k, nil
 				}
 
-				local_env[sym.Value] = v
+				self.Env.Regist(sym.Value, v)
 			} else {
-				local_env[sym.Value] = values[idx]
+				self.Env.Regist(sym.Value, values[idx])
 			}
 			idx = idx + 1
 		}
 	}
-	saveEnv := self.Env
-	self.Env = NewSimpleEnv(self.Env, &local_env)
 	var (
 		result Expression
 		err    error
 	)
 	for _, exp := range self.Body {
-		result, err = eval(exp, self.Env)
-		if err != nil {
-			return exp, err
+		if body, ok := exp.(*List); ok && self.Name != "lambda" {
+			evalTailRecursion(self.Env, body, self.Name, self.ParamName.Value)
+		}
+		for {
+			result, err = eval(exp, self.Env)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := result.(*TailRecursion); !ok {
+				break
+			}
 		}
 	}
 	// https://github.com/hidekuno/go-scheme/issues/46
@@ -530,19 +540,25 @@ type LetLoop struct {
 	Expression
 	ParamName List
 	Body      Expression
+	Name      string
 }
 
-func NewLetLoop(param *List, body Expression) *LetLoop {
+func NewLetLoop(param *List, body Expression, name string) *LetLoop {
 	let := new(LetLoop)
 	let.ParamName = *param
 	let.Body = body
+	let.Name = name
 	return let
 }
 
 func (self *LetLoop) Print() {
 	fmt.Print("Let Macro: ", self)
 }
+
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
+
+	body := self.Body.(*List)
+	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
 
 	for i, c := range self.ParamName.Value {
 		pname := c.(*Symbol)
@@ -551,9 +567,16 @@ func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error)
 			return nil, err
 		}
 		(*env).Set(pname.Value, data)
-
 	}
-	return eval(self.Body, env)
+	for {
+		ret, err := eval(body, env)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := ret.(*TailRecursion); !ok {
+			return ret, nil
+		}
+	}
 }
 
 type Promise struct {
@@ -596,6 +619,73 @@ func NewNil() *Nil {
 }
 func (self *Nil) Print() {
 	fmt.Print("nil")
+}
+
+type TailRecursion struct {
+	Expression
+	param    []Expression
+	nameList []Expression
+}
+
+func NewTailRecursion(param []Expression, nameList []Expression) *TailRecursion {
+	self := new(TailRecursion)
+	self.param = param
+	self.nameList = nameList
+	return self
+}
+
+func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
+
+	values := make([]Expression, 0, 8)
+	for i, _ := range self.nameList {
+		v, err := eval(self.param[i], env)
+		if err != nil {
+			return nil, err
+		}
+		if k, ok := v.(*Continuation); ok {
+			return k, nil
+		}
+		values = append(values, v)
+	}
+
+	for i, c := range self.nameList {
+		pname := c.(*Symbol)
+		(*env).Set(pname.Value, values[i])
+	}
+	return self, nil
+}
+
+func (self *TailRecursion) Print() {
+	fmt.Print("TailRecursion", self)
+}
+
+func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) error {
+
+	if len(body.Value) == 0 {
+		return nil
+	}
+	v := body.Value
+	for i := 0; i < len(body.Value); i += 1 {
+		if l, ok := v[i].(*List); ok {
+			if sym, ok := l.Value[0].(*Symbol); ok {
+				proc, err := eval(l.Value[0], env)
+				if err != nil {
+					return err
+				}
+				if let, ok := proc.(*LetLoop); ok && label == let.Name {
+					v[i] = NewTailRecursion(l.Value[1:], nameList)
+					continue
+				} else if fn, ok := proc.(*Function); ok && fn.Name != "lambda" && label == fn.Name {
+					v[i] = NewTailRecursion(l.Value[1:], nameList)
+					continue
+				}
+				if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
+					evalTailRecursion(env, l, label, nameList)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // lex support  for  string
@@ -807,6 +897,10 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			// execute
 			return fn.Execute(env, v[1:])
 		}
+	} else if _, ok := sexp.(*Nil); ok {
+		return sexp, nil
+	} else if te, ok := sexp.(*TailRecursion); ok {
+		return te.SetParam(env)
 	}
 	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
@@ -1340,7 +1434,7 @@ func build_func() {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
 			}
 			key = l.Value[0].(*Symbol)
-			exp = NewFunction(env, NewList(l.Value[1:]), v[1:])
+			exp = NewFunction(env, NewList(l.Value[1:]), v[1:], key.Value)
 		} else {
 			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
 		}
@@ -1356,7 +1450,7 @@ func build_func() {
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(v[0]).String())
 		}
-		return NewFunction(env, l, v[1:]), nil
+		return NewFunction(env, l, v[1:], "lambda"), nil
 	}
 	special_func["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) != 2 {
@@ -1419,7 +1513,7 @@ func build_func() {
 			local_env[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body]))
+			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body], letsym.Value))
 		}
 
 		nse := NewSimpleEnv(env, &local_env)
