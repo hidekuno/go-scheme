@@ -12,10 +12,10 @@ import (
 	"time"
 )
 
-func build_go_func() {
-	special_func["go-append"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		finish_ch := make(chan bool, 2)
-		var append_list []Expression
+func buildGoFunc() {
+	specialFuncTbl["go-append"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		finish := make(chan bool, 2)
+		var result []Expression
 		var exp1 Expression
 		var exp2 Expression
 
@@ -24,32 +24,32 @@ func build_go_func() {
 			exp1, _ = eval(v[0], env)
 			t1 := time.Now()
 			fmt.Println("go-1", t1.Sub(t0))
-			finish_ch <- true
+			finish <- true
 		}()
 		go func() {
 			t0 := time.Now()
 			exp2, _ = eval(v[1], env)
 			t1 := time.Now()
 			fmt.Println("go-2", t1.Sub(t0))
-			finish_ch <- true
+			finish <- true
 		}()
-		<-finish_ch
-		<-finish_ch
-		append_list = append(append_list, (exp1.(*List)).Value...)
-		append_list = append(append_list, (exp2.(*List)).Value...)
-		return NewList(append_list), nil
+		<-finish
+		<-finish
+		result = append(result, (exp1.(*List)).Value...)
+		result = append(result, (exp2.(*List)).Value...)
+		return NewList(result), nil
 	}
-	special_func["test-list"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["test-list"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		time.Sleep(5 * time.Second)
-		var append_list []Expression
-		return NewList(append_list), nil
+		var result []Expression
+		return NewList(result), nil
 	}
 }
 
 // Main
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	build_func()
-	build_go_func()
-	do_interactive()
+	buildFunc()
+	buildGoFunc()
+	doInteractive()
 }
