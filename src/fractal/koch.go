@@ -10,7 +10,7 @@ import (
 	"math"
 )
 
-func CreateKoch(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
+func CreateKoch(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 
 	cos60 := math.Cos((math.Pi * 60) / 180)
 	sin60 := math.Sin((math.Pi * 60) / 180)
@@ -33,7 +33,7 @@ func CreateKoch(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
 			draw(xb, yb, x1, y1, c-1)
 
 		} else {
-			draw_line(x0, y0, x1, y1)
+			drawLine(x0, y0, x1, y1)
 		}
 	}
 	return func() {

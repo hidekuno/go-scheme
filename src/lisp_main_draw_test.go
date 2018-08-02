@@ -12,31 +12,31 @@ import (
 	"testing"
 )
 
-func run_draw_app()                               {}
-func draw_clear()                                 {}
-func draw_line_reentrant_lisp(x0, y0, x1, y1 int) {}
-func draw_imagefile(filename string)              {}
+func runDrawApp()                     {}
+func drawLineLisp(x0, y0, x1, y1 int) {}
+func drawClear()                      {}
+func drawImageFile(filename string)   {}
 
 func TestDraw(t *testing.T) {
 	var (
 		exp Expression
 	)
-	build_func()
+	buildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
-	build_gtk_func()
-	exp, _ = do_core_logic("(draw-init)", rootEnv)
+	buildGtkFunc()
+	exp, _ = doCoreLogic("(draw-init)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-init")
 	}
-	exp, _ = do_core_logic("(draw-clear)", rootEnv)
+	exp, _ = doCoreLogic("(draw-clear)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-clear")
 	}
-	exp, _ = do_core_logic("(draw-line 100 100 200 200)", rootEnv)
+	exp, _ = doCoreLogic("(draw-line 100 100 200 200)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-line")
 	}
-	exp, _ = do_core_logic("(draw-imagefile \"./images/duke.png\")", rootEnv)
+	exp, _ = doCoreLogic("(draw-imagefile \"./images/duke.png\")", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-imagefile")
 	}
@@ -51,7 +51,7 @@ func TestDraw(t *testing.T) {
 		{"(draw-imagefile #t)", "E1003"},
 	}
 	for _, e := range testCode {
-		_, err := do_core_logic(e[0], rootEnv)
+		_, err := doCoreLogic(e[0], rootEnv)
 		if err.(*RuntimeError).MsgCode != e[1] {
 			t.Fatal("failed test: " + e[0])
 		}

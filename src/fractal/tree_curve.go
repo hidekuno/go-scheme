@@ -10,7 +10,7 @@ import (
 	"math"
 )
 
-func CreateTree(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
+func CreateTree(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 
 	cs := math.Cos((math.Pi * 15) / 180)
 	sn := math.Sin((math.Pi * 45) / 180)
@@ -19,7 +19,7 @@ func CreateTree(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
 
 	draw = func(x0, y0, x1, y1, c int) {
 
-		draw_line(x0, y0, x1, y1)
+		drawLine(x0, y0, x1, y1)
 		ya := y1 + int(sn*float64(x1-x0)*alpha+cs*float64(y1-y0)*alpha)
 		xa := x1 + int(cs*float64(x1-x0)*alpha-sn*float64(y1-y0)*alpha)
 
@@ -27,8 +27,8 @@ func CreateTree(scale int, draw_line func(x0, y0, x1, y1 int)) func() {
 		xb := x1 + int(cs*float64(x1-x0)*alpha+sn*float64(y1-y0)*alpha)
 
 		if 0 >= c {
-			draw_line(x1, y1, xa, ya)
-			draw_line(x1, y1, xb, yb)
+			drawLine(x1, y1, xa, ya)
+			drawLine(x1, y1, xb, yb)
 		} else {
 			draw(x1, y1, xa, ya, c-1)
 			draw(x1, y1, xb, yb, c-1)
