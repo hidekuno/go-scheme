@@ -1307,6 +1307,28 @@ func buildFunc() {
 		}
 		return listFunc(lambda, exp...)
 	}
+	builtinFuncTbl["for-each"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+
+		fn, ok := exp[0].(*Function)
+		if !ok {
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
+		}
+		l, ok := exp[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+		}
+		param := make([]Expression, 1)
+		for _, param[0] = range l.Value {
+			_, err := fn.Execute(nil, param)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return NewNil(), nil
+	}
 	builtinFuncTbl["filter"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
