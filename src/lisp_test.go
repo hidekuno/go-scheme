@@ -322,6 +322,12 @@ func TestListFunc(t *testing.T) {
 	if len((exp.(*List)).Value) != 0 {
 		t.Fatal("failed test: ()")
 	}
+	doCoreLogic("(define cnt 0)", rootEnv)
+	doCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
+	exp, _ = doCoreLogic("cnt", rootEnv)
+	if !checkLogicInt(exp, 5) {
+		t.Fatal("failed test: reduce")
+	}
 }
 func TestBasicOperation(t *testing.T) {
 	var (
