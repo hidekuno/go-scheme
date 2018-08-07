@@ -6,7 +6,7 @@
   (lambda (frame)
     (for-each
      (lambda (segment)
-       (draw-line2
+       (draw-line-from-point
         ((frame-coord-map frame) (start-segment segment))
         ((frame-coord-map frame) (end-segment segment))))
      segment-list)))
@@ -43,7 +43,7 @@
                      (make-vect 1.0 1.0)
                      (make-vect 0.0 0.0)))
 
-(define (squash-inwards painter painter)
+(define (squash-inwards painter)
   (transform-painter painter
                      (make-vect 0.0 0.0)
                      (make-vect 0.65 0.35)

@@ -19,5 +19,5 @@
 		     (make-segment(make-point 0.5 0.7)   (make-point 0.4 1))
                   ))
 (define wave (segments->painter segments))
-(define draw-line2 (lambda (p1 p2) (draw-line (* (x-point p1) 300)(* (y-point p1) 200)(* (x-point p2) 300)(* (y-point p2) 200))))
+(define draw-line-from-point (lambda (p1 p2) (draw-line (* (x-point p1) 600)(* (y-point p1) 400)(* (x-point p2) 600)(* (y-point p2) 400))))
 ((square-limit wave 4) frame)
