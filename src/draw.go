@@ -63,7 +63,8 @@ func buildGtkApp() {
 		gdkwin.Invalidate(nil, false)
 	}
 	drawImageFile = func(filename string) {
-		pixbuf, err := gdkpixbuf.NewPixbufFromFile(filename)
+
+		pixbuf, err := gdkpixbuf.NewPixbufFromFileAtScale(filename, -1, -1, true)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
