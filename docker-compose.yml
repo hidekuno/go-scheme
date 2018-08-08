@@ -1,0 +1,12 @@
+---
+goscheme:
+  build: .
+  dockerfile: docker/Dockerfile
+  expose:
+    - 80
+  ports:
+    - 8009:80
+  stdin_open: true
+  environment:
+    - "TZ=Japan"
+  container_name: go-scheme
