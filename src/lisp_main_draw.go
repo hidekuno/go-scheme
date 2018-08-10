@@ -12,9 +12,17 @@ import (
 	"strconv"
 )
 
+var (
+	execFinished = false
+)
+
 func buildGtkFunc() {
+	errorMsg["E2001"] = "Aleady Gtk Init"
 
 	specialFuncTbl["draw-init"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if execFinished == true {
+			return nil, NewRuntimeError("E2001")
+		}
 		go runDrawApp()
 
 		specialFuncTbl["draw-clear"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
@@ -54,6 +62,7 @@ func buildGtkFunc() {
 			}
 			return NewNil(), nil
 		}
+		execFinished = true
 		return NewNil(), nil
 	}
 }
