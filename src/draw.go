@@ -63,12 +63,12 @@ func buildGtkApp() {
 		gdkwin.Invalidate(nil, false)
 	}
 	drawImageFile = func(filename string) {
-
-		pixbuf, err := gdkpixbuf.NewPixbufFromFileAtScale(filename, -1, -1, true)
+		pixbuf, err := gdkpixbuf.NewPixbufFromFile(filename)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
+		pixbuf = pixbuf.ScaleSimple(100, 100, gdkpixbuf.INTERP_HYPER).RotateSimple(gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE)
 		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
 		gdkwin.Invalidate(nil, false)
 		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
@@ -157,16 +157,31 @@ func buildGtkApp() {
 	submenu = gtk.NewMenu()
 	cascademenu.SetSubmenu(submenu)
 
-	menuitem = gtk.NewMenuItemWithMnemonic("_Duke")
+	menuitem = gtk.NewMenuItemWithMnemonic("_SICP")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/duke.png")
+		orig_pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/ch2-Z-G-30.gif")
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
-		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+		type ImageSample struct {
+			Scale int
+			Angle gdkpixbuf.PixbufRotation
+		}
+		samples := []ImageSample{
+			{180, gdkpixbuf.PIXBUF_ROTATE_NONE},
+			{90, gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE},
+			{45, gdkpixbuf.PIXBUF_ROTATE_UPSIDEDOWN},
+			{22, gdkpixbuf.PIXBUF_ROTATE_CLOCKWISE},
+			{11, gdkpixbuf.PIXBUF_ROTATE_NONE},
+		}
+		w, h := 0, 0
+		for _, rec := range samples {
+			pixbuf := orig_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
+			gdkwin.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			w, h = w+pixbuf.GetWidth(), h+pixbuf.GetHeight()
+		}
 	})
 	submenu.Append(menuitem)
 
