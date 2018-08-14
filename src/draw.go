@@ -160,7 +160,7 @@ func buildGtkApp() {
 	menuitem = gtk.NewMenuItemWithMnemonic("_SICP")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		orig_pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/ch2-Z-G-30.gif")
+		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/ch2-Z-G-30.gif")
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -171,14 +171,14 @@ func buildGtkApp() {
 		}
 		samples := []ImageSample{
 			{180, gdkpixbuf.PIXBUF_ROTATE_NONE},
-			{90, gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE},
-			{45, gdkpixbuf.PIXBUF_ROTATE_UPSIDEDOWN},
-			{22, gdkpixbuf.PIXBUF_ROTATE_CLOCKWISE},
-			{11, gdkpixbuf.PIXBUF_ROTATE_NONE},
+			{120, gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE},
+			{80, gdkpixbuf.PIXBUF_ROTATE_UPSIDEDOWN},
+			{52, gdkpixbuf.PIXBUF_ROTATE_CLOCKWISE},
+			{34, gdkpixbuf.PIXBUF_ROTATE_NONE},
 		}
 		w, h := 0, 0
 		for _, rec := range samples {
-			pixbuf := orig_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
+			pixbuf := org_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
 			gdkwin.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
 			w, h = w+pixbuf.GetWidth(), h+pixbuf.GetHeight()
 		}
