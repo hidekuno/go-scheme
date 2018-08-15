@@ -29,6 +29,7 @@ const (
 var drawLineLisp func(x0, y0, x1, y1 int)
 var drawClear func()
 var drawImageFile func(filename string)
+var drawImage func(pixbuf *gdkpixbuf.Pixbuf)
 
 func buildGtkApp() {
 
@@ -68,7 +69,11 @@ func buildGtkApp() {
 			fmt.Println(err.Error())
 			return
 		}
-		pixbuf = pixbuf.ScaleSimple(100, 100, gdkpixbuf.INTERP_HYPER).RotateSimple(gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE)
+		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+		gdkwin.Invalidate(nil, false)
+		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+	}
+	drawImage = func(pixbuf *gdkpixbuf.Pixbuf) {
 		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
 		gdkwin.Invalidate(nil, false)
 		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
