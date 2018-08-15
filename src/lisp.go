@@ -54,6 +54,7 @@ var (
 		"E1012": "Not Cond Gramar",
 		"E1013": "Calculate A Division By Zero",
 		"E1014": "Not Found Program File",
+		"E1015": "Not String",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
