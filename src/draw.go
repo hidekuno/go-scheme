@@ -26,19 +26,20 @@ const (
 	SierpinskiMax = 16
 )
 
-var drawLineLisp func(x0, y0, x1, y1 int)
-var drawClear func()
-var drawImageFile func(filename string)
-var drawImage func(pixbuf *gdkpixbuf.Pixbuf)
-
-func buildGtkApp() {
+func buildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 
 	var (
 		pixmap *gdk.Pixmap
+		gdkwin *gdk.Window
 		fg     *gdk.GC
 		bg     *gdk.GC
-		gdkwin *gdk.Window
 	)
+	//--------------------------------------------------------
+	// Init etc...
+	//--------------------------------------------------------
+	gdk.ThreadsInit()
+	gtk.Init(nil)
+
 	win := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	win.SetTitle("scheme.go")
 	win.SetPosition(gtk.WIN_POS_CENTER)
@@ -53,31 +54,6 @@ func buildGtkApp() {
 	//--------------------------------------------------------
 	// GtkMenuBar
 	//--------------------------------------------------------
-	drawLineLisp = func(x0, y0, x1, y1 int) {
-		gdk.ThreadsEnter()
-		pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
-		gdkwin.Invalidate(nil, false)
-		gdk.ThreadsLeave()
-	}
-	drawClear = func() {
-		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		gdkwin.Invalidate(nil, false)
-	}
-	drawImageFile = func(filename string) {
-		pixbuf, err := gdkpixbuf.NewPixbufFromFile(filename)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
-		gdkwin.Invalidate(nil, false)
-		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
-	}
-	drawImage = func(pixbuf *gdkpixbuf.Pixbuf) {
-		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
-		gdkwin.Invalidate(nil, false)
-		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
-	}
 	var drawLineReEntrant = func(x0, y0, x1, y1 int) {
 		gdk.ThreadsEnter()
 		pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
@@ -232,14 +208,5 @@ func buildGtkApp() {
 	win.ShowAll()
 
 	gdkwin = canvas.GetWindow()
-
-}
-func runDrawApp() {
-
-	gdk.ThreadsInit()
-	gtk.Init(nil)
-
-	buildGtkApp()
-
-	gtk.Main()
+	return pixmap, gdkwin, fg, bg
 }

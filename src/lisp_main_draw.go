@@ -8,7 +8,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
+	"github.com/mattn/go-gtk/gtk"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -41,7 +43,7 @@ func (self *Image) RotateSimple180() *Image {
 	return NewImage(self.Value.RotateSimple(gdkpixbuf.PIXBUF_ROTATE_UPSIDEDOWN))
 }
 func (self *Image) RotateSimple270() *Image {
-	return NewImage(self.Value.RotateSimple(gdkpixbuf.PIXBUF_ROTATE_NONE))
+	return NewImage(self.Value.RotateSimple(gdkpixbuf.PIXBUF_ROTATE_CLOCKWISE))
 }
 
 func buildGtkFunc() {
@@ -53,10 +55,34 @@ func buildGtkFunc() {
 		if execFinished == true {
 			return nil, NewRuntimeError("E2001")
 		}
-		go runDrawApp()
+		pixmap, gdkwin, fg, bg := buildGtkApp()
+		go gtk.Main()
+
+		//--------------------------------------------------------
+		// Function for lisp
+		//--------------------------------------------------------
+		LispDrawLine := func(x0, y0, x1, y1 int) {
+			gdk.ThreadsEnter()
+			pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
+			gdkwin.Invalidate(nil, false)
+			gdk.ThreadsLeave()
+		}
+		LispDrawClear := func() {
+			gdk.ThreadsEnter()
+			pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
+			gdkwin.Invalidate(nil, false)
+			gdk.ThreadsLeave()
+		}
+		LispDrawImage := func(pixbuf *gdkpixbuf.Pixbuf, x, y int) {
+			gdk.ThreadsEnter()
+			pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, x, y, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			gdkwin.Invalidate(nil, false)
+			gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+			gdk.ThreadsLeave()
+		}
 
 		builtinFuncTbl["draw-clear"] = func(exp ...Expression) (Expression, error) {
-			drawClear()
+			LispDrawClear()
 			return NewNil(), nil
 		}
 		builtinFuncTbl["draw-line"] = func(exp ...Expression) (Expression, error) {
@@ -73,18 +99,7 @@ func buildGtkFunc() {
 					return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
-			drawLineLisp(point[0], point[1], point[2], point[3])
-			return NewNil(), nil
-		}
-		specialFuncTbl["draw-imagefile"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-			if len(v) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
-			}
-			if s, ok := v[0].(*String); ok {
-				drawImageFile(s.Value)
-			} else {
-				return nil, NewRuntimeError("E1003", reflect.TypeOf(v[0]).String())
-			}
+			LispDrawLine(point[0], point[1], point[2], point[3])
 			return NewNil(), nil
 		}
 		builtinFuncTbl["create-image-from-file"] = func(exp ...Expression) (Expression, error) {
@@ -101,14 +116,24 @@ func buildGtkFunc() {
 			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 		}
 		builtinFuncTbl["draw-image"] = func(exp ...Expression) (Expression, error) {
-			if len(exp) != 1 {
+			if len(exp) != 3 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			if img, ok := exp[0].(*Image); ok {
-				drawImage(img.Value)
-				return NewNil(), nil
+			img, ok := exp[0].(*Image)
+			if !ok {
+				return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
 			}
-			return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+			x, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+			}
+			y, ok := exp[2].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
+			}
+			LispDrawImage(img.Value, x.Value, y.Value)
+			return NewNil(), nil
+
 		}
 		builtinFuncTbl["scale-image"] = func(exp ...Expression) (Expression, error) {
 			if len(exp) != 3 {
