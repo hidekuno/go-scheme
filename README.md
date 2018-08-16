@@ -72,7 +72,7 @@ ok  	command-line-arguments	0.010s
 ```
 ### scheme グラフィックス単体
 ```
-[kunohi@centos7-dev-docker src]$ go test -v lisp_main_draw.go lisp_main_draw_test.go  lisp.go
+[kunohi@centos7-dev-docker src]$ go test -v lisp_main_draw.go draw.go lisp.go lisp_main_draw_test.go 
 === RUN   Test_draw
 --- PASS: Test_draw (0.00s)
 PASS
