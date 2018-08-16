@@ -1697,7 +1697,7 @@ func buildFunc() {
 		}
 		filename, ok := v[0].(*String)
 		if !ok {
-			return nil, NewRuntimeError("E1002", reflect.TypeOf(v[0]).String())
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(v[0]).String())
 		}
 
 		fd, err := os.Open(filename.Value)

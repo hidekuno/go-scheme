@@ -764,7 +764,7 @@ func TestErrCase(t *testing.T) {
 		{"(time #\\abc)", "E0004"},
 		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
 		{"(load-file)", "E1007"},
-		{"(load-file 10)", "E1002"},
+		{"(load-file 10)", "E1015"},
 		{"(load-file \"example/no.scm\")", "E1014"},
 	}
 	for _, e := range testCode {
