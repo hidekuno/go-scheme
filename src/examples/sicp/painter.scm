@@ -6,7 +6,7 @@
   (lambda (frame)
     (for-each
      (lambda (segment)
-       (draw-line-from-point
+       (draw-line-vect
         ((frame-coord-map frame) (start-segment segment))
         ((frame-coord-map frame) (end-segment segment))))
      segment-list)))
