@@ -15,7 +15,7 @@
         (v3 (make-vect 0.0 1.0))
         (v4 (make-vect 1.0 1.0)))
     (segments->painter (list (make-segment v1 v4)
-                             (mafke-segment v2 v3)))))
+                             (make-segment v2 v3)))))
 
 (define diamond
   (let ((v1 (make-vect 0.5 0.0))
