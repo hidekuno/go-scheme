@@ -7,11 +7,13 @@
 package main
 
 import (
+	"github.com/mattn/go-gtk/gtk"
 	"runtime"
 )
 
 // Main
 func main() {
 	runtime.GOMAXPROCS(1)
-	runDrawApp()
+	buildGtkApp()
+	gtk.Main()
 }

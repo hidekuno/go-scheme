@@ -26,18 +26,20 @@ const (
 	SierpinskiMax = 16
 )
 
-var drawLineLisp func(x0, y0, x1, y1 int)
-var drawClear func()
-var drawImageFile func(filename string)
-
-func buildGtkApp() {
+func buildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 
 	var (
 		pixmap *gdk.Pixmap
+		gdkwin *gdk.Window
 		fg     *gdk.GC
 		bg     *gdk.GC
-		gdkwin *gdk.Window
 	)
+	//--------------------------------------------------------
+	// Init etc...
+	//--------------------------------------------------------
+	gdk.ThreadsInit()
+	gtk.Init(nil)
+
 	win := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	win.SetTitle("scheme.go")
 	win.SetPosition(gtk.WIN_POS_CENTER)
@@ -52,26 +54,6 @@ func buildGtkApp() {
 	//--------------------------------------------------------
 	// GtkMenuBar
 	//--------------------------------------------------------
-	drawLineLisp = func(x0, y0, x1, y1 int) {
-		gdk.ThreadsEnter()
-		pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
-		gdkwin.Invalidate(nil, false)
-		gdk.ThreadsLeave()
-	}
-	drawClear = func() {
-		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		gdkwin.Invalidate(nil, false)
-	}
-	drawImageFile = func(filename string) {
-		pixbuf, err := gdkpixbuf.NewPixbufFromFile(filename)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
-		gdkwin.Invalidate(nil, false)
-		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
-	}
 	var drawLineReEntrant = func(x0, y0, x1, y1 int) {
 		gdk.ThreadsEnter()
 		pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
@@ -156,16 +138,31 @@ func buildGtkApp() {
 	submenu = gtk.NewMenu()
 	cascademenu.SetSubmenu(submenu)
 
-	menuitem = gtk.NewMenuItemWithMnemonic("_Duke")
+	menuitem = gtk.NewMenuItemWithMnemonic("_SICP")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/duke.png")
+		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/ch2-Z-G-30.gif")
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, 0, 0, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
-		gdkwin.GetDrawable().DrawDrawable(fg, pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
+		type ImageSample struct {
+			Scale int
+			Angle gdkpixbuf.PixbufRotation
+		}
+		samples := []ImageSample{
+			{180, gdkpixbuf.PIXBUF_ROTATE_NONE},
+			{120, gdkpixbuf.PIXBUF_ROTATE_COUNTERCLOCKWISE},
+			{80, gdkpixbuf.PIXBUF_ROTATE_UPSIDEDOWN},
+			{52, gdkpixbuf.PIXBUF_ROTATE_CLOCKWISE},
+			{34, gdkpixbuf.PIXBUF_ROTATE_NONE},
+		}
+		w, h := 0, 0
+		for _, rec := range samples {
+			pixbuf := org_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
+			gdkwin.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			w, h = w+pixbuf.GetWidth(), h+pixbuf.GetHeight()
+		}
 	})
 	submenu.Append(menuitem)
 
@@ -211,14 +208,5 @@ func buildGtkApp() {
 	win.ShowAll()
 
 	gdkwin = canvas.GetWindow()
-
-}
-func runDrawApp() {
-
-	gdk.ThreadsInit()
-	gtk.Init(nil)
-
-	buildGtkApp()
-
-	gtk.Main()
+	return pixmap, gdkwin, fg, bg
 }
