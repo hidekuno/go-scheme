@@ -1,5 +1,6 @@
-lisp
-draw
+lisp_main
+draw_main
+lisp_draw_main
 main.test
 lisp.cprof
 lisp.mprof
