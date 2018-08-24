@@ -4,7 +4,7 @@
 
    hidekuno@gmail.com
 */
-package main
+package scheme
 
 import (
 	"bufio"
@@ -53,6 +53,8 @@ var (
 		"E1011": "Not Enough List Length",
 		"E1012": "Not Cond Gramar",
 		"E1013": "Calculate A Division By Zero",
+		"E1014": "Not Found Program File",
+		"E1015": "Not String",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -557,6 +559,9 @@ func (self *LetLoop) Print() {
 
 func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
 
+	if len(self.ParamName.Value) != len(v) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	}
 	body := self.Body.(*List)
 	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
 
@@ -948,21 +953,28 @@ func countParenthesis(program string) bool {
 }
 
 // CUI desu.
-func doInteractive() {
-	program := make([]string, 0, 64)
-
-	prompt := PROMPT
-	reader := bufio.NewReaderSize(os.Stdin, MaxLineSize)
+func DoInteractive() {
 	rootEnv := NewSimpleEnv(nil, nil)
-	for {
-		fmt.Print(prompt + " ")
+	repl(os.Stdin, rootEnv)
+}
 
-		var line string
+// Read-eval-print loop
+func repl(stream *os.File, rootEnv *SimpleEnv) {
+	program := make([]string, 0, 64)
+	prompt := PROMPT
+	reader := bufio.NewReaderSize(stream, MaxLineSize)
+
+	for {
+		if stream == os.Stdin {
+			fmt.Print(prompt + " ")
+		}
 		b, _, err := reader.ReadLine()
-		line = string(b)
+		line := string(b)
 		if err == io.EOF {
 			break
 		} else if line == "" {
+			continue
+		} else if line[0] == ';' {
 			continue
 		} else if line == "(quit)" {
 			break
@@ -989,7 +1001,7 @@ func doInteractive() {
 }
 
 // Build Global environement.
-func buildFunc() {
+func BuildFunc() {
 	builtinFuncTbl = map[string]func(...Expression) (Expression, error){}
 	specialFuncTbl = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
 
@@ -1303,6 +1315,28 @@ func buildFunc() {
 			return append(vaList, result), nil
 		}
 		return listFunc(lambda, exp...)
+	}
+	builtinFuncTbl["for-each"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+
+		fn, ok := exp[0].(*Function)
+		if !ok {
+			return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
+		}
+		l, ok := exp[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+		}
+		param := make([]Expression, 1)
+		for _, param[0] = range l.Value {
+			_, err := fn.Execute(nil, param)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return NewNil(), nil
 	}
 	builtinFuncTbl["filter"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 2 {
@@ -1654,6 +1688,26 @@ func buildFunc() {
 		}
 		t1 := time.Now()
 		fmt.Println(t1.Sub(t0))
+		return NewNil(), nil
+	}
+	specialFuncTbl["load-file"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+
+		if len(v) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+		filename, ok := v[0].(*String)
+		if !ok {
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(v[0]).String())
+		}
+
+		fd, err := os.Open(filename.Value)
+		if os.IsNotExist(err) {
+			return nil, NewRuntimeError("E1014")
+		} else if err != nil {
+			panic(err)
+		}
+		repl(fd, env)
+		fd.Close()
 		return NewNil(), nil
 	}
 }
