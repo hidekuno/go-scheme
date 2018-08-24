@@ -22,7 +22,7 @@ Go言語手習いのため、Schemeの縮小版を実装した。
 ```
 GOARCH=amd64
 GOOS=linux
-GOPATH=/home/kunohi/go-scheme:/home/kunohi/go
+GOPATH=${HOME}/go-scheme:${HOME}/go
 ```
 
 ## その他
