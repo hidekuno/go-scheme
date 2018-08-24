@@ -9,11 +9,11 @@
 
    hidekuno@gmail.com
 */
-package main
+package draw
 
 import (
-	"./fractal"
 	"fmt"
+	"fractal"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
@@ -26,7 +26,7 @@ const (
 	SierpinskiMax = 16
 )
 
-func buildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
+func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 
 	var (
 		pixmap *gdk.Pixmap

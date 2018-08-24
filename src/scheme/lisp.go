@@ -4,7 +4,7 @@
 
    hidekuno@gmail.com
 */
-package main
+package scheme
 
 import (
 	"bufio"
@@ -953,7 +953,7 @@ func countParenthesis(program string) bool {
 }
 
 // CUI desu.
-func doInteractive() {
+func DoInteractive() {
 	rootEnv := NewSimpleEnv(nil, nil)
 	repl(os.Stdin, rootEnv)
 }
@@ -1001,7 +1001,7 @@ func repl(stream *os.File, rootEnv *SimpleEnv) {
 }
 
 // Build Global environement.
-func buildFunc() {
+func BuildFunc() {
 	builtinFuncTbl = map[string]func(...Expression) (Expression, error){}
 	specialFuncTbl = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
 
