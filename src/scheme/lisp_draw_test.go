@@ -2,23 +2,23 @@
    Go lang 4th study program.
    This is test program for mini scheme subset.
 
-   ex.) go test -v lisp_main_draw.go draw.go lisp.go lisp_main_draw_test.go
+   ex.) go test -v lisp_go draw.go lisp.go lisp_draw_test.go
 
    hidekuno@gmail.com
 */
-package main
+package scheme
 
 import (
 	"testing"
 )
 
 func TestDraw(t *testing.T) {
-	var (
-		exp Expression
-	)
-	buildFunc()
+
+	var exp Expression
+
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
-	buildGtkFunc()
+	BuildGtkFunc()
 
 	exp, _ = doCoreLogic("(draw-init)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
@@ -32,11 +32,11 @@ func TestDraw(t *testing.T) {
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-line")
 	}
-	exp, _ = doCoreLogic("(create-image-from-file \"images/ch2-Z-G-30.gif\")", rootEnv)
+	exp, _ = doCoreLogic("(create-image-from-file \"../images/ch2-Z-G-30.gif\")", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: create-image-from-file")
 	}
-	_, _ = doCoreLogic("(define img (create-image-from-file \"images/ch2-Z-G-30.gif\"))", rootEnv)
+	_, _ = doCoreLogic("(define img (create-image-from-file \"../images/ch2-Z-G-30.gif\"))", rootEnv)
 
 	exp, _ = doCoreLogic("(draw-image img 10 10)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
