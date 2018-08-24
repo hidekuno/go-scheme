@@ -6,7 +6,7 @@
 
    hidekuno@gmail.com
 */
-package main
+package scheme
 
 import (
 	"io/ioutil"
@@ -111,7 +111,7 @@ var (
 )
 
 func TestCheckFunclist(t *testing.T) {
-	buildFunc()
+	BuildFunc()
 	for key, _ := range builtinFuncTbl {
 		t.Log(key)
 	}
@@ -123,7 +123,7 @@ func TestLispSampleProgram(t *testing.T) {
 	var (
 		exp Expression
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 	for _, p := range program {
 		exp, _ = doCoreLogic(p, rootEnv)
@@ -223,7 +223,7 @@ func TestMathFunc(t *testing.T) {
 	var (
 		exp Expression
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	exp, _ = doCoreLogic("(sqrt 9)", rootEnv)
@@ -255,7 +255,7 @@ func TestListFunc(t *testing.T) {
 	var (
 		exp Expression
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	exp, _ = doCoreLogic("(list 1 2 3)", rootEnv)
@@ -322,12 +322,18 @@ func TestListFunc(t *testing.T) {
 	if len((exp.(*List)).Value) != 0 {
 		t.Fatal("failed test: ()")
 	}
+	doCoreLogic("(define cnt 0)", rootEnv)
+	doCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
+	exp, _ = doCoreLogic("cnt", rootEnv)
+	if !checkLogicInt(exp, 5) {
+		t.Fatal("failed test: reduce")
+	}
 }
 func TestBasicOperation(t *testing.T) {
 	var (
 		exp Expression
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	exp, _ = doCoreLogic("10", rootEnv)
@@ -551,7 +557,7 @@ func TestErrCase(t *testing.T) {
 	var (
 		err error
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	testCode := [][]string{
@@ -756,6 +762,10 @@ func TestErrCase(t *testing.T) {
 
 		{"(time)", "E1007"},
 		{"(time #\\abc)", "E0004"},
+		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
+		{"(load-file)", "E1007"},
+		{"(load-file 10)", "E1015"},
+		{"(load-file \"example/no.scm\")", "E1014"},
 	}
 	for _, e := range testCode {
 		_, err = doCoreLogic(e[0], rootEnv)
@@ -785,7 +795,7 @@ func TestInteractive(t *testing.T) {
 		os.Stdout = outw
 		os.Stderr = errw
 
-		doInteractive()
+		DoInteractive()
 
 		os.Stdin = orgStdin
 		os.Stdout = orgStdout
@@ -835,7 +845,7 @@ func TestPerformance(t *testing.T) {
 	var (
 		exp Expression
 	)
-	buildFunc()
+	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	doCoreLogic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 600)))", rootEnv)

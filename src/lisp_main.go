@@ -6,8 +6,12 @@
 */
 package main
 
+import "scheme"
+
 // Main
 func main() {
-	buildFunc()
-	doInteractive()
+
+	scheme.BuildFunc()
+
+	scheme.DoInteractive()
 }
