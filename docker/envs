@@ -1,2 +1,2 @@
-GOPATH=${HOME}/go
+GOPATH=${HOME}/go-scheme:${HOME}/go
 PATH=${GOPATH}/bin:$PATH
