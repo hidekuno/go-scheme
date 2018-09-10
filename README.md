@@ -5,7 +5,11 @@ Go言語によるScheme(subset版)の実装
 Go言語手習いのため、Schemeの縮小版を実装した。
 
 ## 完成度合い
-下記プログラムが動作するところまで確認した。
+- 簡単なプログラム(quick-sort, merge-sort, permutations,combination　等)が動くレベル 
+
+https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
+
+- 下記プログラムが動作するところまで確認した。
 
 ![image](https://user-images.githubusercontent.com/22115777/44436239-11406600-a5ef-11e8-9860-0b3f73350114.png)
 
