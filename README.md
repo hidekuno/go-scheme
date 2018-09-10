@@ -6,7 +6,6 @@ Go言語手習いのため、Schemeの縮小版を実装した。
 
 ## 完成度合い
 - 簡単なプログラム(quick-sort, merge-sort, permutations,combination　等)が動くレベル 
-
 https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
 
 - 下記プログラムが動作するところまで確認した。
