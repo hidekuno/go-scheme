@@ -4,7 +4,7 @@ Go言語によるScheme(subset版)の実装
 ## 概要
 Go言語手習いのため、Schemeの縮小版を実装した。
 
-## 機能
+## 完成度合い
 下記プログラムが動作するところまで確認した。
 
 ![image](https://user-images.githubusercontent.com/22115777/44436239-11406600-a5ef-11e8-9860-0b3f73350114.png)
