@@ -7,8 +7,11 @@
 package main
 
 import (
+	crand "crypto/rand"
 	"flag"
 	"fmt"
+	"math"
+	"math/big"
 	"math/rand"
 	"runtime"
 	"time"
@@ -73,6 +76,9 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
+
+	seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+	rand.Seed(seed.Int64())
 
 	data := make(Nums, TestDataCount)
 	for i, _ := range data {
