@@ -20,41 +20,41 @@ func TestDraw(t *testing.T) {
 	rootEnv := NewSimpleEnv(nil, nil)
 	BuildGtkFunc()
 
-	exp, _ = doCoreLogic("(draw-init)", rootEnv)
+	exp, _ = DoCoreLogic("(draw-init)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-init")
 	}
-	exp, _ = doCoreLogic("(draw-clear)", rootEnv)
+	exp, _ = DoCoreLogic("(draw-clear)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-clear")
 	}
-	exp, _ = doCoreLogic("(draw-line 100 100 200 200)", rootEnv)
+	exp, _ = DoCoreLogic("(draw-line 100 100 200 200)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-line")
 	}
-	exp, _ = doCoreLogic("(create-image-from-file \"../images/ch2-Z-G-30.gif\")", rootEnv)
+	exp, _ = DoCoreLogic("(create-image-from-file \"../../images/ch2-Z-G-30.gif\")", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: create-image-from-file")
 	}
-	_, _ = doCoreLogic("(define img (create-image-from-file \"../images/ch2-Z-G-30.gif\"))", rootEnv)
+	_, _ = DoCoreLogic("(define img (create-image-from-file \"../../images/ch2-Z-G-30.gif\"))", rootEnv)
 
-	exp, _ = doCoreLogic("(draw-image img 10 10)", rootEnv)
+	exp, _ = DoCoreLogic("(draw-image img 10 10)", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: draw-image")
 	}
-	exp, _ = doCoreLogic("(scale-image img 90 90)", rootEnv)
+	exp, _ = DoCoreLogic("(scale-image img 90 90)", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: draw-image")
 	}
-	exp, _ = doCoreLogic("(rotate90-image img)", rootEnv)
+	exp, _ = DoCoreLogic("(rotate90-image img)", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: rotate90-image")
 	}
-	exp, _ = doCoreLogic("(rotate180-image img)", rootEnv)
+	exp, _ = DoCoreLogic("(rotate180-image img)", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: rotate180-image")
 	}
-	exp, _ = doCoreLogic("(rotate270-image img)", rootEnv)
+	exp, _ = DoCoreLogic("(rotate270-image img)", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: rotate270-image")
 	}
@@ -90,7 +90,7 @@ func TestDraw(t *testing.T) {
 		{"(rotate270-image #t)", "E2003"},
 	}
 	for _, e := range testCode {
-		_, err := doCoreLogic(e[0], rootEnv)
+		_, err := DoCoreLogic(e[0], rootEnv)
 		if err.(*RuntimeError).MsgCode != e[1] {
 			t.Fatal("failed test: " + e[0])
 		}
