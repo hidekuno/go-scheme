@@ -38,7 +38,7 @@ func main() {
 	scheme.BuildFunc()
 	rootEnv = scheme.NewSimpleEnv(nil, nil)
 
-	http.HandleFunc("/", doLisp)
+	http.HandleFunc("/lisp", doLisp)
 
 	if err := http.ListenAndServe(":9000", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
