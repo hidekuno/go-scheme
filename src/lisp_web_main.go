@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	rootEnv *scheme.SimpleEnv
-	store   *sessions.CookieStore
+	rootEnvTbl map[string]*scheme.SimpleEnv
+	store      *sessions.CookieStore
 )
 
 const (
@@ -56,15 +56,16 @@ func doLisp(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	userInfo.UseCount++
-	session.Values[sessionVarName] = userInfo
-	session.Save(r, w)
 
 	// main proc
 	bufbody := new(bytes.Buffer)
 	bufbody.ReadFrom(r.Body)
+	e, err := scheme.DoCoreLogic(bufbody.String(), rootEnvTbl[userInfo.Name])
 
-	e, err := scheme.DoCoreLogic(bufbody.String(), rootEnv)
+	userInfo.UseCount++
+	session.Values[sessionVarName] = userInfo
+	session.Save(r, w)
+
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -106,6 +107,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		u, _ := loginInfo["user"].(string)
 		session.Values[sessionVarName] = &UserInfo{u, true, 0}
+		rootEnvTbl[u] = scheme.NewSimpleEnv(nil, nil)
 
 		if err := session.Save(r, w); err != nil {
 			log.Println(err)
@@ -125,6 +127,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userInfo.Authenticated = false
+	rootEnvTbl[userInfo.Name] = nil
 
 	session.Values[sessionVarName] = userInfo
 	session.Save(r, w)
@@ -142,9 +145,9 @@ func sessionInit() {
 // Main
 func main() {
 	scheme.BuildFunc()
-	rootEnv = scheme.NewSimpleEnv(nil, nil)
-
+	rootEnvTbl = map[string]*scheme.SimpleEnv{}
 	gob.Register(&UserInfo{})
+
 	sessionInit()
 
 	http.HandleFunc("/lisp", doLisp)
