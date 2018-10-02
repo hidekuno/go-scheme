@@ -96,7 +96,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	var loginInfo map[string]interface{}
 	err = json.Unmarshal(body[:length], &loginInfo)
 	if err != nil {
-		http.Error(w, "Server Error", http.StatusInternalServerError)
+		http.Error(w, "Json Parse Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -113,6 +113,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "OK")
 	} else {
 		http.Error(w, "Unauthorized Error", http.StatusUnauthorized)
 	}
@@ -132,6 +133,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	session.Values[sessionVarName] = userInfo
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "OK")
 }
 func sessionInit() {
 	// 乱数生成
