@@ -12,6 +12,8 @@ import (
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
+	"io"
+	"os"
 	"reflect"
 	"strconv"
 )
@@ -31,7 +33,10 @@ func NewImage(pixbuf *gdkpixbuf.Pixbuf) *Image {
 	return self
 }
 func (self *Image) Print() {
-	fmt.Print("Pixbuf: ", self)
+	self.Fprint(os.Stdout)
+}
+func (self *Image) Fprint(w io.Writer) {
+	fmt.Fprint(w, "Pixbuf: ", self)
 }
 func (self *Image) Scale(w, h int) *Image {
 	return NewImage(self.Value.ScaleSimple(w, h, gdkpixbuf.INTERP_HYPER))
