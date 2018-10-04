@@ -6,6 +6,7 @@ STACK_SIZE_MAX = 2048
 class OpCode(IntEnum):
 
     # stack operation
+    NOP                =  0,
     PUSH_INT           =  1,
     PUSH_DOUBLE        =  2,
     PUSH_STRING        =  3,
@@ -65,28 +66,28 @@ class SchemeVm:
         self.accumelator = 0
         self.pc = 0
         self.stack = [0] * STACK_SIZE_MAX
-        self.stack_pos = STACK_SIZE_MAX - 1
-        self.stack_ebp = self.stack_pos
+        self.sp = STACK_SIZE_MAX - 1
+        self.bp = self.sp
 
     def int_stack_write(self, ivalue):
         stack = self.stack
 
-        stack[ self.stack_pos ] = struct.unpack("i", ivalue)[0]
-        print(stack[ self.stack_pos ])
-        self.stack_pos -= 1
+        stack[ self.sp ] = struct.unpack("i", ivalue)[0]
+        print(stack[ self.sp ])
+        self.sp -= 1
 
         self.pc = self.pc + 1 + 4
 
     def int_add(self):
         stack = self.stack
 
-        stack[ self.stack_pos ] = 0
-        for i in (stack[self.stack_pos + 1 : self.stack_ebp + 1]):
-            stack[ self.stack_pos ] += i
+        stack[ self.sp ] = 0
+        for i in (stack[self.sp + 1 : self.bp + 1]):
+            stack[ self.sp ] += i
 
-        self.accumelator = self.stack[ self.stack_pos ]
-        self.stack_ebp = self.stack_pos
-        self.stack_pos -= self.stack_pos
+        self.accumelator = self.stack[ self.sp ]
+        self.bp = self.sp
+        self.sp -= self.sp
 
         self.pc = self.pc + 1
         
@@ -94,7 +95,7 @@ class SchemeVm:
         print(self.accumelator)
 
 def createInfo():
-    asmInfo = [OpCodeInfo("dummy", "", 0),
+    asmInfo = [OpCodeInfo("nop", "", 0),
                OpCodeInfo("push_int", "p", 1),
                OpCodeInfo("push_double", "p", 1),
                OpCodeInfo("push_string", "p", 1),
@@ -147,7 +148,7 @@ def execute(vm, byte_code,info):
         if (byte_code[vm.pc] == OpCode.ADD_INT):
             #print(info[byte_code[vm.pc]].nemonic)
             vm.int_add()
-            vm.print_accumelator()
+    vm.print_accumelator()
 
 # Main
 execute(SchemeVm(), b'\x01\x0a\x00\x00\x00\x01\x0b\x00\x00\x00\x09', createInfo())
