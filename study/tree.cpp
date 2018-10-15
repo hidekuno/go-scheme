@@ -1,4 +1,10 @@
-//g++ --std=c++11 tree.cpp -o tree
+/*
+   Go lang 2nd study program.
+   This is c++-11 sample
+   hidekuno@gmail.com
+
+   g++ --std=c++11 tree.cpp -o tree
+*/
 #include <list>
 #include <string>
 #include <iostream>
@@ -10,8 +16,9 @@
 #include <cstdio>
 #include <fstream>
 #include <stdexcept>
+
 extern "C" {
-#include "unistd.h"
+  #include "unistd.h"
 }
 
 using std::string;
