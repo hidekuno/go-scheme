@@ -13,6 +13,7 @@ import (
 	"net/http/cookiejar"
 	"strings"
 	"testing"
+	"time"
 )
 
 func doRequest(client *http.Client, method string, uri string, data ...string) (int, string) {
@@ -34,6 +35,12 @@ func doRequest(client *http.Client, method string, uri string, data ...string) (
 
 	res.Body.Close()
 	return res.StatusCode, strings.TrimRight(string(byteArray), "\n")
+}
+func TestStartServer(t *testing.T) {
+	go func() {
+		startService()
+	}()
+	time.Sleep(3)
 }
 func TestWebOperation(t *testing.T) {
 	result := ""
