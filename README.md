@@ -20,6 +20,7 @@ https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
 | Gtk+   | 2.24.31||
 | golang   | 1.9.4||
 | go-gtk | release-0.1|https://github.com/mattn/go-gtk|
+| gorilla/sessions|v1.1.2|https://github.com/gorilla/sessions|
 
 ## 変数
 ```

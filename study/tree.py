@@ -1,5 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#   Go lang 2nd study program.
+#   This is python sample
+#   hidekuno@gmail.com
+
 import sys
 import argparse
 DELIMITER_CHAR = '.'
