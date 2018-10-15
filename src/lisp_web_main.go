@@ -144,8 +144,8 @@ func sessionInit() {
 	store = sessions.NewCookieStore([]byte(strings.TrimRight(base32.StdEncoding.EncodeToString(b), "=")))
 }
 
-// Main
-func main() {
+// Start Service
+func startService() {
 	scheme.BuildFunc()
 	rootEnvTbl = map[string]*scheme.SimpleEnv{}
 	gob.Register(&UserInfo{})
@@ -159,4 +159,9 @@ func main() {
 	if err := http.ListenAndServe(":9000", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+}
+
+// Main
+func main() {
+	startService()
 }
