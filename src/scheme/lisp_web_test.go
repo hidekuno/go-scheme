@@ -40,7 +40,7 @@ func TestStartServer(t *testing.T) {
 	go func() {
 		StartWebService()
 	}()
-	time.Sleep(3)
+	time.Sleep(1 * time.Second)
 }
 func TestWebOperation(t *testing.T) {
 	result := ""
