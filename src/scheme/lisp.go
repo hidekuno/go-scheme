@@ -843,12 +843,10 @@ func atom(token string) (Atom, error) {
 	var (
 		atom Atom
 	)
-	ivalue, err := strconv.Atoi(token)
-	if err == nil {
+	if ivalue, err := strconv.Atoi(token); err == nil {
 		atom = NewInteger(ivalue)
 	} else {
-		fvalue, err := strconv.ParseFloat(token, 64)
-		if err == nil {
+		if fvalue, err := strconv.ParseFloat(token, 64); err == nil {
 			atom = NewFloat(fvalue)
 		} else {
 			switch token {
