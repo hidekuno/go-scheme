@@ -250,6 +250,18 @@ func TestMathFunc(t *testing.T) {
 	if exp.(*Float).Value != 2.0 {
 		t.Fatal("failed test: exp")
 	}
+	exp, _ = DoCoreLogic("(expt 2 0)", rootEnv)
+	if exp.(*Integer).Value != 1 {
+		t.Fatal("failed test: expt")
+	}
+	exp, _ = DoCoreLogic("(expt 2 1)", rootEnv)
+	if exp.(*Integer).Value != 2 {
+		t.Fatal("failed test: expt")
+	}
+	exp, _ = DoCoreLogic("(expt 2 3)", rootEnv)
+	if exp.(*Integer).Value != 8 {
+		t.Fatal("failed test: expt")
+	}
 }
 func TestListFunc(t *testing.T) {
 	var (
@@ -706,6 +718,11 @@ func TestErrCase(t *testing.T) {
 		{"(rand-integer 10.2)", "E1002"},
 		{"(rand-integer)", "E1007"},
 		{"(rand-integer 11 9)", "E1007"},
+
+		{"(expt 10)", "E1007"},
+		{"(expt 10 10 10)", "E1007"},
+		{"(expt 11.5 10)", "E1002"},
+		{"(expt 11 12.5)", "E1002"},
 
 		{"(if 10 1 2)", "E1001"},
 		{"(if (= 10 10))", "E1007"},
