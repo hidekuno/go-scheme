@@ -4,7 +4,7 @@
 
    hidekuno@gmail.com
 */
-package main
+package scheme
 
 import (
 	"bytes"
@@ -38,9 +38,9 @@ func doRequest(client *http.Client, method string, uri string, data ...string) (
 }
 func TestStartServer(t *testing.T) {
 	go func() {
-		startService()
+		StartWebService()
 	}()
-	time.Sleep(3)
+	time.Sleep(1 * time.Second)
 }
 func TestWebOperation(t *testing.T) {
 	result := ""
