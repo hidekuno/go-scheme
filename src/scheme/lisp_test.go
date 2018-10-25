@@ -348,6 +348,10 @@ func TestBasicOperation(t *testing.T) {
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: atom")
 	}
+	exp, _ = DoCoreLogic("\"AB\\\"C\"", rootEnv)
+	if (exp.(*String)).Value != "AB\\\"C" {
+		t.Fatal("failed test: atom")
+	}
 	exp, _ = DoCoreLogic("\"(A B C)\"", rootEnv)
 	if (exp.(*String)).Value != "(A B C)" {
 		t.Fatal("failed test: atom")
