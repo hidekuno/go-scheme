@@ -368,7 +368,7 @@ type String struct {
 
 func NewString(p string) *String {
 	v := new(String)
-	v.Value = strings.Replace(p, "\"", "", -1)
+	v.Value = p[1 : len(p)-1]
 	return v
 }
 
@@ -751,8 +751,10 @@ func tokenize(s string) []string {
 	for i, c := range s {
 		if stringMode {
 			if c == '"' {
-				token = append(token, s[from:i+1])
-				stringMode = false
+				if s[i-1] != '\\' {
+					token = append(token, s[from:i+1])
+					stringMode = false
+				}
 			}
 		} else {
 			if c == '"' {
