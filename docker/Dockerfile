@@ -10,5 +10,8 @@ ENV GOPATH ${HOME}/go
 ENV PATH ${GOPATH}/bin:$PATH
 RUN go get github.com/mattn/go-gtk/gtk
 RUN go install github.com/mattn/go-gtk/gtk
+RUN go get github.com/gorilla/sessions
+RUN go install github.com/gorilla/sessions
 WORKDIR $HOME
 RUN git clone https://github.com/hidekuno/go-scheme.git go-scheme
+ENV GOPATH ${HOME}/go-scheme:${HOME}/go
