@@ -1474,6 +1474,26 @@ func BuildFunc() {
 		}
 		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 	}
+	builtinFuncTbl["expt"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+
+		m, ok := exp[0].(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+		}
+		n, ok := exp[1].(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+		}
+
+		result := 1
+		for i := 0; i < n.Value; i++ {
+			result *= m.Value
+		}
+		return NewInteger(result), nil
+	}
 	// syntax keyword implements
 	specialFuncTbl["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		if len(v) < 2 {
