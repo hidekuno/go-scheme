@@ -160,7 +160,8 @@ func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 		w, h := 0, 0
 		for _, rec := range samples {
 			pixbuf := org_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
-			gdkwin.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			gdkwin.Invalidate(nil, false)
 			w, h = w+pixbuf.GetWidth(), h+pixbuf.GetHeight()
 		}
 	})
