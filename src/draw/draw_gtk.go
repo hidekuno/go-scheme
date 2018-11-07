@@ -141,7 +141,7 @@ func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 	menuitem = gtk.NewMenuItemWithMnemonic("_SICP")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile("./images/ch2-Z-G-30.gif")
+		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile("../images/ch2-Z-G-30.gif")
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -160,7 +160,8 @@ func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 		w, h := 0, 0
 		for _, rec := range samples {
 			pixbuf := org_pixbuf.ScaleSimple(rec.Scale, rec.Scale, gdkpixbuf.INTERP_HYPER).RotateSimple(rec.Angle)
-			gdkwin.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, w, h, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
+			gdkwin.Invalidate(nil, false)
 			w, h = w+pixbuf.GetWidth(), h+pixbuf.GetHeight()
 		}
 	})
