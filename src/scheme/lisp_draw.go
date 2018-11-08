@@ -60,7 +60,7 @@ func BuildGtkFunc() {
 		if execFinished == true {
 			return nil, NewRuntimeError("E2001")
 		}
-		pixmap, gdkwin, fg, bg := draw.BuildGtkApp()
+		pixmap, gdkwin, fg, bg := draw.BuildGtkApp("scheme.go")
 		go gtk.Main()
 
 		//--------------------------------------------------------
