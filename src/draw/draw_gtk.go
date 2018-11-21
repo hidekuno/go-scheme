@@ -26,7 +26,7 @@ const (
 	SierpinskiMax = 16
 )
 
-func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
+func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 
 	var (
 		pixmap *gdk.Pixmap
@@ -41,7 +41,7 @@ func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 	gtk.Init(nil)
 
 	win := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	win.SetTitle("scheme.go")
+	win.SetTitle(titleName)
 	win.SetPosition(gtk.WIN_POS_CENTER)
 	win.Connect("destroy", gtk.MainQuit)
 
@@ -111,7 +111,9 @@ func BuildGtkApp() (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 		gtk.MainQuit()
 	})
 	submenu.Append(menuitem)
-
+	if titleName == "scheme.go" {
+		menuitem.SetSensitive(false)
+	}
 	cascademenu = gtk.NewMenuItemWithMnemonic("_Fractal")
 	menubar.Append(cascademenu)
 	submenu = gtk.NewMenu()
