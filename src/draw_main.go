@@ -15,6 +15,6 @@ import (
 // Main
 func main() {
 	runtime.GOMAXPROCS(1)
-	draw.BuildGtkApp()
+	draw.BuildGtkApp("draw-demo")
 	gtk.Main()
 }
