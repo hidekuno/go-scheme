@@ -8,13 +8,17 @@ package scheme
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
 func BuildGoFunc() {
 	specialFuncTbl["go-append"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+		if len(v) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		}
+
 		finish := make(chan bool, 2)
-		var result []Expression
 		var exp1 Expression
 		var exp2 Expression
 
@@ -34,9 +38,7 @@ func BuildGoFunc() {
 		}()
 		<-finish
 		<-finish
-		result = append(result, (exp1.(*List)).Value...)
-		result = append(result, (exp2.(*List)).Value...)
-		return NewList(result), nil
+		return NewList(append((exp1.(*List)).Value, (exp2.(*List)).Value...)), nil
 	}
 	specialFuncTbl["test-list"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
 		time.Sleep(5 * time.Second)
