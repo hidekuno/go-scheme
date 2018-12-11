@@ -31,7 +31,7 @@ func BuildGoFunc() {
 		}()
 		go func() {
 			t0 := time.Now()
-			exp2, _ = eval(v[1], env)
+			exp2, _ = eval(v[1], copyEnv(env))
 			t1 := time.Now()
 			fmt.Println("go-2", t1.Sub(t0))
 			finish <- true
@@ -45,4 +45,18 @@ func BuildGoFunc() {
 		var result []Expression
 		return NewList(result), nil
 	}
+}
+
+// support for multi threading
+func copyEnv(env *SimpleEnv) *SimpleEnv {
+	env2 := NewSimpleEnv(nil, nil)
+	*(env2.EnvTable) = *(env.EnvTable)
+
+	for key, _ := range *(env2.EnvTable) {
+		proc := (*env2.EnvTable)[key]
+		if fn, ok := proc.(*Function); ok {
+			fn.Env = NewSimpleEnv(env, nil)
+		}
+	}
+	return env2
 }
