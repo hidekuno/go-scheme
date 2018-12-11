@@ -50,12 +50,12 @@ func BuildGoFunc() {
 // support for multi threading
 func copyEnv(env *SimpleEnv) *SimpleEnv {
 	env2 := NewSimpleEnv(nil, nil)
-	*(env2.EnvTable) = *(env.EnvTable)
 
-	for key, _ := range *(env2.EnvTable) {
-		proc := (*env2.EnvTable)[key]
-		if fn, ok := proc.(*Function); ok {
-			fn.Env = NewSimpleEnv(env, nil)
+	for key, _ := range *(env.EnvTable) {
+
+		if fn, ok := ((*env.EnvTable)[key]).(*Function); ok {
+			fn2 := NewFunction(env2, &fn.ParamName, fn.Body, fn.Name)
+			env2.Regist(key, fn2)
 		}
 	}
 	return env2
