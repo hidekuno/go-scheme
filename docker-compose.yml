@@ -3,9 +3,9 @@ goscheme:
   build: .
   dockerfile: docker/Dockerfile
   expose:
-    - 80
+    - 9000
   ports:
-    - 8009:80
+    - 9000:9000
   stdin_open: true
   environment:
     - "TZ=Japan"
