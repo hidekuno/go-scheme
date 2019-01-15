@@ -9,6 +9,7 @@ package main
 import (
 	"runtime"
 	"scheme"
+	"scheme/draw"
 )
 
 // Main
@@ -17,7 +18,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	scheme.BuildFunc()
-	scheme.BuildGtkFunc()
+	draw.BuildGtkFunc()
 
 	cui := make(chan bool)
 	go func() {

@@ -4,7 +4,7 @@
 
    hidekuno@gmail.com
 */
-package scheme
+package draw
 
 import (
 	"draw"
@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"scheme"
 	"strconv"
 )
 
@@ -23,7 +24,7 @@ var (
 )
 
 type Image struct {
-	Expression
+	scheme.Expression
 	Value *gdkpixbuf.Pixbuf
 }
 
@@ -52,13 +53,13 @@ func (self *Image) RotateSimple270() *Image {
 }
 
 func BuildGtkFunc() {
-	errorMsg["E2001"] = "Aleady Gtk Init"
-	errorMsg["E2002"] = "Cannot Read Image File"
-	errorMsg["E2003"] = "Not Image"
+	scheme.AddErrorMsg("E2001", "Aleady Gtk Init")
+	scheme.AddErrorMsg("E2002", "Cannot Read Image File")
+	scheme.AddErrorMsg("E2003", "Not Image")
 
-	specialFuncTbl["draw-init"] = func(env *SimpleEnv, exps []Expression) (Expression, error) {
+	draw_init := func(exp ...scheme.Expression) (scheme.Expression, error) {
 		if execFinished == true {
-			return nil, NewRuntimeError("E2001")
+			return nil, scheme.NewRuntimeError("E2001")
 		}
 		pixmap, gdkwin, fg, bg := draw.BuildGtkApp("scheme.go")
 		go gtk.Main()
@@ -86,106 +87,107 @@ func BuildGtkFunc() {
 			gdk.ThreadsLeave()
 		}
 
-		builtinFuncTbl["draw-clear"] = func(exp ...Expression) (Expression, error) {
+		scheme.AddBuiltInFunc("draw-clear", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			LispDrawClear()
-			return NewNil(), nil
-		}
-		builtinFuncTbl["draw-line"] = func(exp ...Expression) (Expression, error) {
+			return scheme.NewNil(), nil
+		})
+		scheme.AddBuiltInFunc("draw-line", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			var point [4]int
 			if len(exp) != 4 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			for i, e := range exp {
-				if p, ok := e.(*Integer); ok {
+				if p, ok := e.(*scheme.Integer); ok {
 					point[i] = p.Value
-				} else if p, ok := e.(*Float); ok {
+				} else if p, ok := e.(*scheme.Float); ok {
 					point[i] = int(p.Value)
 				} else {
-					return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
+					return nil, scheme.NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
 			LispDrawLine(point[0], point[1], point[2], point[3])
-			return NewNil(), nil
-		}
-		builtinFuncTbl["create-image-from-file"] = func(exp ...Expression) (Expression, error) {
+			return scheme.NewNil(), nil
+		})
+		scheme.AddBuiltInFunc("create-image-from-file", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			if s, ok := exp[0].(*String); ok {
+			if s, ok := exp[0].(*scheme.String); ok {
 				pixbuf, err := gdkpixbuf.NewPixbufFromFile(s.Value)
 				if err != nil {
-					return nil, NewRuntimeError("E2002")
+					return nil, scheme.NewRuntimeError("E2002")
 				}
 				return NewImage(pixbuf), nil
 			}
-			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
-		}
-		builtinFuncTbl["draw-image"] = func(exp ...Expression) (Expression, error) {
+			return nil, scheme.NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+		})
+		scheme.AddBuiltInFunc("draw-image", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 3 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			img, ok := exp[0].(*Image)
 			if !ok {
-				return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+				return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
 			}
-			x, ok := exp[1].(*Integer)
+			x, ok := exp[1].(*scheme.Integer)
 			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				return nil, scheme.NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
 			}
-			y, ok := exp[2].(*Integer)
+			y, ok := exp[2].(*scheme.Integer)
 			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
+				return nil, scheme.NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
 			}
 			LispDrawImage(img.Value, x.Value, y.Value)
-			return NewNil(), nil
+			return scheme.NewNil(), nil
 
-		}
-		builtinFuncTbl["scale-image"] = func(exp ...Expression) (Expression, error) {
+		})
+		scheme.AddBuiltInFunc("scale-image", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 3 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			img, ok := exp[0].(*Image)
 			if !ok {
-				return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+				return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
 			}
-			w, ok := exp[1].(*Integer)
+			w, ok := exp[1].(*scheme.Integer)
 			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				return nil, scheme.NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
 			}
-			h, ok := exp[2].(*Integer)
+			h, ok := exp[2].(*scheme.Integer)
 			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
+				return nil, scheme.NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
 			}
 			return img.Scale(w.Value, h.Value), nil
-		}
-		builtinFuncTbl["rotate90-image"] = func(exp ...Expression) (Expression, error) {
+		})
+		scheme.AddBuiltInFunc("rotate90-image", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			if img, ok := exp[0].(*Image); ok {
 				return img.RotateSimple90(), nil
 			}
-			return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
-		}
-		builtinFuncTbl["rotate180-image"] = func(exp ...Expression) (Expression, error) {
+			return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+		})
+		scheme.AddBuiltInFunc("rotate180-image", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			if img, ok := exp[0].(*Image); ok {
 				return img.RotateSimple180(), nil
 			}
-			return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
-		}
-		builtinFuncTbl["rotate270-image"] = func(exp ...Expression) (Expression, error) {
+			return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+		})
+		scheme.AddBuiltInFunc("rotate270-image", func(exp ...scheme.Expression) (scheme.Expression, error) {
 			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			if img, ok := exp[0].(*Image); ok {
 				return img.RotateSimple270(), nil
 			}
-			return nil, NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
-		}
+			return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
+		})
 		execFinished = true
-		return NewNil(), nil
+		return scheme.NewNil(), nil
 	}
+	scheme.AddBuiltInFunc("draw-init", draw_init)
 }
