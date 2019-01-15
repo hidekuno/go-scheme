@@ -715,6 +715,7 @@ func TestErrCase(t *testing.T) {
 		{"(exp 11 10)", "E1007"},
 		{"(exp)", "E1007"},
 
+		{"(rand-init 10.2)", "E1007"},
 		{"(rand-integer 10.2)", "E1002"},
 		{"(rand-integer)", "E1007"},
 		{"(rand-integer 11 9)", "E1007"},

@@ -8,10 +8,12 @@ package scheme
 
 import (
 	"bufio"
+	crand "crypto/rand"
 	"fmt"
 	"io"
 	"log"
 	"math"
+	"math/big"
 	"math/rand"
 	"os"
 	"path"
@@ -55,6 +57,7 @@ var (
 		"E1013": "Calculate A Division By Zero",
 		"E1014": "Not Found Program File",
 		"E1015": "Not String",
+		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
@@ -1464,6 +1467,17 @@ func BuildFunc() {
 	}
 	builtinFuncTbl["exp"] = func(exp ...Expression) (Expression, error) {
 		return mathImpl(math.Exp, exp...)
+	}
+	builtinFuncTbl["rand-init"] = func(exp ...Expression) (Expression, error) {
+		if len(exp) != 0 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+		if err != nil {
+			return nil, NewRuntimeError("E9999")
+		}
+		rand.Seed(seed.Int64())
+		return NewNil(), nil
 	}
 	builtinFuncTbl["rand-integer"] = func(exp ...Expression) (Expression, error) {
 		if len(exp) != 1 {
