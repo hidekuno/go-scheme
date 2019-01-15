@@ -4,7 +4,7 @@
 
    hidekuno@gmail.com
 */
-package scheme
+package web
 
 import (
 	"bytes"
@@ -19,12 +19,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"scheme"
 	"strconv"
 	"strings"
 )
 
 var (
-	rootEnvTbl map[string]*SimpleEnv
+	rootEnvTbl map[string]*scheme.SimpleEnv
 	store      *sessions.CookieStore
 )
 
@@ -54,7 +55,7 @@ func doLisp(w http.ResponseWriter, r *http.Request) {
 	// main proc
 	bufbody := new(bytes.Buffer)
 	bufbody.ReadFrom(r.Body)
-	e, err := DoCoreLogic(bufbody.String(), rootEnvTbl[userInfo.Name])
+	e, err := scheme.DoCoreLogic(bufbody.String(), rootEnvTbl[userInfo.Name])
 
 	userInfo.UseCount++
 	session.Values[sessionVarName] = userInfo
@@ -101,7 +102,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		u, _ := loginInfo["user"].(string)
 		session.Values[sessionVarName] = &UserInfo{u, true, 0}
-		rootEnvTbl[u] = NewSimpleEnv(nil, nil)
+		rootEnvTbl[u] = scheme.NewSimpleEnv(nil, nil)
 
 		if err := session.Save(r, w); err != nil {
 			log.Println(err)
@@ -139,10 +140,10 @@ func sessionInit() {
 }
 
 // Start Service
-func StartWebService() {
+func StartService() {
 
-	BuildFunc()
-	rootEnvTbl = map[string]*SimpleEnv{}
+	scheme.BuildFunc()
+	rootEnvTbl = map[string]*scheme.SimpleEnv{}
 	gob.Register(&UserInfo{})
 
 	sessionInit()

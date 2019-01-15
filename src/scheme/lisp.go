@@ -1778,3 +1778,13 @@ func BuildFunc() {
 		return NewNil(), nil
 	}
 }
+
+// add error message from other package
+func AddErrorMsg(code string, value string) {
+	errorMsg[code] = value
+}
+
+// add func
+func AddBuiltInFunc(funcName string, funcBody func(...Expression) (Expression, error)) {
+	builtinFuncTbl[funcName] = funcBody
+}
