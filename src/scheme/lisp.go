@@ -1788,3 +1788,11 @@ func AddErrorMsg(code string, value string) {
 func AddBuiltInFunc(funcName string, funcBody func(...Expression) (Expression, error)) {
 	builtinFuncTbl[funcName] = funcBody
 }
+
+func AddSpecialFunc(funcName string, funcBody func(env *SimpleEnv, v []Expression) (Expression, error)) {
+	specialFuncTbl[funcName] = funcBody
+}
+
+func DoEval(sexp Expression, env *SimpleEnv) (Expression, error) {
+	return eval(sexp, env)
+}
