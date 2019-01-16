@@ -60,7 +60,9 @@ func TestDraw(t *testing.T) {
 		t.Fatal("failed test: rotate270-image")
 	}
 	testCode := [][]string{
+		{"(draw-init 10)", "E1007"},
 		{"(draw-init)", "E2001"},
+		{"(draw-clear 10)", "E1007"},
 		{"(draw-line)", "E1007"},
 		{"(draw-line 100 100 200)", "E1007"},
 		{"(draw-line 100 100 200 200 100)", "E1007"},
