@@ -58,6 +58,9 @@ func BuildGtkFunc() {
 	scheme.AddErrorMsg("E2003", "Not Image")
 
 	draw_init := func(exp ...scheme.Expression) (scheme.Expression, error) {
+		if len(exp) != 0 {
+			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		if execFinished == true {
 			return nil, scheme.NewRuntimeError("E2001")
 		}
@@ -88,6 +91,9 @@ func BuildGtkFunc() {
 		}
 
 		scheme.AddBuiltInFunc("draw-clear", func(exp ...scheme.Expression) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
 			LispDrawClear()
 			return scheme.NewNil(), nil
 		})

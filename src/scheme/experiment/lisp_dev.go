@@ -15,9 +15,9 @@ import (
 
 func BuildGoFunc() {
 
-	scheme.AddSpecialFunc("go-append", func(env *scheme.SimpleEnv, v []scheme.Expression) (scheme.Expression, error) {
-		if len(v) < 2 {
-			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	scheme.AddSpecialFunc("go-append", func(env *scheme.SimpleEnv, exp []scheme.Expression) (scheme.Expression, error) {
+		if len(exp) < 2 {
+			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 
 		finish := make(chan bool, 2)
@@ -26,14 +26,14 @@ func BuildGoFunc() {
 
 		go func() {
 			t0 := time.Now()
-			exp1, _ = scheme.DoEval(v[0], env)
+			exp1, _ = scheme.DoEval(exp[0], env)
 			t1 := time.Now()
 			fmt.Println("go-1", t1.Sub(t0))
 			finish <- true
 		}()
 		go func() {
 			t0 := time.Now()
-			exp2, _ = scheme.DoEval(v[1], copyEnv(env))
+			exp2, _ = scheme.DoEval(exp[1], copyEnv(env))
 			t1 := time.Now()
 			fmt.Println("go-2", t1.Sub(t0))
 			finish <- true

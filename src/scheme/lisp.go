@@ -354,14 +354,14 @@ func (self *Float) LessEqual(p Number) bool {
 	return self.Value <= v.Value
 }
 
-func CreateNumber(p Expression) (Number, error) {
-	if v, ok := p.(*Integer); ok {
+func CreateNumber(exp Expression) (Number, error) {
+	if v, ok := exp.(*Integer); ok {
 		return NewInteger(v.Value), nil
 	}
-	if v, ok := p.(*Float); ok {
+	if v, ok := exp.(*Float); ok {
 		return NewFloat(v.Value), nil
 	}
-	return nil, NewRuntimeError("E1003", reflect.TypeOf(p).String())
+	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
 }
 
 type String struct {
@@ -387,9 +387,9 @@ type List struct {
 	Value []Expression
 }
 
-func NewList(el []Expression) *List {
+func NewList(exp []Expression) *List {
 	l := new(List)
-	l.Value = el
+	l.Value = exp
 	return l
 }
 func (self *List) Print() {
@@ -455,8 +455,8 @@ func (self *SpecialFunc) Fprint(w io.Writer) {
 	fmt.Fprint(w, "Special Functon ex. if: ", self)
 }
 
-func (self *SpecialFunc) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
-	e, err := self.Impl(env, exps)
+func (self *SpecialFunc) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
+	e, err := self.Impl(env, exp)
 	if err != nil {
 		return nil, err
 	}
@@ -484,18 +484,18 @@ func (self *Operator) Fprint(w io.Writer) {
 	fmt.Fprint(w, "Operatotion or Builtin: ", self)
 }
 
-func (self *Operator) Execute(env *SimpleEnv, exps []Expression) (Expression, error) {
+func (self *Operator) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 	var args []Expression
 
-	for _, exp := range exps {
-		e, err := eval(exp, env)
+	for _, e := range exp {
+		c, err := eval(e, env)
 		if err != nil {
-			return exp, err
+			return e, err
 		}
-		if k, ok := e.(*Continuation); ok {
+		if k, ok := c.(*Continuation); ok {
 			return k, nil
 		}
-		args = append(args, e)
+		args = append(args, c)
 	}
 	return self.Impl(args...)
 }
@@ -524,18 +524,18 @@ func (self *Function) Fprint(w io.Writer) {
 }
 
 // Bind lambda function' parameters.
-func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, error) {
+func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 
-	if len(self.ParamName.Value) != len(values) {
-		return nil, NewRuntimeError("E1007", strconv.Itoa(len(values)))
+	if len(self.ParamName.Value) != len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
 	saveEnv := self.Env
 	self.Env = NewSimpleEnv(self.Env, nil)
 	idx := 0
-	for _, i := range self.ParamName.Value {
-		if sym, ok := i.(*Symbol); ok {
+	for _, v := range self.ParamName.Value {
+		if sym, ok := v.(*Symbol); ok {
 			if env != nil {
-				v, err := eval(values[idx], env)
+				v, err := eval(exp[idx], env)
 				if err != nil {
 					return nil, err
 				}
@@ -545,21 +545,21 @@ func (self *Function) Execute(env *SimpleEnv, values []Expression) (Expression, 
 
 				self.Env.Regist(sym.Value, v)
 			} else {
-				self.Env.Regist(sym.Value, values[idx])
+				self.Env.Regist(sym.Value, exp[idx])
 			}
-			idx = idx + 1
+			idx++
 		}
 	}
 	var (
 		result Expression
 		err    error
 	)
-	for _, exp := range self.Body {
-		if body, ok := exp.(*List); ok && self.Name != "lambda" {
+	for _, e := range self.Body {
+		if body, ok := e.(*List); ok && self.Name != "lambda" {
 			evalTailRecursion(self.Env, body, self.Name, self.ParamName.Value)
 		}
 		for {
-			result, err = eval(exp, self.Env)
+			result, err = eval(e, self.Env)
 			if err != nil {
 				return nil, err
 			}
@@ -595,17 +595,17 @@ func (self *LetLoop) Fprint(w io.Writer) {
 	fmt.Fprint(w, "Let Macro: ", self)
 }
 
-func (self *LetLoop) Execute(env *SimpleEnv, v []Expression) (Expression, error) {
+func (self *LetLoop) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 
-	if len(self.ParamName.Value) != len(v) {
-		return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	if len(self.ParamName.Value) != len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
 	body := self.Body.(*List)
 	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
 
 	for i, c := range self.ParamName.Value {
 		pname := c.(*Symbol)
-		data, err := eval(v[i], env)
+		data, err := eval(exp[i], env)
 		if err != nil {
 			return nil, err
 		}
@@ -1093,12 +1093,12 @@ func BuildFunc() {
 	builtinFuncTbl["*"] = func(exp ...Expression) (Expression, error) {
 		return calcOperate(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 	}
-	builtinFuncTbl["/"] = func(exp ...Expression) (sexp Expression, e error) {
+	builtinFuncTbl["/"] = func(exp ...Expression) (se Expression, e error) {
 		// Not the best. But, Better than before.
 		defer func() {
 			if err := recover(); err != nil {
 				if zero, ok := err.(*RuntimeError); ok {
-					sexp = nil
+					se = nil
 					e = zero
 				}
 			}
@@ -1509,103 +1509,103 @@ func BuildFunc() {
 		return NewInteger(result), nil
 	}
 	// syntax keyword implements
-	specialFuncTbl["if"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) < 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["if"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		exp, err := eval(v[0], env)
+		e, err := eval(exp[0], env)
 		if err != nil {
 			return nil, err
 		}
 
-		b, ok := exp.(*Boolean)
+		b, ok := e.(*Boolean)
 		if !ok {
 			return nil, NewRuntimeError("E1001", reflect.TypeOf(exp).String())
 		}
 		if b.Value {
-			return eval(v[1], env)
-		} else if 3 <= len(v) {
-			return eval(v[2], env)
+			return eval(exp[1], env)
+		} else if 3 <= len(exp) {
+			return eval(exp[2], env)
 		}
 		return NewNil(), nil
 	}
-	specialFuncTbl["define"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["define"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var (
 			key *Symbol
 			err error
 			ok  bool
-			exp Expression
+			e   Expression
 		)
-		if key, ok = v[0].(*Symbol); ok {
-			exp, err = eval(v[1], env)
+		if key, ok = exp[0].(*Symbol); ok {
+			e, err = eval(exp[1], env)
 			if err != nil {
 				return nil, err
 			}
-		} else if l, ok := v[0].(*List); ok {
+		} else if l, ok := exp[0].(*List); ok {
 			if len(l.Value) < 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
 			key = l.Value[0].(*Symbol)
-			exp = NewFunction(env, NewList(l.Value[1:]), v[1:], key.Value)
+			e = NewFunction(env, NewList(l.Value[1:]), exp[1:], key.Value)
 		} else {
-			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
+			return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
 		}
-		(*env).Regist(key.Value, exp)
+		(*env).Regist(key.Value, e)
 		return key, nil
 	}
-	specialFuncTbl["lambda"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) < 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["lambda"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		// if l == (), internal list implements
-		l, ok := v[0].(*List)
+		l, ok := exp[0].(*List)
 		if !ok {
-			return nil, NewRuntimeError("E1005", reflect.TypeOf(v[0]).String())
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
-		return NewFunction(env, l, v[1:], "lambda"), nil
+		return NewFunction(env, l, exp[1:], "lambda"), nil
 	}
-	specialFuncTbl["set!"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["set!"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		s, ok := v[0].(*Symbol)
+		s, ok := exp[0].(*Symbol)
 		if !ok {
-			return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
+			return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
 		}
 
-		exp, err := eval(v[1], env)
+		e, err := eval(exp[1], env)
 		if err != nil {
-			return v[1], err
+			return exp[1], err
 		}
 		if _, ok := (*env).Find(s.Value); !ok {
-			return exp, NewRuntimeError("E1008", s.Value)
+			return e, NewRuntimeError("E1008", s.Value)
 		}
-		(*env).Set(s.Value, exp)
-		return exp, nil
+		(*env).Set(s.Value, e)
+		return e, nil
 	}
-	specialFuncTbl["let"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["let"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
 		body := 1
 
-		l, ok := v[0].(*List)
-		if ok && len(v) < 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		l, ok := exp[0].(*List)
+		if ok && len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		if !ok {
-			letsym, ok = v[0].(*Symbol)
+			letsym, ok = exp[0].(*Symbol)
 			if !ok {
-				return nil, NewRuntimeError("E1004", reflect.TypeOf(v[0]).String())
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
 			}
-			if len(v) < 3 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+			if len(exp) < 3 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			l, ok = v[1].(*List)
+			l, ok = exp[1].(*List)
 			if !ok {
-				return nil, NewRuntimeError("E1005", reflect.TypeOf(v[1]).String())
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 			}
 			body = 2
 		}
@@ -1628,14 +1628,14 @@ func BuildFunc() {
 			localEnv[sym.Value] = v
 		}
 		if letsym != nil {
-			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), v[body], letsym.Value))
+			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), exp[body], letsym.Value))
 		}
 
 		nse := NewSimpleEnv(env, &localEnv)
 		var lastExp Expression
-		for idx := body; idx < len(v); idx += 1 {
-			if exp, err := eval(v[idx], nse); err == nil {
-				lastExp = exp
+		for idx := body; idx < len(exp); idx += 1 {
+			if e, err := eval(exp[idx], nse); err == nil {
+				lastExp = e
 			} else {
 				return nil, err
 			}
@@ -1688,17 +1688,17 @@ func BuildFunc() {
 		}
 		return eval(p.Body, p.Env)
 	}
-	specialFuncTbl["identity"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["identity"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		return eval(v[0], env)
+		return eval(exp[0], env)
 	}
-	specialFuncTbl["call/cc"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["call/cc"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		e, err := eval(v[0], env)
+		e, err := eval(exp[0], env)
 		if err != nil {
 			return nil, err
 		}
@@ -1709,21 +1709,21 @@ func BuildFunc() {
 		param := make([]Expression, 1)
 		param[0] = NewContinuation()
 
-		exp, err := lambda.Execute(nil, param)
+		e, err = lambda.Execute(nil, param)
 		if err != nil {
 			return nil, err
 		}
-		if k, ok := exp.(*Continuation); ok {
+		if k, ok := e.(*Continuation); ok {
 			return eval(k.Body, k.Env)
 		} else {
-			return exp, nil
+			return e, nil
 		}
 	}
-	specialFuncTbl["cond"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) < 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["cond"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		for _, e := range v {
+		for _, e := range exp {
 			l, ok := e.(*List)
 			if !ok {
 				return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
@@ -1732,11 +1732,11 @@ func BuildFunc() {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
 			}
 			if _, ok := l.Value[0].(*List); ok {
-				exp, err := eval(l.Value[0], env)
+				b, err := eval(l.Value[0], env)
 				if err != nil {
 					return nil, err
 				}
-				if b, ok := exp.(*Boolean); ok {
+				if b, ok := b.(*Boolean); ok {
 					if b.Value {
 						return eval(l.Value[1], env)
 					}
@@ -1753,32 +1753,32 @@ func BuildFunc() {
 		}
 		return NewNil(), nil
 	}
-	specialFuncTbl["quote"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["quote"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		return v[0], nil
+		return exp[0], nil
 	}
-	specialFuncTbl["time"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
-		if len(v) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+	specialFuncTbl["time"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		t0 := time.Now()
-		if exp, err := eval(v[0], env); err != nil {
-			return exp, err
+		if e, err := eval(exp[0], env); err != nil {
+			return e, err
 		}
 		t1 := time.Now()
 		fmt.Println(t1.Sub(t0))
 		return NewNil(), nil
 	}
-	specialFuncTbl["load-file"] = func(env *SimpleEnv, v []Expression) (Expression, error) {
+	specialFuncTbl["load-file"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
 
-		if len(v) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(v)))
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		filename, ok := v[0].(*String)
+		filename, ok := exp[0].(*String)
 		if !ok {
-			return nil, NewRuntimeError("E1015", reflect.TypeOf(v[0]).String())
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 		}
 
 		fd, err := os.Open(filename.Value)
@@ -1799,12 +1799,12 @@ func AddErrorMsg(code string, value string) {
 }
 
 // add func
-func AddBuiltInFunc(funcName string, funcBody func(...Expression) (Expression, error)) {
-	builtinFuncTbl[funcName] = funcBody
+func AddBuiltInFunc(name string, body func(...Expression) (Expression, error)) {
+	builtinFuncTbl[name] = body
 }
 
-func AddSpecialFunc(funcName string, funcBody func(env *SimpleEnv, v []Expression) (Expression, error)) {
-	specialFuncTbl[funcName] = funcBody
+func AddSpecialFunc(name string, body func(*SimpleEnv, []Expression) (Expression, error)) {
+	specialFuncTbl[name] = body
 }
 
 func DoEval(sexp Expression, env *SimpleEnv) (Expression, error) {
