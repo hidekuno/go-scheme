@@ -863,32 +863,41 @@ func TestInteractive(t *testing.T) {
 }
 
 //https://github.com/hidekuno/go-scheme/issues/46
-// go test -bench . -benchmem
-func BenchmarkQsort(b *testing.B) {
+func TestRecursive(t *testing.T) {
 	var (
 		exp Expression
 	)
 	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
+	DoCoreLogic("(define (fact n result)(if (>= 1 n) result (fact (- n 1) (* result n))))", rootEnv)
 
-	DoCoreLogic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 600)))", rootEnv)
-	DoCoreLogic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", rootEnv)
-	DoCoreLogic("(qsort test-list)", rootEnv)
-	DoCoreLogic("(qsort test-list)", rootEnv)
-	DoCoreLogic("(qsort test-list)", rootEnv)
-
-	DoCoreLogic("(define (fact n result)(if (>= 1 n) result(fact (- n 1) (* result n))))", rootEnv)
 	exp, _ = DoCoreLogic("(fact 5 1)", rootEnv)
 	if !checkLogicInt(exp, 120) {
-		b.Fatal("failed test: tail recursive")
+		t.Fatal("failed test: tail recursive")
 	}
+
 	exp, _ = DoCoreLogic("(let loop ((i 0)) (if (<= 1000000 i) i (loop (+ 1 i))))", rootEnv)
 	if !checkLogicInt(exp, 1000000) {
-		b.Fatal("failed test: tail recursive")
+		t.Fatal("failed test: tail recursive")
 	}
 
 	exp, _ = DoCoreLogic("(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 50 i) j k)(loop (+ 1 i) j k))))", rootEnv)
 	if !checkLogicInt(exp, 1000000) {
-		b.Fatal("failed test: tail recursive")
+		t.Fatal("failed test: tail recursive")
+	}
+}
+
+// go test -bench . -benchmem
+func BenchmarkQsort(b *testing.B) {
+
+	BuildFunc()
+	rootEnv := NewSimpleEnv(nil, nil)
+
+	DoCoreLogic("(define test-list (map (lambda (n) (rand-integer 10000))(iota 600)))", rootEnv)
+	DoCoreLogic("(define qsort (lambda (l)(if (null? l) l (append (qsort (filter (lambda (n) (< n (car l)))(cdr l)))(cons (car l)(qsort (filter (lambda (n) (not (< n (car l))))(cdr l))))))))", rootEnv)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DoCoreLogic("(qsort test-list)", rootEnv)
 	}
 }
