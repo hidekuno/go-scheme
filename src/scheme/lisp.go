@@ -720,7 +720,7 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 		return nil
 	}
 	v := body.Value
-	for i := 0; i < len(body.Value); i += 1 {
+	for i := 0; i < len(body.Value); i++ {
 		if l, ok := v[i].(*List); ok {
 			if sym, ok := l.Value[0].(*Symbol); ok {
 				proc, err := eval(l.Value[0], env)
@@ -1633,8 +1633,9 @@ func BuildFunc() {
 
 		nse := NewSimpleEnv(env, &localEnv)
 		var lastExp Expression
-		for idx := body; idx < len(exp); idx += 1 {
-			if e, err := eval(exp[idx], nse); err == nil {
+
+		for i := body; i < len(exp); i++ {
+			if e, err := eval(exp[i], nse); err == nil {
 				lastExp = e
 			} else {
 				return nil, err
