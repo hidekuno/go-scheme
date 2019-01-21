@@ -6,9 +6,16 @@
 */
 package fractal
 
+import (
+	"os"
+)
 func CreateSierpinski(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 
 	var draw func(x0, y0, x1, y1, x2, y2, c int)
+
+	if os.Getenv("DISPLAY") ==  "docker.for.mac.localhost:0" {
+		scale = 8
+	}
 
 	draw = func(x0, y0, x1, y1, x2, y2, c int) {
 		if c > 1 {

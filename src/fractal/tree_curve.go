@@ -7,7 +7,8 @@
 package fractal
 
 import (
-	"math"
+       "os"
+       "math"
 )
 
 func CreateTree(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
@@ -16,6 +17,10 @@ func CreateTree(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 	sn := math.Sin((math.Pi * 45) / 180)
 	alpha := 0.6
 	var draw func(x0, y0, x1, y1, c int)
+
+	if os.Getenv("DISPLAY") ==  "docker.for.mac.localhost:0" {
+		scale = 10
+	}
 
 	draw = func(x0, y0, x1, y1, c int) {
 

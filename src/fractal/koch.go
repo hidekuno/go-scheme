@@ -7,6 +7,7 @@
 package fractal
 
 import (
+	"os"
 	"math"
 )
 
@@ -16,6 +17,9 @@ func CreateKoch(scale int, drawLine func(x0, y0, x1, y1 int)) func() {
 	sin60 := math.Sin((math.Pi * 60) / 180)
 	var draw func(x0, y0, x1, y1, c int)
 
+	if os.Getenv("DISPLAY") ==  "docker.for.mac.localhost:0" {
+		scale = 4
+	}
 	draw = func(x0, y0, x1, y1, c int) {
 		if c > 1 {
 
