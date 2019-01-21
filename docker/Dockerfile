@@ -12,5 +12,5 @@ RUN go get github.com/mattn/go-gtk/gtk
 RUN go install github.com/mattn/go-gtk/gtk
 RUN go get github.com/gorilla/sessions
 RUN go install github.com/gorilla/sessions
-RUN git clone https://github.com/hidekuno/go-scheme.git go-scheme
+RUN mkdir go-scheme
 ENV GOPATH ${HOME}/go-scheme:${HOME}/go
