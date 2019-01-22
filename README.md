@@ -3,8 +3,8 @@ Go言語によるScheme(subset版)の実装
 
 ## 概要
 - Go言語手習いのため、Schemeの縮小版を実装した。
-- オマケとして、フラクタル図形プログラムを簡単に動作させるための環境を提供する。
-- さらにオマケとして、WebAPIを実装してみた。
+- 実装目標として、フラクタル図形プログラムを簡単に動作させるための環境を提供する。
+- さらに、WebAPIを実装してみた。
 
 ## 完成度合い
 - 簡単なプログラム(quick-sort, merge-sort, permutations,combination,Eratosthenes等)が動くレベル  
