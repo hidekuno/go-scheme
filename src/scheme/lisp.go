@@ -155,7 +155,7 @@ type Any interface{}
 type Atom interface {
 	Expression
 	// Because Expression is different
-	Dummy() Any
+	String() string
 }
 
 type Symbol struct {
@@ -174,6 +174,9 @@ func (self *Symbol) Print() {
 }
 func (self *Symbol) Fprint(w io.Writer) {
 	fmt.Fprint(w, self.Value)
+}
+func (self *Symbol) String() string {
+	return self.Value
 }
 
 type Number interface {
@@ -251,6 +254,9 @@ func (self *Integer) LessEqual(p Number) bool {
 	v, _ := p.(*Integer)
 	return self.Value <= v.Value
 }
+func (self *Integer) String() string {
+	return strconv.Itoa(self.Value)
+}
 
 type Boolean struct {
 	Atom
@@ -275,6 +281,9 @@ func (self *Boolean) Print() {
 func (self *Boolean) Fprint(w io.Writer) {
 	fmt.Fprint(w, self.exp)
 }
+func (self *Boolean) String() string {
+	return self.exp
+}
 
 type Char struct {
 	Atom
@@ -295,6 +304,10 @@ func (self *Char) Print() {
 
 func (self *Char) Fprint(w io.Writer) {
 	fmt.Fprint(w, self.exp)
+}
+
+func (self *Char) String() string {
+	return self.exp
 }
 
 type Float struct {
@@ -353,6 +366,9 @@ func (self *Float) LessEqual(p Number) bool {
 	v, _ := p.(*Float)
 	return self.Value <= v.Value
 }
+func (self *Float) String() string {
+	return strconv.FormatFloat(self.Value, 'f', 8, 64)
+}
 
 func CreateNumber(exp Expression) (Number, error) {
 	if v, ok := exp.(*Integer); ok {
@@ -380,6 +396,29 @@ func (self *String) Print() {
 }
 func (self *String) Fprint(w io.Writer) {
 	fmt.Print("\"" + self.Value + "\"")
+}
+func (self *String) String() string {
+	return "\"" + self.Value + "\""
+}
+
+type Nil struct {
+	Atom
+	exp string
+}
+
+func NewNil() *Nil {
+	n := new(Nil)
+	n.exp = "nil"
+	return n
+}
+func (self *Nil) Print() {
+	self.Fprint(os.Stdout)
+}
+func (self *Nil) Fprint(w io.Writer) {
+	fmt.Fprint(w, self.exp)
+}
+func (self *Nil) String() string {
+	return self.exp
 }
 
 type List struct {
@@ -657,20 +696,6 @@ func (self *Continuation) Print() {
 }
 func (self *Continuation) Fprint(w io.Writer) {
 	fmt.Fprint(w, "Continuation: ", self)
-}
-
-type Nil struct {
-	Expression
-}
-
-func NewNil() *Nil {
-	return &Nil{}
-}
-func (self *Nil) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Nil) Fprint(w io.Writer) {
-	fmt.Fprint(w, "nil")
 }
 
 type TailRecursion struct {
@@ -952,8 +977,6 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			// execute
 			return fn.Execute(env, v[1:])
 		}
-	} else if _, ok := sexp.(*Nil); ok {
-		return sexp, nil
 	} else if te, ok := sexp.(*TailRecursion); ok {
 		return te.SetParam(env)
 	}
