@@ -65,8 +65,7 @@ func doLisp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
-		e.Fprint(w)
-		fmt.Fprintln(w)
+		fmt.Fprintln(w, e.String())
 	}
 	log.Print(r.URL, " ", userInfo.UseCount)
 }

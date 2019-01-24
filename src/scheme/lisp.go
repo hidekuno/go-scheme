@@ -8,6 +8,7 @@ package scheme
 
 import (
 	"bufio"
+	"bytes"
 	crand "crypto/rand"
 	"fmt"
 	"io"
@@ -106,7 +107,7 @@ func (self *SimpleEnv) Set(key string, exp Expression) {
 	}
 }
 
-// Basic Data Type. (need
+// Error(syntax, runtime)
 type SyntaxError struct {
 	MsgCode           string
 	SourceFileName    string
@@ -146,39 +147,17 @@ func NewRuntimeError(text string, args ...string) error {
 	return &RuntimeError{text, sourceFileName, sourceFileLineNum, args}
 }
 
+// eval type
 type Expression interface {
-	Print()
-	Fprint(io.Writer)
+	String() string
 }
 
 type Any interface{}
 type Atom interface {
 	Expression
 	// Because Expression is different
-	String() string
+	Dummy() Any
 }
-
-type Symbol struct {
-	Atom
-	Value string
-}
-
-func NewSymbol(token string) *Symbol {
-	s := new(Symbol)
-	s.Value = token
-	return s
-}
-
-func (self *Symbol) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Symbol) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.Value)
-}
-func (self *Symbol) String() string {
-	return self.Value
-}
-
 type Number interface {
 	Atom
 	Add(Number) Number
@@ -192,6 +171,17 @@ type Number interface {
 	LessEqual(Number) bool
 }
 
+func CreateNumber(exp Expression) (Number, error) {
+	if v, ok := exp.(*Integer); ok {
+		return NewInteger(v.Value), nil
+	}
+	if v, ok := exp.(*Float); ok {
+		return NewFloat(v.Value), nil
+	}
+	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
+}
+
+// Integer Type
 type Integer struct {
 	Number
 	Value int
@@ -201,13 +191,6 @@ func NewInteger(p int) *Integer {
 	v := new(Integer)
 	v.Value = p
 	return v
-}
-
-func (self *Integer) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Integer) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.Value)
 }
 
 func (self *Integer) Add(p Number) Number {
@@ -254,62 +237,12 @@ func (self *Integer) LessEqual(p Number) bool {
 	v, _ := p.(*Integer)
 	return self.Value <= v.Value
 }
+
 func (self *Integer) String() string {
 	return strconv.Itoa(self.Value)
 }
 
-type Boolean struct {
-	Atom
-	Value bool
-	exp   string
-}
-
-func NewBoolean(v bool) *Boolean {
-	b := new(Boolean)
-	b.Value = v
-	if v {
-		b.exp = "#t"
-	} else {
-		b.exp = "#f"
-	}
-	return b
-}
-
-func (self *Boolean) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Boolean) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.exp)
-}
-func (self *Boolean) String() string {
-	return self.exp
-}
-
-type Char struct {
-	Atom
-	Value byte
-	exp   string
-}
-
-func NewChar(v string) *Char {
-	b := new(Char)
-	b.exp = v
-	b.Value = v[2]
-	return b
-}
-
-func (self *Char) Print() {
-	self.Fprint(os.Stdout)
-}
-
-func (self *Char) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.exp)
-}
-
-func (self *Char) String() string {
-	return self.exp
-}
-
+// Float Type
 type Float struct {
 	Number
 	Value float64
@@ -319,12 +252,6 @@ func NewFloat(p float64) *Float {
 	v := new(Float)
 	v.Value = p
 	return v
-}
-func (self *Float) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Float) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.Value)
 }
 func (self *Float) Add(p Number) Number {
 	v, _ := p.(*Float)
@@ -367,19 +294,70 @@ func (self *Float) LessEqual(p Number) bool {
 	return self.Value <= v.Value
 }
 func (self *Float) String() string {
-	return strconv.FormatFloat(self.Value, 'f', 8, 64)
+	return fmt.Sprint(self.Value)
+}
+func (self *Float) FormatString(prec int) string {
+	return strconv.FormatFloat(self.Value, 'f', prec, 64)
+}
+func (self *Float) LogFormatString(prec int) string {
+	return strconv.FormatFloat(self.Value, 'e', prec, 64)
 }
 
-func CreateNumber(exp Expression) (Number, error) {
-	if v, ok := exp.(*Integer); ok {
-		return NewInteger(v.Value), nil
-	}
-	if v, ok := exp.(*Float); ok {
-		return NewFloat(v.Value), nil
-	}
-	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
+// Symbol Type
+type Symbol struct {
+	Atom
+	Value string
 }
 
+func NewSymbol(token string) *Symbol {
+	s := new(Symbol)
+	s.Value = token
+	return s
+}
+
+func (self *Symbol) String() string {
+	return self.Value
+}
+
+// Boolean Type
+type Boolean struct {
+	Atom
+	Value bool
+	exp   string
+}
+
+func NewBoolean(v bool) *Boolean {
+	b := new(Boolean)
+	b.Value = v
+	if v {
+		b.exp = "#t"
+	} else {
+		b.exp = "#f"
+	}
+	return b
+}
+func (self *Boolean) String() string {
+	return self.exp
+}
+
+// Character Type
+type Char struct {
+	Atom
+	Value byte
+	exp   string
+}
+
+func NewChar(v string) *Char {
+	b := new(Char)
+	b.exp = v
+	b.Value = v[2]
+	return b
+}
+func (self *Char) String() string {
+	return self.exp
+}
+
+// String Type
 type String struct {
 	Atom
 	Value string
@@ -391,36 +369,27 @@ func NewString(p string) *String {
 	return v
 }
 
-func (self *String) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *String) Fprint(w io.Writer) {
-	fmt.Print("\"" + self.Value + "\"")
-}
 func (self *String) String() string {
 	return "\"" + self.Value + "\""
 }
 
+// Nil Type
 type Nil struct {
 	Atom
-	exp string
+	value string
 }
 
 func NewNil() *Nil {
 	n := new(Nil)
-	n.exp = "nil"
+	n.value = "nil"
 	return n
 }
-func (self *Nil) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Nil) Fprint(w io.Writer) {
-	fmt.Fprint(w, self.exp)
-}
+
 func (self *Nil) String() string {
-	return self.exp
+	return self.value
 }
 
+// List Type
 type List struct {
 	Expression
 	Value []Expression
@@ -431,29 +400,32 @@ func NewList(exp []Expression) *List {
 	l.Value = exp
 	return l
 }
-func (self *List) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *List) Fprint(w io.Writer) {
-	var tprint func(*List)
-	tprint = func(l *List) {
-		fmt.Fprint(w, "(")
+
+func (self *List) String() string {
+	var buffer bytes.Buffer
+	var make_string func(*List)
+
+	make_string = func(l *List) {
+		buffer.WriteString("(")
 
 		for _, i := range l.Value {
 			if j, ok := i.(*List); ok {
-				tprint(j)
+				make_string(j)
+
 			} else if j, ok := i.(Expression); ok {
-				j.Fprint(w)
+				buffer.WriteString(j.String())
 			}
 			if i != l.Value[len(l.Value)-1] {
-				fmt.Fprint(w, " ")
+				buffer.WriteString(" ")
 			}
 		}
-		fmt.Fprint(w, ")")
+		buffer.WriteString(")")
 	}
-	tprint(self)
+	make_string(self)
+	return buffer.String()
 }
 
+// Pair Type
 type Pair struct {
 	Expression
 	Car Expression
@@ -466,17 +438,17 @@ func NewPair(car Expression, cdr Expression) *Pair {
 	p.Cdr = cdr
 	return p
 }
-func (self *Pair) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Pair) Fprint(w io.Writer) {
-	fmt.Fprint(w, "(")
-	self.Car.Fprint(w)
-	fmt.Fprint(w, " . ")
-	self.Cdr.Fprint(w)
-	fmt.Fprint(w, ")")
+func (self *Pair) String() string {
+	var buffer bytes.Buffer
+	buffer.WriteString("(")
+	buffer.WriteString(self.Car.String())
+	buffer.WriteString(" . ")
+	buffer.WriteString(self.Cdr.String())
+	buffer.WriteString(")")
+	return buffer.String()
 }
 
+// Function (with eval exexuting)
 type SpecialFunc struct {
 	Expression
 	Impl func(*SimpleEnv, []Expression) (Expression, error)
@@ -487,11 +459,8 @@ func NewSpecialFunc(fn func(*SimpleEnv, []Expression) (Expression, error)) *Spec
 	sf.Impl = fn
 	return sf
 }
-func (self *SpecialFunc) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *SpecialFunc) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Special Functon ex. if: ", self)
+func (self *SpecialFunc) String() string {
+	return "Special Functon ex. if: "
 }
 
 func (self *SpecialFunc) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
@@ -506,6 +475,7 @@ func (self *SpecialFunc) Execute(env *SimpleEnv, exp []Expression) (Expression, 
 	}
 }
 
+// Operation (without eval exexuting)
 type Operator struct {
 	Expression
 	Impl func(...Expression) (Expression, error)
@@ -516,13 +486,9 @@ func NewOperator(fn func(...Expression) (Expression, error)) *Operator {
 	op.Impl = fn
 	return op
 }
-func (self *Operator) Print() {
-	self.Fprint(os.Stdout)
+func (self *Operator) String() string {
+	return "Operatotion or Builtin: "
 }
-func (self *Operator) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Operatotion or Builtin: ", self)
-}
-
 func (self *Operator) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 	var args []Expression
 
@@ -539,6 +505,7 @@ func (self *Operator) Execute(env *SimpleEnv, exp []Expression) (Expression, err
 	return self.Impl(args...)
 }
 
+// Function (lambda)
 type Function struct {
 	Expression
 	ParamName List
@@ -555,16 +522,12 @@ func NewFunction(parent *SimpleEnv, param *List, body []Expression, name string)
 	self.Name = name
 	return self
 }
-func (self *Function) Print() {
-	self.Fprint(os.Stdout)
+func (self *Function) String() string {
+	return "Function: "
 }
-func (self *Function) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Function: ", self)
-}
-
-// Bind lambda function' parameters.
 func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 
+	// Bind lambda function' parameters.
 	if len(self.ParamName.Value) != len(exp) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -612,6 +575,7 @@ func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, err
 	return result, nil
 }
 
+// Let (lambda)
 type LetLoop struct {
 	Expression
 	ParamName List
@@ -627,13 +591,9 @@ func NewLetLoop(param *List, body Expression, name string) *LetLoop {
 	return let
 }
 
-func (self *LetLoop) Print() {
-	self.Fprint(os.Stdout)
+func (self *LetLoop) String() string {
+	return "Let Macro: "
 }
-func (self *LetLoop) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Let Macro: ", self)
-}
-
 func (self *LetLoop) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
 
 	if len(self.ParamName.Value) != len(exp) {
@@ -661,6 +621,7 @@ func (self *LetLoop) Execute(env *SimpleEnv, exp []Expression) (Expression, erro
 	}
 }
 
+// Promise
 type Promise struct {
 	Expression
 	Body Expression
@@ -674,13 +635,11 @@ func NewPromise(parent *SimpleEnv, body Expression) *Promise {
 	return fn
 }
 
-func (self *Promise) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Promise) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Promise: ", self)
+func (self *Promise) String() string {
+	return "Promise: "
 }
 
+// Continuation
 type Continuation struct {
 	Expression
 	Body Expression
@@ -691,13 +650,12 @@ func NewContinuation() *Continuation {
 	k := new(Continuation)
 	return k
 }
-func (self *Continuation) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Continuation) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Continuation: ", self)
+
+func (self *Continuation) String() string {
+	return "Continuation: "
 }
 
+// TailRecursion
 type TailRecursion struct {
 	Expression
 	param    []Expression
@@ -731,41 +689,9 @@ func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 	}
 	return self, nil
 }
-func (self *TailRecursion) Print() {
-	self.Fprint(os.Stdout)
-}
 
-func (self *TailRecursion) Fprint(w io.Writer) {
-	fmt.Fprint(w, "TailRecursion", self)
-}
-
-func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) error {
-
-	if len(body.Value) == 0 {
-		return nil
-	}
-	v := body.Value
-	for i := 0; i < len(body.Value); i++ {
-		if l, ok := v[i].(*List); ok {
-			if sym, ok := l.Value[0].(*Symbol); ok {
-				proc, err := eval(l.Value[0], env)
-				if err != nil {
-					return err
-				}
-				if let, ok := proc.(*LetLoop); ok && label == let.Name {
-					v[i] = NewTailRecursion(l.Value[1:], nameList)
-					continue
-				} else if fn, ok := proc.(*Function); ok && fn.Name != "lambda" && label == fn.Name {
-					v[i] = NewTailRecursion(l.Value[1:], nameList)
-					continue
-				}
-				if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
-					evalTailRecursion(env, l, label, nameList)
-				}
-			}
-		}
-	}
-	return nil
+func (self *TailRecursion) String() string {
+	return "TailRecursion"
 }
 
 // lex support  for  string
@@ -983,6 +909,36 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	return sexp, NewRuntimeError("E1009", reflect.TypeOf(sexp).String())
 }
 
+// eval tail recursion
+func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) error {
+
+	if len(body.Value) == 0 {
+		return nil
+	}
+	v := body.Value
+	for i := 0; i < len(body.Value); i++ {
+		if l, ok := v[i].(*List); ok {
+			if sym, ok := l.Value[0].(*Symbol); ok {
+				proc, err := eval(l.Value[0], env)
+				if err != nil {
+					return err
+				}
+				if let, ok := proc.(*LetLoop); ok && label == let.Name {
+					v[i] = NewTailRecursion(l.Value[1:], nameList)
+					continue
+				} else if fn, ok := proc.(*Function); ok && fn.Name != "lambda" && label == fn.Name {
+					v[i] = NewTailRecursion(l.Value[1:], nameList)
+					continue
+				}
+				if sym.Value == "if" || sym.Value == "cond" || sym.Value == "else" {
+					evalTailRecursion(env, l, label, nameList)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // main logic
 func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
 
@@ -1062,8 +1018,7 @@ func repl(stream *os.File, rootEnv *SimpleEnv) {
 			fmt.Println(err.Error())
 			goto FINISH
 		}
-		val.Print()
-		fmt.Print("\n")
+		fmt.Println(val.String())
 		if DEBUG {
 			fmt.Print(reflect.TypeOf(val))
 		}
