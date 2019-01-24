@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Go Scheme wasm</title>
+</head>
+
+<body>
+  <script src="wasm_exec.js"></script>
+  <script>
+    if (!WebAssembly.instantiateStreaming) { // polyfill
+      WebAssembly.instantiateStreaming = async (resp, importObject) => {
+        const source = await (await resp).arrayBuffer();
+        return await WebAssembly.instantiate(source, importObject);
+      };
+    }
+    const go = new Go();
+    let mod, inst;
+    WebAssembly.instantiateStreaming(fetch("lisp.wasm"), go.importObject).then(async (result) => {
+      mod = result.module;
+      inst = result.instance;
+      console.clear();
+      await go.run(inst);
+    }).catch((err) => {
+      console.error(err);
+    });
+  </script>
+
+  <div id="head-1" style="float: left">
+    <div id="calcResult" style="width: 800px; height: 20px"></div>
+  </div>
+  <div id="head-2" style="float: right">
+   <button onClick="eval();" id="evalButton">Eval</button>
+  </div>
+  <div id="body">
+    <textarea id="sExpression" style="font-size: 14px;" name="sexpression" cols="128" rows="30"></textarea>
+  </div>
+</body>
+</html>

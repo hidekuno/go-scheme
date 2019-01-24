@@ -8,12 +8,9 @@ package draw
 
 import (
 	"draw"
-	"fmt"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
-	"io"
-	"os"
 	"reflect"
 	"scheme"
 	"strconv"
@@ -33,11 +30,8 @@ func NewImage(pixbuf *gdkpixbuf.Pixbuf) *Image {
 	self.Value = pixbuf
 	return self
 }
-func (self *Image) Print() {
-	self.Fprint(os.Stdout)
-}
-func (self *Image) Fprint(w io.Writer) {
-	fmt.Fprint(w, "Pixbuf: ", self)
+func (self *Image) String() string {
+	return "Pixbuf: "
 }
 func (self *Image) Scale(w, h int) *Image {
 	return NewImage(self.Value.ScaleSimple(w, h, gdkpixbuf.INTERP_HYPER))
