@@ -185,7 +185,7 @@ void create_tree(shared_ptr<Item>& top, istream& in) {
 			if (items == "") {
 				items = *it;
 			} else {
-				items = items + '.' + *it;
+				items = items + DELIMITER_CHAR + *it;
 			}
 
 			auto k = cache.find(items);
