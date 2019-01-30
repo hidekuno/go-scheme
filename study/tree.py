@@ -54,7 +54,7 @@ class RuledLine(object):
             horizon.append(self.m1 if tree.parent.children[-1] == tree else self.m2)
             sys.stdout.write("".join(horizon))
 
-        print tree.short_name()
+        print(tree.short_name())
         for c in tree.children:
             self.visit(c)
 
@@ -64,7 +64,7 @@ def create_tree_ordered(istream):
     for line in istream:
         rec = line.rstrip()
         parent_name = rec[:rec.rfind(DELIMITER_CHAR)]
-        if cache.has_key(parent_name):
+        if parent_name in cache:
             cache[rec] = Tree(rec, cache[parent_name])
             cache[parent_name].add(cache[rec] )
         else:
@@ -80,18 +80,18 @@ def create_tree(istream):
         rec = line.rstrip()
 
         items = ""
-        for c in rec.split('.'):
+        for c in rec.split(DELIMITER_CHAR):
             if items:
                 items  = items + "." + c
             else:
                 items  = c
 
-            if cache.has_key(items):
+            if items in cache:
                 continue
 
             parent_name = items[:items.rfind(DELIMITER_CHAR)]
 
-            if cache.has_key(parent_name):
+            if parent_name in cache:
                 cache[items] = Tree(items, cache[parent_name])
                 cache[parent_name].add(cache[items])
             else:
