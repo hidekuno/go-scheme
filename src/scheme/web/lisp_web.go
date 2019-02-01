@@ -16,13 +16,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gorilla/sessions"
 	"io"
 	"log"
 	"net/http"
 	"scheme"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/sessions"
 )
 
 var (
