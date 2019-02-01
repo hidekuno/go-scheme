@@ -8,8 +8,9 @@ package main
 
 import (
 	"draw"
-	"github.com/mattn/go-gtk/gtk"
 	"runtime"
+
+	"github.com/mattn/go-gtk/gtk"
 )
 
 // Main
