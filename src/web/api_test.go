@@ -38,7 +38,7 @@ func doRequest(client *http.Client, method string, uri string, data ...string) (
 }
 func TestStartServer(t *testing.T) {
 	go func() {
-		StartService()
+		StartApiService()
 	}()
 	time.Sleep(1 * time.Second)
 }
