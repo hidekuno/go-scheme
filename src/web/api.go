@@ -14,7 +14,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -141,7 +140,7 @@ func sessionInit() {
 }
 
 // Start Service
-func StartService() {
+func StartApiService() {
 
 	scheme.BuildFunc()
 	rootEnvTbl = map[string]*scheme.SimpleEnv{}
@@ -156,14 +155,4 @@ func StartService() {
 	if err := http.ListenAndServe(":9000", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
-}
-
-// Start Wasm
-func StartWebAseembly() {
-	listen := flag.String("listen", ":9000", "listen address")
-	dir := flag.String("dir", "./wasm", "directory to serve")
-	flag.Parse()
-
-	log.Printf("listening on %q...", *listen)
-	log.Fatal(http.ListenAndServe(*listen, http.FileServer(http.Dir(*dir))))
 }

@@ -13,7 +13,7 @@ package main
 */
 import (
 	"runtime"
-	"scheme/web"
+	"web"
 )
 
 // Main
@@ -21,5 +21,5 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	web.StartService()
+	web.StartApiService()
 }

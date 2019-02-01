@@ -4,7 +4,7 @@ package main
    Go lang 3rd study program.
    hidekuno@gmail.com
 
-   GOARCH=wasm GOOS=js go build -o lisp.wasm wasm_lisp.go
+   GOARCH=wasm GOOS=js go build -o lisp.wasm lisp_wasm.go
 */
 import (
 	"scheme"
