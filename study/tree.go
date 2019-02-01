@@ -157,11 +157,11 @@ func CreateTree(stream *os.File) *Item {
 		}
 
 		itemName := ""
-		for _, s := range strings.Split(string(line), ".") {
+		for _, s := range strings.Split(string(line), DelimiterChar) {
 			if itemName == "" {
 				itemName = s
 			} else {
-				itemName = itemName + "." + s
+				itemName = itemName + DelimiterChar + s
 			}
 			if _, ok := cache[itemName]; ok {
 				continue

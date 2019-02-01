@@ -8,12 +8,13 @@ package draw
 
 import (
 	"draw"
-	"github.com/mattn/go-gtk/gdk"
-	"github.com/mattn/go-gtk/gdkpixbuf"
-	"github.com/mattn/go-gtk/gtk"
 	"reflect"
 	"scheme"
 	"strconv"
+
+	"github.com/mattn/go-gtk/gdk"
+	"github.com/mattn/go-gtk/gdkpixbuf"
+	"github.com/mattn/go-gtk/gtk"
 )
 
 var (

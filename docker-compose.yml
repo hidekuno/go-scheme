@@ -11,4 +11,5 @@ goscheme:
     - ./:/root/go-scheme
   environment:
     - "TZ=Japan"
+    - "DISPLAY=docker.for.mac.localhost:0"
   container_name: go-scheme
