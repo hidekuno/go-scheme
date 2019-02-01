@@ -141,7 +141,7 @@ func sessionInit() {
 }
 
 // Start Service
-func StartService() {
+func StartApiService() {
 
 	scheme.BuildFunc()
 	rootEnvTbl = map[string]*scheme.SimpleEnv{}
