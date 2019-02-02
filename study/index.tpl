@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
+  <title>websocket {{.Date}}</title>
 </head>
 <body>
   <div class="container">
