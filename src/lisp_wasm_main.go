@@ -16,5 +16,6 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	web.StartWebAseembly()
+	//web.StartWebAseembly()
+	web.StartWebSocket()
 }
