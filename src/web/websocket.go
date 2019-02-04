@@ -25,21 +25,21 @@ import (
 type Event struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
-	User string `json:"user"`
 }
 
-var participants = list.List{}
+var clients = list.List{}
 
 func socket(conn *websocket.Conn) {
-	participation := participants.PushBack(conn)
 
 	rand.Seed(time.Now().Unix())
 	id := fmt.Sprintf("#%02x%02x%02x", rand.Intn(255), rand.Intn(255), rand.Intn(255))
 	logger := log.New(os.Stdout, fmt.Sprintf("[%s]\t", id), 0)
 
+	self := clients.PushBack(conn)
+
 	defer func() {
 		conn.Close()
-		participants.Remove(participation)
+		clients.Remove(self)
 		logger.Println("Exited loop")
 	}()
 
@@ -48,7 +48,7 @@ func socket(conn *websocket.Conn) {
 		Text string
 	}{}
 
-	ev := &Event{Type: "CONNECT", Text: ";Hello, Web Socket", User: id}
+	ev := &Event{Type: "CONNECT", Text: ";Hello, Web Socket"}
 	b, _ := json.Marshal(ev)
 	conn.Write(b)
 	for {
@@ -58,7 +58,7 @@ func socket(conn *websocket.Conn) {
 			} else {
 				logger.Println("Unexpected error:", err)
 			}
-			return // Exit from this loop
+			return
 		}
 		switch msg.Type {
 		case "KEEPALIVE":
@@ -71,7 +71,7 @@ func message(w http.ResponseWriter, r *http.Request) {
 
 	b, _ := ioutil.ReadAll(r.Body)
 	fmt.Println(string(b))
-	for e := participants.Front(); e != nil; e = e.Next() {
+	for e := clients.Front(); e != nil; e = e.Next() {
 		e.Value.(*websocket.Conn).Write(b)
 	}
 	w.WriteHeader(http.StatusOK)

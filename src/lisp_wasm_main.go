@@ -20,20 +20,18 @@ import (
 	"web"
 )
 
-type Event struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-	User string `json:"user"`
-}
+const (
+	URL = "http://localhost:9000/message"
+)
 
 func broadcast_code(code string) {
 
-	ev := &Event{Type: "MESSAGE", Text: code, User: "test"}
+	ev := &web.Event{Type: "MESSAGE", Text: code}
 	data, _ := json.Marshal(ev)
 
 	client := &http.Client{Timeout: time.Duration(10) * time.Second}
 
-	req, _ := http.NewRequest("POST", "http://localhost:9000/message", bytes.NewBuffer(data))
+	req, _ := http.NewRequest("POST", URL, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
