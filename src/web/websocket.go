@@ -18,20 +18,9 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"flag"
 
 	"golang.org/x/net/websocket"
 )
-
-// Start Wasm
-func StartWebAseembly() {
-	listen := flag.String("listen", ":9000", "listen address")
-	dir := flag.String("dir", "./wasm", "directory to serve")
-	flag.Parse()
-
-	log.Printf("listening on %q...", *listen)
-	log.Fatal(http.ListenAndServe(*listen, http.FileServer(http.Dir(*dir))))
-}
 
 type Event struct {
 	Type string `json:"type"`
@@ -40,6 +29,7 @@ type Event struct {
 }
 
 var participants = list.List{}
+
 func socket(conn *websocket.Conn) {
 	participation := participants.PushBack(conn)
 
@@ -58,10 +48,9 @@ func socket(conn *websocket.Conn) {
 		Text string
 	}{}
 
-	ev := &Event{Type: "CONNECT", Text: "yourself", User: id}
+	ev := &Event{Type: "CONNECT", Text: ";Hello, Web Socket", User: id}
 	b, _ := json.Marshal(ev)
 	conn.Write(b)
-
 	for {
 		if err := websocket.JSON.Receive(conn, &msg); err != nil {
 			if err == io.EOF {
@@ -73,10 +62,6 @@ func socket(conn *websocket.Conn) {
 		}
 		switch msg.Type {
 		case "KEEPALIVE":
-			ev := &Event{Type: "MESSAGE", Text: "yourself", User: id}
-			b, _ := json.Marshal(ev)
-			conn.Write(b)
-
 		default:
 		}
 	}
@@ -105,14 +90,10 @@ func StartWebSocket() {
 		}
 		tpl.Execute(w, m)
 	})
+	http.Handle("/wasm/", http.StripPrefix("/wasm/", http.FileServer(http.Dir("./wasm"))))
 
-	contents := []string{"wasm_exec.js","main.js", "lisp.wasm","wasm.html"}
-	for _, s := range contents {
-		http.HandleFunc("/" + s, func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "./wasm/" + s)
-		})
-	}
 	port := "9000"
 	log.Println("Listening on port:", port)
 	http.ListenAndServe(":"+port, nil)
+	//log.Fatal(http.ListenAndServe(*listen, http.FileServer(http.Dir(*dir))))
 }
