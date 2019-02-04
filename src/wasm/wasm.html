@@ -2,15 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
   <title>Go Scheme wasm</title>
 <style type=""text/css"">
 <!--
 .result {
+  left:     200px;
   position: relative;
-  left: 56px;
   background-color: white;
-  width: 800px;
-  height: 24px;
+  margin-width: 90px;
+  font-size: 18px;
 }
 -->
 </style>
@@ -37,18 +39,19 @@
     });
   </script>
 
-  <center><h2>Mini Scheme Web Assembly Demo</h2></center>
-  <div id="head-1">
-    <div id="calcResult" class="result"></div>
-  </div>
+  <center><h2>Mini&nbsp;<span style="color:#FFE900">Scheme&nbsp;</span>Web&nbsp;<span style="color:#28AFB0">Assembly&nbsp;</span>Demo&nbsp;<span style="color:#E53D00">Program</span></h2></center>
 
   <center>
-  <div id="body">
-    <textarea id="sExpression" style="font-size: 14px;" name="sexpression" cols="128" rows="30"></textarea>
+  <div id="head-1" class="row">
+    <p id="calcResult" style="text-align: left;" class="result">&nbsp;</p>
+  </div>
+  <div id="body" class="row">
+    <textarea id="sExpression" style="font-size: 16px; width: 920px; height:320px;" name="sexpression" cols="128" rows="30"></textarea>
   </div>
   </center>
   <div id="head-2" style="float: right">
-   <button onClick="eval();" id="evalButton" style="font-size: 14px">Eval</button>
+    <button class="button-primary" onClick="eval();" id="evalButton" style="font-size: 14px">Eval</button>
   </div>
+  <script src="websocket.js"></script>
 </body>
 </html>
