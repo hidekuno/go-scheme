@@ -338,7 +338,7 @@ func TestListFunc(t *testing.T) {
 	DoCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
 	exp, _ = DoCoreLogic("cnt", rootEnv)
 	if !checkLogicInt(exp, 5) {
-		t.Fatal("failed test: reduce")
+		t.Fatal("failed test: for-each")
 	}
 }
 func TestBasicOperation(t *testing.T) {
