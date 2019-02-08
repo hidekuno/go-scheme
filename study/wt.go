@@ -82,7 +82,7 @@ func main() {
 	http.HandleFunc("/socket", s.ServeHTTP)
 	http.HandleFunc("/message", message)
 	http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
-		tpl := template.Must(template.ParseFiles("index.tpl"))
+		tpl := template.Must(template.ParseFiles("index.j2"))
 		m := map[string]string{
 			"Date": time.Now().Format("2006-01-02"),
 		}
