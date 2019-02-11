@@ -21,7 +21,9 @@ import (
 
 	"golang.org/x/net/websocket"
 )
-
+const (
+	RESOURCEDIR = "wasm"
+)
 type Event struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
@@ -77,23 +79,83 @@ func message(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "OK")
 }
+func index(w http.ResponseWriter, r *http.Request) {
+	index_tmpl := `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
+  <title>Go Scheme wasm  {{.Date}}</title>
+<style type="text/css">
+<!--
+.result {
+  left:     200px;
+  position: relative;
+  background-color: whitegray;
+  font-size: 1.0em;
+  font-family: -webkit-body
+}
+-->
+</style>
+</head>
 
+<body>
+  <script src="{{.Resource}}/wasm_exec.js"></script>
+  <script>
+    if (!WebAssembly.instantiateStreaming) { // polyfill
+      WebAssembly.instantiateStreaming = async (resp, importObject) => {
+        const source = await (await resp).arrayBuffer();
+        return await WebAssembly.instantiate(source, importObject);
+      };
+    }
+    const go = new Go();
+    let mod, inst;
+    WebAssembly.instantiateStreaming(fetch("{{.Resource}}/lisp.wasm"), go.importObject).then(async (result) => {
+      mod = result.module;
+      inst = result.instance;
+      console.clear();
+      await go.run(inst);
+    }).catch((err) => {
+      console.error(err);
+    });
+  </script>
+
+  <center><h2>Mini&nbsp;<span style="color:#FFE900">Scheme&nbsp;</span>Web&nbsp;<span style="color:#28AFB0">Assembly&nbsp;</span>Demo&nbsp;<span style="color:#E53D00">Program</span></h2></center>
+
+  <center>
+  <div id="head" class="row">
+    <p id="calcResult" style="text-align: left;" class="result">&nbsp;</p>
+  </div>
+  <div id="body" class="row">
+    <textarea id="sExpression" style="font-size: 16px; width: 920px; height:320px;" name="sexpression" cols="128" rows="30"></textarea>
+  </div>
+  </center>
+  <div id="tail" style="float: right">
+    <button class="button-primary" onClick="eval();" id="evalButton" style="font-size: 14px">Eval</button>
+  </div>
+  <script src="{{.Resource}}/websocket.js"></script>
+</body>
+</html>
+`
+	tpl := template.Must(template.New("wasm index").Parse(index_tmpl))
+	m := map[string]string{
+		"Date": time.Now().Format("2006-01-02"),
+		"Resource": RESOURCEDIR,
+	}
+	if err := tpl.ExecuteTemplate(w, "wasm index", m); err != nil {
+		log.Fatal(err)
+	}
+}
 func StartWebSocket() {
 
 	s := &websocket.Server{Handler: socket}
 	http.HandleFunc("/socket", s.ServeHTTP)
 	http.HandleFunc("/message", message)
-	http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
-		tpl := template.Must(template.ParseFiles("index.tpl"))
-		m := map[string]string{
-			"Date": time.Now().Format("2006-01-02"),
-		}
-		tpl.Execute(w, m)
-	})
-	http.Handle("/wasm/", http.StripPrefix("/wasm/", http.FileServer(http.Dir("./wasm"))))
+	http.HandleFunc("/index", index)
+	http.Handle("/" + RESOURCEDIR + "/", http.StripPrefix("/" + RESOURCEDIR + "/", http.FileServer(http.Dir("./" + RESOURCEDIR))))
 
 	port := "9000"
 	log.Println("Listening on port:", port)
 	http.ListenAndServe(":"+port, nil)
-	//log.Fatal(http.ListenAndServe(*listen, http.FileServer(http.Dir(*dir))))
 }
