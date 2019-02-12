@@ -26,7 +26,7 @@ const (
 
 func broadcast_code(code string) {
 
-	ev := &web.Event{Type: "MESSAGE", Text: code}
+	ev := &web.Event{Type: "LISPCODE", Text: code}
 	data, _ := json.Marshal(ev)
 
 	client := &http.Client{Timeout: time.Duration(10) * time.Second}
