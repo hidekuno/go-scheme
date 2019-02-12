@@ -8,8 +8,25 @@
 	return raw;
     };
     var append = function(code) { history.innerHTML = `<li>${escape(code.text)}</li>` + history.innerHTML};
-
-    socket.onmessage = e => { code = JSON.parse(e.data); sExpression.value = code.text; append(code);};
+    var send =  function () {
+	message	= sExpression.value;
+	fetch("/message", {method:"POST",body:JSON.stringify({type:"EVAL",text: message}), headers:{"content-type":"application/json"}});
+    };
+    socket.onmessage = e => {
+	code = JSON.parse(e.data);
+	if (code.type == "CONNECT") {
+	    append(code);
+	} else 	if (code.type == "LISPCODE") {
+	    sExpression.value = code.text;
+	} else 	if (code.type == "EVAL") {
+	    append(code);
+	}
+    };
     socket.onerror = e => console.log("[ONERROR]", e);
     socket.onclose = e => console.log("[ONCLOSE]", e);
+
+    document.querySelector('#evalButton').onclick = function() {
+	eval();
+	send();
+    };
 })();
