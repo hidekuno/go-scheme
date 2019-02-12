@@ -21,9 +21,11 @@ import (
 
 	"golang.org/x/net/websocket"
 )
+
 const (
 	RESOURCEDIR = "wasm"
 )
+
 type Event struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
@@ -94,7 +96,15 @@ func index(w http.ResponseWriter, r *http.Request) {
   position: relative;
   background-color: whitegray;
   font-size: 1.0em;
-  font-family: -webkit-body
+  font-family: -webkit-body;
+}
+ul {
+  background: #f3fbff;
+  border: 2px skyblue dashed;
+}
+ul li {
+  padding 5px 5px;
+  color: #0000cd;
 }
 -->
 </style>
@@ -134,13 +144,16 @@ func index(w http.ResponseWriter, r *http.Request) {
   <div id="tail" style="float: right">
     <button class="button-primary" onClick="eval();" id="evalButton" style="font-size: 14px">Eval</button>
   </div>
+  <div class="container">
+    <ul id="history"></ul>
+  </div>
   <script src="{{.Resource}}/websocket.js"></script>
 </body>
 </html>
 `
 	tpl := template.Must(template.New("wasm index").Parse(index_tmpl))
 	m := map[string]string{
-		"Date": time.Now().Format("2006-01-02"),
+		"Date":     time.Now().Format("2006-01-02"),
 		"Resource": RESOURCEDIR,
 	}
 	if err := tpl.ExecuteTemplate(w, "wasm index", m); err != nil {
@@ -153,7 +166,7 @@ func StartWebSocket() {
 	http.HandleFunc("/socket", s.ServeHTTP)
 	http.HandleFunc("/message", message)
 	http.HandleFunc("/index", index)
-	http.Handle("/" + RESOURCEDIR + "/", http.StripPrefix("/" + RESOURCEDIR + "/", http.FileServer(http.Dir("./" + RESOURCEDIR))))
+	http.Handle("/"+RESOURCEDIR+"/", http.StripPrefix("/"+RESOURCEDIR+"/", http.FileServer(http.Dir("./"+RESOURCEDIR))))
 
 	port := "9000"
 	log.Println("Listening on port:", port)
