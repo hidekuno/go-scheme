@@ -100,11 +100,13 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 ul {
   background: #f3fbff;
-  border: 2px skyblue dashed;
+  border: 2px skyblue;
 }
 ul li {
   padding 5px 5px;
   color: #0000cd;
+  font-size: 0.75em;
+  font-family: -webkit-body;
 }
 -->
 </style>
@@ -142,7 +144,7 @@ ul li {
   </div>
   </center>
   <div id="tail" style="float: right">
-    <button class="button-primary" onClick="eval();" id="evalButton" style="font-size: 14px">Eval</button>
+    <button class="button-primary" id="evalButton" style="font-size: 14px">Eval</button>
   </div>
   <div class="container">
     <ul id="history"></ul>
