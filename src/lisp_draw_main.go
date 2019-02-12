@@ -19,11 +19,5 @@ func main() {
 
 	scheme.BuildFunc()
 	draw.BuildGtkFunc()
-
-	cui := make(chan bool)
-	go func() {
-		scheme.DoInteractive()
-		cui <- true
-	}()
-	<-cui
+	scheme.DoInteractive()
 }
