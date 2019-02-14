@@ -113,8 +113,9 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	})
 	submenu.Append(menuitem)
 	if titleName == "scheme.go" {
-		menuitem.SetSensitive(false)
+		cascademenu.SetSensitive(false)
 	}
+
 	cascademenu = gtk.NewMenuItemWithMnemonic("_Fractal")
 	menubar.Append(cascademenu)
 	submenu = gtk.NewMenu()
@@ -135,6 +136,9 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	menuitem = gtk.NewMenuItemWithMnemonic("_Sierpinski")
 	menuitem.Connect("activate", func() { drawReEntrant(fractal.CreateSierpinski(SierpinskiMax, drawLineReEntrant)) })
 	submenu.Append(menuitem)
+	if titleName == "scheme.go" {
+		cascademenu.SetSensitive(false)
+	}
 
 	cascademenu = gtk.NewMenuItemWithMnemonic("_Image")
 	menubar.Append(cascademenu)
@@ -169,7 +173,9 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 		}
 	})
 	submenu.Append(menuitem)
-
+	if titleName == "scheme.go" {
+		cascademenu.SetSensitive(false)
+	}
 	//--------------------------------------------------------
 	// DrawingArea
 	//--------------------------------------------------------

@@ -65,19 +65,19 @@ func BuildGtkFunc() {
 		//--------------------------------------------------------
 		// Function for lisp
 		//--------------------------------------------------------
-		LispDrawLine := func(x0, y0, x1, y1 int) {
+		lispDrawLine := func(x0, y0, x1, y1 int) {
 			gdk.ThreadsEnter()
 			pixmap.GetDrawable().DrawLine(fg, x0, y0, x1, y1)
 			gdkwin.Invalidate(nil, false)
 			gdk.ThreadsLeave()
 		}
-		LispDrawClear := func() {
+		lispDrawClear := func() {
 			gdk.ThreadsEnter()
 			pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
 			gdkwin.Invalidate(nil, false)
 			gdk.ThreadsLeave()
 		}
-		LispDrawImage := func(pixbuf *gdkpixbuf.Pixbuf, x, y int) {
+		lispDrawImage := func(pixbuf *gdkpixbuf.Pixbuf, x, y int) {
 			gdk.ThreadsEnter()
 			pixmap.GetDrawable().DrawPixbuf(fg, pixbuf, 0, 0, x, y, -1, -1, gdk.RGB_DITHER_NONE, 0, 0)
 			gdkwin.Invalidate(nil, false)
@@ -89,7 +89,7 @@ func BuildGtkFunc() {
 			if len(exp) != 0 {
 				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			LispDrawClear()
+			lispDrawClear()
 			return scheme.NewNil(), nil
 		})
 		scheme.AddBuiltInFunc("draw-line", func(exp ...scheme.Expression) (scheme.Expression, error) {
@@ -106,7 +106,7 @@ func BuildGtkFunc() {
 					return nil, scheme.NewRuntimeError("E1003", reflect.TypeOf(e).String())
 				}
 			}
-			LispDrawLine(point[0], point[1], point[2], point[3])
+			lispDrawLine(point[0], point[1], point[2], point[3])
 			return scheme.NewNil(), nil
 		})
 		scheme.AddBuiltInFunc("create-image-from-file", func(exp ...scheme.Expression) (scheme.Expression, error) {
@@ -138,7 +138,7 @@ func BuildGtkFunc() {
 			if !ok {
 				return nil, scheme.NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
 			}
-			LispDrawImage(img.Value, x.Value, y.Value)
+			lispDrawImage(img.Value, x.Value, y.Value)
 			return scheme.NewNil(), nil
 
 		})
