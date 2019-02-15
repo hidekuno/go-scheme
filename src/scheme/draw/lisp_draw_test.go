@@ -33,11 +33,11 @@ func TestDraw(t *testing.T) {
 	if _, ok := exp.(*scheme.Nil); !ok {
 		t.Fatal("failed test: draw-line")
 	}
-	exp, _ = scheme.DoCoreLogic("(create-image-from-file \"../../../images/ch2-Z-G-30.gif\")", rootEnv)
+	exp, _ = scheme.DoCoreLogic("(create-image-from-file \"../../../images/duke.png\")", rootEnv)
 	if _, ok := exp.(*Image); !ok {
 		t.Fatal("failed test: create-image-from-file")
 	}
-	_, _ = scheme.DoCoreLogic("(define img (create-image-from-file \"../../../images/ch2-Z-G-30.gif\"))", rootEnv)
+	_, _ = scheme.DoCoreLogic("(define img (create-image-from-file \"../../../images/duke.png\"))", rootEnv)
 
 	exp, _ = scheme.DoCoreLogic("(draw-image img 10 10)", rootEnv)
 	if _, ok := exp.(*scheme.Nil); !ok {
