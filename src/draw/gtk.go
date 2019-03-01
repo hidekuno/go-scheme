@@ -13,18 +13,13 @@ package draw
 
 import (
 	"fmt"
-	"fractal"
 	"time"
 
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
-)
 
-const (
-	KochMax       = 12
-	TreeMax       = 20
-	SierpinskiMax = 16
+	"fractal"
 )
 
 func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
@@ -148,7 +143,7 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	menuitem = gtk.NewMenuItemWithMnemonic("_Simple")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile("../images/glenda.png")
+		org_pixbuf, err := gdkpixbuf.NewPixbufFromFile(SampleImage)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
