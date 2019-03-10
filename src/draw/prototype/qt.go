@@ -13,6 +13,7 @@ import (
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 
+	"draw"
 	"fractal"
 )
 
@@ -41,7 +42,7 @@ func (self *Canvas) paintEvent(event *gui.QPaintEvent) {
 
 func (self *Canvas) DrawImage() {
 	image := gui.NewQImage()
-	image.Load(SampleImage, "png")
+	image.Load(draw.SampleImage, "png")
 
 	tf := gui.NewQTransform()
 	w := (float64)(image.Width())
@@ -78,13 +79,13 @@ func BuildQtApp(titleName string) {
 
 	canvas := NewCanvas()
 	kochAction.ConnectTriggered(func(bool) {
-		canvas.ChangeDrawble(fractal.CreateKoch(KochMax, canvas.DrawLine))
+		canvas.ChangeDrawble(fractal.CreateKoch(draw.KochMax, canvas.DrawLine))
 	})
 	treeAction.ConnectTriggered(func(bool) {
-		canvas.ChangeDrawble(fractal.CreateTree(TreeMax, canvas.DrawLine))
+		canvas.ChangeDrawble(fractal.CreateTree(draw.TreeMax, canvas.DrawLine))
 	})
 	sierpinskiAction.ConnectTriggered(func(bool) {
-		canvas.ChangeDrawble(fractal.CreateSierpinski(SierpinskiMax, canvas.DrawLine))
+		canvas.ChangeDrawble(fractal.CreateSierpinski(draw.SierpinskiMax, canvas.DrawLine))
 	})
 
 	imageMenu := menubar.AddMenu2("Image")
@@ -92,7 +93,7 @@ func BuildQtApp(titleName string) {
 	glendaAction.ConnectTriggered(func(bool) {
 		canvas.ChangeDrawble(func() {
 			image := gui.NewQImage()
-			image.Load(SampleImage, "png")
+			image.Load(draw.SampleImage, "png")
 
 			tf := gui.NewQTransform()
 			w := (float64)(image.Width())
