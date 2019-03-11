@@ -7,7 +7,7 @@
 package main
 
 import (
-	draw "draw/prototype"
+	"draw/prototype"
 	"github.com/therecipe/qt/widgets"
 )
 
