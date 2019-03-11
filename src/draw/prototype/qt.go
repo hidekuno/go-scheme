@@ -17,6 +17,10 @@ import (
 	"fractal"
 )
 
+var (
+	menubar *widgets.QMenuBar
+)
+
 type Canvas struct {
 	*widgets.QWidget
 	painter *gui.QPainter
@@ -29,7 +33,7 @@ func NewCanvas() *Canvas {
 	return canvas
 }
 func (self *Canvas) DrawLine(x0, y0, x1, y1 int) {
-	self.painter.DrawLine3(x0, y0, x1, y1)
+	self.painter.DrawLine3(x0, y0+menubar.Height(), x1, y1+menubar.Height())
 }
 
 func (self *Canvas) paintEvent(event *gui.QPaintEvent) {
@@ -53,7 +57,7 @@ func BuildQtApp(titleName string) {
 	window.SetWindowTitle(titleName)
 	window.Resize(core.NewQSize2(720, 560))
 
-	menubar := window.MenuBar()
+	menubar = window.MenuBar()
 	fileMenu := menubar.AddMenu2("&File")
 	exitAction := fileMenu.AddAction("&Exit")
 	exitAction.SetShortcut(gui.QKeySequence_FromString("Ctrl+Q", 0))
