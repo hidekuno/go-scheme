@@ -40,19 +40,6 @@ func (self *Canvas) paintEvent(event *gui.QPaintEvent) {
 	self.painter.End()
 }
 
-func (self *Canvas) DrawImage() {
-	image := gui.NewQImage()
-	image.Load(draw.SampleImage, "png")
-
-	tf := gui.NewQTransform()
-	w := (float64)(image.Width())
-	h := (float64)(image.Height())
-	tf.Translate(w, h)
-	// tf.Rotate(180.0, core.Qt__XAxis)
-	tf.Rotate(180.0, core.Qt__YAxis)
-	self.painter.SetTransform(tf, true)
-	self.painter.DrawImage(core.NewQRectF4(0, 0, w, h), image, core.NewQRectF(), core.Qt__AutoColor)
-}
 func (self *Canvas) ChangeDrawble(p func()) {
 	self.draw = p
 	self.Update()
