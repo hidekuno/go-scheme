@@ -123,6 +123,7 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	menuitem = gtk.NewMenuItemWithMnemonic("_CSingleKoch")
 	menuitem.Connect("activate", func() { drawSingle(fractal.CreateKoch(KochMax, drawLineSingle)) })
 	submenu.Append(menuitem)
+	menuitem.SetSensitive(false)
 
 	menuitem = gtk.NewMenuItemWithMnemonic("_Tree")
 	menuitem.Connect("activate", func() { drawReEntrant(fractal.CreateTree(TreeMax, drawLineReEntrant)) })
