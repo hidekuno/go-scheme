@@ -768,7 +768,7 @@ func parse(tokens []string) (Expression, int, error) {
 		count := 1
 		for {
 			if tokens[0] == ")" {
-				count = count + 1
+				count++
 				break
 			}
 			exp, c, err := parse(tokens)
@@ -972,10 +972,10 @@ func countParenthesis(program string) bool {
 			search = true
 		}
 		if c == '(' && search {
-			left = left + 1
+			left++
 		}
 		if c == ')' && search {
-			right = right + 1
+			right++
 		}
 	}
 	return left <= right
