@@ -27,6 +27,7 @@ import (
 
 type (
 	Environment map[string]Expression
+	EvalFunc    func([]Expression, *SimpleEnv) (Expression, error)
 )
 
 const (
@@ -35,9 +36,16 @@ const (
 	PROMPT      = "scheme.go> "
 )
 
+type FuncKind int
+
+const (
+	AllParamEval FuncKind = iota
+	ExecuteParamEval
+)
+
 var (
 	builtinFuncTbl map[string]func(...Expression) (Expression, error)
-	specialFuncTbl map[string]func(*SimpleEnv, []Expression) (Expression, error)
+	specialFuncTbl map[string]EvalFunc
 	errorMsg       = map[string]string{
 		"E0001": "Unexpected EOF while reading",
 		"E0002": "Unexpected ')' while reading",
@@ -448,13 +456,45 @@ func (self *Pair) String() string {
 	return buffer.String()
 }
 
+// BuildInFunc
+type BuildInFunc struct {
+	Expression
+	Impl EvalFunc
+}
+
+func NewBuildInFunc(fn EvalFunc) *BuildInFunc {
+	f := new(BuildInFunc)
+	f.Impl = fn
+	return f
+}
+func (self *BuildInFunc) String() string {
+	return "BuildInFunction: "
+}
+func (self *BuildInFunc) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
+	var args []Expression
+
+	for _, e := range exp {
+		c, err := eval(e, env)
+		if err != nil {
+			return e, err
+		}
+		if k, ok := c.(*Continuation); ok {
+			return k, nil
+		}
+		args = append(args, c)
+	}
+	return self.Impl(args, env)
+	//	return self.Impl(args, env)
+	//	return self.Impl(exp, env)
+}
+
 // Function (with eval exexuting)
 type SpecialFunc struct {
 	Expression
-	Impl func(*SimpleEnv, []Expression) (Expression, error)
+	Impl EvalFunc
 }
 
-func NewSpecialFunc(fn func(*SimpleEnv, []Expression) (Expression, error)) *SpecialFunc {
+func NewSpecialFunc(fn EvalFunc) *SpecialFunc {
 	sf := new(SpecialFunc)
 	sf.Impl = fn
 	return sf
@@ -464,15 +504,7 @@ func (self *SpecialFunc) String() string {
 }
 
 func (self *SpecialFunc) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
-	e, err := self.Impl(env, exp)
-	if err != nil {
-		return nil, err
-	}
-	if k, ok := e.(*Continuation); ok {
-		return k, nil
-	} else {
-		return e, nil
-	}
+	return self.Impl(exp, env)
 }
 
 // Operation (without eval exexuting)
@@ -1031,7 +1063,23 @@ func repl(stream *os.File, rootEnv *SimpleEnv) {
 // Build Global environement.
 func BuildFunc() {
 	builtinFuncTbl = map[string]func(...Expression) (Expression, error){}
-	specialFuncTbl = map[string]func(*SimpleEnv, []Expression) (Expression, error){}
+	specialFuncTbl = map[string]EvalFunc{}
+
+	eval_all_param := func(exp []Expression, env *SimpleEnv) ([]Expression, error) {
+		var args []Expression
+
+		for _, e := range exp {
+			c, err := eval(e, env)
+			if err != nil {
+				return nil, err
+			}
+			if k, ok := c.(*Continuation); ok {
+				return k, nil
+			}
+			args = append(args, c)
+		}
+		return args, nil
+	}
 
 	// addl, subl,imul,idiv,modulo
 	calcOperate := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
@@ -1487,7 +1535,7 @@ func BuildFunc() {
 		return NewInteger(result), nil
 	}
 	// syntax keyword implements
-	specialFuncTbl["if"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["if"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1507,7 +1555,7 @@ func BuildFunc() {
 		}
 		return NewNil(), nil
 	}
-	specialFuncTbl["define"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["define"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1534,7 +1582,7 @@ func BuildFunc() {
 		(*env).Regist(key.Value, e)
 		return key, nil
 	}
-	specialFuncTbl["lambda"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["lambda"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1545,7 +1593,7 @@ func BuildFunc() {
 		}
 		return NewFunction(env, l, exp[1:], "lambda"), nil
 	}
-	specialFuncTbl["set!"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1564,7 +1612,7 @@ func BuildFunc() {
 		(*env).Set(s.Value, e)
 		return e, nil
 	}
-	specialFuncTbl["let"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["let"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
 		body := 1
@@ -1623,7 +1671,7 @@ func BuildFunc() {
 
 	}
 	// and or not
-	logicalOperate := func(env *SimpleEnv, exp []Expression, bcond bool, bret bool) (Expression, error) {
+	logicalOperate := func(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1641,19 +1689,19 @@ func BuildFunc() {
 		}
 		return NewBoolean(bret), nil
 	}
-	specialFuncTbl["and"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
-		return logicalOperate(env, exp, false, true)
+	specialFuncTbl["and"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return logicalOperate(exp, env, false, true)
 	}
-	specialFuncTbl["or"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
-		return logicalOperate(env, exp, true, false)
+	specialFuncTbl["or"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return logicalOperate(exp, env, true, false)
 	}
-	specialFuncTbl["delay"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["delay"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return NewPromise(env, exp[0]), nil
 	}
-	specialFuncTbl["force"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["force"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1667,13 +1715,13 @@ func BuildFunc() {
 		}
 		return eval(p.Body, p.Env)
 	}
-	specialFuncTbl["identity"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["identity"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return eval(exp[0], env)
 	}
-	specialFuncTbl["call/cc"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["call/cc"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1698,7 +1746,7 @@ func BuildFunc() {
 			return e, nil
 		}
 	}
-	specialFuncTbl["cond"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["cond"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1732,13 +1780,13 @@ func BuildFunc() {
 		}
 		return NewNil(), nil
 	}
-	specialFuncTbl["quote"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return exp[0], nil
 	}
-	specialFuncTbl["time"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["time"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1750,7 +1798,7 @@ func BuildFunc() {
 		fmt.Println(t1.Sub(t0))
 		return NewNil(), nil
 	}
-	specialFuncTbl["load-file"] = func(env *SimpleEnv, exp []Expression) (Expression, error) {
+	specialFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -1782,7 +1830,7 @@ func AddBuiltInFunc(name string, body func(...Expression) (Expression, error)) {
 	builtinFuncTbl[name] = body
 }
 
-func AddSpecialFunc(name string, body func(*SimpleEnv, []Expression) (Expression, error)) {
+func AddSpecialFunc(name string, body EvalFunc) {
 	specialFuncTbl[name] = body
 }
 
