@@ -15,7 +15,7 @@ import (
 
 func BuildGoFunc() {
 
-	scheme.AddSpecialFunc("go-append", func(env *scheme.SimpleEnv, exp []scheme.Expression) (scheme.Expression, error) {
+	scheme.AddBuildInFunc("go-append", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
 		if len(exp) < 2 {
 			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
