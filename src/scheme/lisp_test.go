@@ -112,10 +112,7 @@ var (
 
 func TestCheckFunclist(t *testing.T) {
 	BuildFunc()
-	for key, _ := range builtinFuncTbl {
-		t.Log(key)
-	}
-	for key, _ := range specialFuncTbl {
+	for key, _ := range buildinFuncTbl {
 		t.Log(key)
 	}
 }
@@ -852,8 +849,8 @@ func TestInteractive(t *testing.T) {
 	iostub("(list 1 2 3 (list 4 5))", "(1 2 3 (4 5))")
 	iostub("(cons 1 2)", "(1 . 2)")
 	iostub("(lambda (n m) (+ n m))", "Function:")
-	iostub("+", "Operatotion or Builtin:")
-	iostub("if", "Special Functon ex. if:")
+	iostub("+", "Build In Function: +")
+	iostub("if", "Build In Function: if")
 	iostub("(delay 1)", "Promise:")
 	iostub("#\\space", "#\\space")
 	iostub("#\\newline", "#\\newline")
