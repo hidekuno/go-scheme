@@ -37,16 +37,9 @@ const (
 	PROMPT      = "scheme.go> "
 )
 
-type FuncKind int
-
-const (
-	AllParamEval FuncKind = iota
-	ExecuteParamEval
-)
-
 var (
 	//	builtinFuncTbl map[string]func(...Expression) (Expression, error)
-	buildinFuncTbl map[string]EvalFunc
+	buildInFuncTbl map[string]EvalFunc
 	errorMsg       = map[string]string{
 		"E0001": "Unexpected EOF while reading",
 		"E0002": "Unexpected ')' while reading",
@@ -819,7 +812,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env).Find(sym.Value); ok {
 				return v, nil
-			} else if v, ok := buildinFuncTbl[sym.Value]; ok {
+			} else if v, ok := buildInFuncTbl[sym.Value]; ok {
 				return NewBuildInFunc(v, sym.Value), nil
 			} else {
 				return sexp, NewRuntimeError("E1008", sym.Value)
@@ -1011,7 +1004,7 @@ func EvalCalcParam(exp []Expression, env *SimpleEnv, fn EvaledAllParamFunc) (Exp
 
 // Build Global environement.
 func BuildFunc() {
-	buildinFuncTbl = map[string]EvalFunc{}
+	buildInFuncTbl = map[string]EvalFunc{}
 
 	// addl, subl,imul,idiv,modulo
 	calcOperate := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
@@ -1042,25 +1035,25 @@ func BuildFunc() {
 		}
 		return result, nil
 	}
-	buildinFuncTbl["+"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["+"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return calcOperate(func(a Number, b Number) Number { return a.Add(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["-"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["-"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return calcOperate(func(a Number, b Number) Number { return a.Sub(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["*"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["*"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return calcOperate(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["/"] = func(exp []Expression, env *SimpleEnv) (se Expression, e error) {
+	buildInFuncTbl["/"] = func(exp []Expression, env *SimpleEnv) (se Expression, e error) {
 		// Not the best. But, Better than before.
 		defer func() {
 			if err := recover(); err != nil {
@@ -1075,8 +1068,8 @@ func BuildFunc() {
 				return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["quotient"] = buildinFuncTbl["/"]
-	buildinFuncTbl["modulo"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["quotient"] = buildInFuncTbl["/"]
+	buildInFuncTbl["modulo"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1123,37 +1116,37 @@ func BuildFunc() {
 		}
 		return NewBoolean(cmp(result, prm)), nil
 	}
-	buildinFuncTbl[">"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl[">"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return cmpOperate(func(a Number, b Number) bool { return a.Greater(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["<"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["<"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return cmpOperate(func(a Number, b Number) bool { return a.Less(b) }, exp...)
 			})
 	}
-	buildinFuncTbl[">="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl[">="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return cmpOperate(func(a Number, b Number) bool { return a.GreaterEqual(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["<="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["<="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return cmpOperate(func(a Number, b Number) bool { return a.LessEqual(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return cmpOperate(func(a Number, b Number) bool { return a.Equal(b) }, exp...)
 			})
 	}
-	buildinFuncTbl["not"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["not"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1167,14 +1160,14 @@ func BuildFunc() {
 	}
 
 	// list operator
-	buildinFuncTbl["list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				var l []Expression
 				return NewList(append(l, exp...)), nil
 			})
 	}
-	buildinFuncTbl["null?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["null?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1187,7 +1180,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1200,7 +1193,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["car"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["car"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1218,7 +1211,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["cdr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["cdr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1237,7 +1230,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["cadr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["cadr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1253,7 +1246,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["cons"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["cons"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1267,7 +1260,7 @@ func BuildFunc() {
 				return NewPair(exp[0], exp[1]), nil
 			})
 	}
-	buildinFuncTbl["append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) < 2 {
@@ -1284,7 +1277,7 @@ func BuildFunc() {
 				return NewList(expList), nil
 			})
 	}
-	buildinFuncTbl["last"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["last"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1302,7 +1295,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["reverse"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["reverse"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 {
@@ -1324,7 +1317,7 @@ func BuildFunc() {
 				}
 			})
 	}
-	buildinFuncTbl["iota"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["iota"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 1 && len(exp) != 2 {
@@ -1381,7 +1374,7 @@ func BuildFunc() {
 		}
 		return NewList(vaList), nil
 	}
-	buildinFuncTbl["map"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["map"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1393,7 +1386,7 @@ func BuildFunc() {
 				return listFunc(lambda, exp...)
 			})
 	}
-	buildinFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1418,7 +1411,7 @@ func BuildFunc() {
 				return NewNil(), nil
 			})
 	}
-	buildinFuncTbl["filter"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["filter"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1437,7 +1430,7 @@ func BuildFunc() {
 				return listFunc(lambda, exp...)
 			})
 	}
-	buildinFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				if len(exp) != 2 {
@@ -1483,35 +1476,35 @@ func BuildFunc() {
 		}
 		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 	}
-	buildinFuncTbl["sqrt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["sqrt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Sqrt, exp...) })
 	}
-	buildinFuncTbl["sin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["sin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Sin, exp...) })
 	}
-	buildinFuncTbl["cos"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["cos"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Cos, exp...) })
 	}
-	buildinFuncTbl["tan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["tan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Tan, exp...) })
 	}
-	buildinFuncTbl["atan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["atan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Atan, exp...) })
 	}
-	buildinFuncTbl["log"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["log"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Log, exp...) })
 	}
-	buildinFuncTbl["exp"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["exp"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Exp, exp...) })
 	}
-	buildinFuncTbl["rand-init"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["rand-init"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 0 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1522,7 +1515,7 @@ func BuildFunc() {
 		rand.Seed(seed.Int64())
 		return NewNil(), nil
 	}
-	buildinFuncTbl["rand-integer"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["rand-integer"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1531,7 +1524,7 @@ func BuildFunc() {
 		}
 		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 	}
-	buildinFuncTbl["expt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["expt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1552,7 +1545,7 @@ func BuildFunc() {
 		return NewInteger(result), nil
 	}
 	// syntax keyword implements
-	buildinFuncTbl["if"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["if"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1572,7 +1565,7 @@ func BuildFunc() {
 		}
 		return NewNil(), nil
 	}
-	buildinFuncTbl["define"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["define"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1599,7 +1592,7 @@ func BuildFunc() {
 		(*env).Regist(key.Value, e)
 		return key, nil
 	}
-	buildinFuncTbl["lambda"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["lambda"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1610,7 +1603,7 @@ func BuildFunc() {
 		}
 		return NewFunction(env, l, exp[1:], "lambda"), nil
 	}
-	buildinFuncTbl["set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1629,7 +1622,7 @@ func BuildFunc() {
 		(*env).Set(s.Value, e)
 		return e, nil
 	}
-	buildinFuncTbl["let"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["let"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		var letsym *Symbol
 		var pname []Expression
 		body := 1
@@ -1706,19 +1699,19 @@ func BuildFunc() {
 		}
 		return NewBoolean(bret), nil
 	}
-	buildinFuncTbl["and"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["and"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return logicalOperate(exp, env, false, true)
 	}
-	buildinFuncTbl["or"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["or"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return logicalOperate(exp, env, true, false)
 	}
-	buildinFuncTbl["delay"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["delay"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return NewPromise(env, exp[0]), nil
 	}
-	buildinFuncTbl["force"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["force"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1732,13 +1725,13 @@ func BuildFunc() {
 		}
 		return eval(p.Body, p.Env)
 	}
-	buildinFuncTbl["identity"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["identity"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return eval(exp[0], env)
 	}
-	buildinFuncTbl["call/cc"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["call/cc"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1763,7 +1756,7 @@ func BuildFunc() {
 			return e, nil
 		}
 	}
-	buildinFuncTbl["cond"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["cond"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1797,13 +1790,13 @@ func BuildFunc() {
 		}
 		return NewNil(), nil
 	}
-	buildinFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return exp[0], nil
 	}
-	buildinFuncTbl["time"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["time"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -1815,7 +1808,7 @@ func BuildFunc() {
 		fmt.Println(t1.Sub(t0))
 		return NewNil(), nil
 	}
-	buildinFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+	buildInFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -1843,8 +1836,8 @@ func AddErrorMsg(code string, value string) {
 }
 
 // add func
-func AddBuildinFunc(name string, body EvalFunc) {
-	buildinFuncTbl[name] = body
+func AddBuildInFunc(name string, body EvalFunc) {
+	buildInFuncTbl[name] = body
 }
 
 func DoEval(sexp Expression, env *SimpleEnv) (Expression, error) {

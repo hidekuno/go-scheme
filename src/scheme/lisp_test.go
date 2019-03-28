@@ -112,7 +112,7 @@ var (
 
 func TestCheckFunclist(t *testing.T) {
 	BuildFunc()
-	for key, _ := range buildinFuncTbl {
+	for key, _ := range buildInFuncTbl {
 		t.Log(key)
 	}
 }
