@@ -483,21 +483,20 @@ func NewFunction(parent *SimpleEnv, param *List, body []Expression, name string)
 	self := new(Function)
 	self.ParamName = *param
 	self.Body = body
-	self.Env = NewSimpleEnv(parent, nil)
+	self.Env = parent
 	self.Name = name
 	return self
 }
 func (self *Function) String() string {
 	return "Function: "
 }
-func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
+func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 	// Bind lambda function' parameters.
 	if len(self.ParamName.Value) != len(exp) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
-	saveEnv := self.Env
-	self.Env = NewSimpleEnv(self.Env, nil)
+	nse := NewSimpleEnv(self.Env, nil)
 	idx := 0
 	for _, v := range self.ParamName.Value {
 		if sym, ok := v.(*Symbol); ok {
@@ -510,9 +509,9 @@ func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, err
 					return k, nil
 				}
 
-				self.Env.Regist(sym.Value, v)
+				nse.Regist(sym.Value, v)
 			} else {
-				self.Env.Regist(sym.Value, exp[idx])
+				nse.Regist(sym.Value, exp[idx])
 			}
 			idx++
 		}
@@ -523,10 +522,10 @@ func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, err
 	)
 	for _, e := range self.Body {
 		if body, ok := e.(*List); ok && self.Name != "lambda" {
-			evalTailRecursion(self.Env, body, self.Name, self.ParamName.Value)
+			evalTailRecursion(nse, body, self.Name, self.ParamName.Value)
 		}
 		for {
-			result, err = eval(e, self.Env)
+			result, err = eval(e, nse)
 			if err != nil {
 				return nil, err
 			}
@@ -536,7 +535,6 @@ func (self *Function) Execute(env *SimpleEnv, exp []Expression) (Expression, err
 		}
 	}
 	// https://github.com/hidekuno/go-scheme/issues/46
-	self.Env = saveEnv
 	return result, nil
 }
 
@@ -559,7 +557,7 @@ func NewLetLoop(param *List, body Expression, name string) *LetLoop {
 func (self *LetLoop) String() string {
 	return "Let Macro: "
 }
-func (self *LetLoop) Execute(env *SimpleEnv, exp []Expression) (Expression, error) {
+func (self *LetLoop) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 	if len(self.ParamName.Value) != len(exp) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -837,12 +835,12 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 				return f.Execute(v[1:], env)
 			} else if fn, ok := proc.(*Function); ok {
 				// (proc 10 20)
-				return fn.Execute(env, v[1:])
+				return fn.Execute(v[1:], env)
 
 			} else if let, ok := proc.(*LetLoop); ok {
 				// (let loop ((a (list 1 2 3))(b 0))
 				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
-				return let.Execute(env, v[1:])
+				return let.Execute(v[1:], env)
 			} else if k, ok := proc.(*Continuation); ok {
 				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
 				k.Body = v[1]
@@ -860,7 +858,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 				return sexp, NewRuntimeError("E1006", reflect.TypeOf(e).String())
 			}
 			// execute
-			return fn.Execute(env, v[1:])
+			return fn.Execute(v[1:], env)
 		}
 	} else if te, ok := sexp.(*TailRecursion); ok {
 		return te.SetParam(env)
@@ -1359,7 +1357,7 @@ func BuildFunc() {
 		var vaList []Expression
 		param := make([]Expression, 1)
 		for _, param[0] = range l.Value {
-			result, err := fn.Execute(nil, param)
+			result, err := fn.Execute(param, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -1403,7 +1401,7 @@ func BuildFunc() {
 				}
 				param := make([]Expression, 1)
 				for _, param[0] = range l.Value {
-					_, err := fn.Execute(nil, param)
+					_, err := fn.Execute(param, nil)
 					if err != nil {
 						return nil, err
 					}
@@ -1451,7 +1449,7 @@ func BuildFunc() {
 				for _, c := range l.Value[1:] {
 					param[0] = result
 					param[1] = c
-					r, err := fn.Execute(nil, param)
+					r, err := fn.Execute(param, nil)
 					result = r
 					if err != nil {
 						return nil, err
@@ -1746,7 +1744,7 @@ func BuildFunc() {
 		param := make([]Expression, 1)
 		param[0] = NewContinuation()
 
-		e, err = lambda.Execute(nil, param)
+		e, err = lambda.Execute(param, nil)
 		if err != nil {
 			return nil, err
 		}
