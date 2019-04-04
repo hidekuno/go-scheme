@@ -730,6 +730,7 @@ func TestErrCase(t *testing.T) {
 		{"(define a 10 11)", "E1007"},
 		{"(define (a))", "E1007"},
 		{"(define 10 11)", "E1004"},
+		{"(define (fuga 1 b) (+ a b))", "E1004"},
 
 		{"(set! 10 10)", "E1004"},
 		{"(set! a)", "E1007"},
@@ -742,6 +743,7 @@ func TestErrCase(t *testing.T) {
 		{"(lambda 10 11)", "E1005"},
 		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
 		{"((lambda (n m) (+ n m)) 1)", "E1007"},
+		{"(lambda (1 1) (+ 1 2))", "E1004"},
 
 		{"(let ((a 10)))", "E1007"},
 		{"(let 10 ((a 10)))", "E1004"},
@@ -749,6 +751,7 @@ func TestErrCase(t *testing.T) {
 		{"(let loop 10 19)", "E1005"},
 		{"(let ((a))(+ 1 1))", "E1007"},
 		{"(let ((a 10)) b a)", "E1008"},
+		{"(let ((1 1)(a 0)) a)", "E1004"},
 
 		{"(and #t)", "E1007"},
 		{"(and 10.2 0 1)", "E1001"},
