@@ -1582,7 +1582,16 @@ func BuildFunc() {
 			if len(l.Value) < 1 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			key = l.Value[0].(*Symbol)
+			key, ok = l.Value[0].(*Symbol)
+			if !ok {
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
+			}
+			for _, p := range l.Value[1:] {
+				e, ok := p.(*Symbol)
+				if !ok {
+					return nil, NewRuntimeError("E1004", reflect.TypeOf(e).String())
+				}
+			}
 			e = NewFunction(env, NewList(l.Value[1:]), exp[1:], key.Value)
 		} else {
 			return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
@@ -1598,6 +1607,12 @@ func BuildFunc() {
 		l, ok := exp[0].(*List)
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+		}
+		for _, p := range l.Value {
+			e, ok := p.(*Symbol)
+			if !ok {
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(e).String())
+			}
 		}
 		return NewFunction(env, l, exp[1:], "lambda"), nil
 	}
@@ -1653,7 +1668,10 @@ func BuildFunc() {
 			if len(r.Value) != 2 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(r.Value)))
 			}
-			sym := (r.Value[0]).(*Symbol)
+			sym, ok := (r.Value[0]).(*Symbol)
+			if !ok {
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(r.Value[0]).String())
+			}
 			v, err := eval(r.Value[1], env)
 			if err != nil {
 				return nil, err
