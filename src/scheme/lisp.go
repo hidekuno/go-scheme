@@ -470,7 +470,7 @@ func (self *BuildInFunc) Execute(exp []Expression, env *SimpleEnv) (Expression, 
 	return self.Impl(exp, env)
 }
 
-// Function (lambda)
+// Function (lambda). Env is exists for closure.
 type Function struct {
 	Expression
 	ParamName List
@@ -508,7 +508,6 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 				if k, ok := v.(*Continuation); ok {
 					return k, nil
 				}
-
 				nse.Regist(sym.Value, v)
 			} else {
 				nse.Regist(sym.Value, exp[idx])
@@ -534,7 +533,6 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 			}
 		}
 	}
-	// https://github.com/hidekuno/go-scheme/issues/46
 	return result, nil
 }
 
@@ -824,41 +822,27 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			return sexp, nil
 		}
 		v := sl.Value
-		if _, ok := v[0].(*Symbol); ok {
-			proc, err := eval(v[0], env)
-			if err != nil {
-				return sexp, err
-			}
-			if f, ok := proc.(*BuildInFunc); ok {
-				// (* (+ a 1) (+ b 2))
-				// (if (= a b) "a" "b")
-				return f.Execute(v[1:], env)
-			} else if fn, ok := proc.(*Function); ok {
-				// (proc 10 20)
-				return fn.Execute(v[1:], env)
-
-			} else if let, ok := proc.(*LetLoop); ok {
-				// (let loop ((a (list 1 2 3))(b 0))
-				//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
-				return let.Execute(v[1:], env)
-			} else if k, ok := proc.(*Continuation); ok {
-				// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
-				k.Body = v[1]
-				k.Env = env
-				return k, nil
-			}
-		} else if slf, ok := v[0].(*List); ok {
-			// ((lambda (a b) (+ a b)) 10 20)
-			e, err := eval(slf, env)
-			if err != nil {
-				return sexp, err
-			}
-			fn, ok := e.(*Function)
-			if !ok {
-				return sexp, NewRuntimeError("E1006", reflect.TypeOf(e).String())
-			}
-			// execute
+		proc, err := eval(v[0], env)
+		if err != nil {
+			return sexp, err
+		}
+		if f, ok := proc.(*BuildInFunc); ok {
+			// (* (+ a 1) (+ b 2)),(if (= a b) "a" "b")
+			return f.Execute(v[1:], env)
+		} else if fn, ok := proc.(*Function); ok {
+			// (proc 10 20)
 			return fn.Execute(v[1:], env)
+		} else if let, ok := proc.(*LetLoop); ok {
+			// (let loop ((a (list 1 2 3))(b 0))
+			//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
+			return let.Execute(v[1:], env)
+		} else if k, ok := proc.(*Continuation); ok {
+			// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
+			k.Body = v[1]
+			k.Env = env
+			return k, nil
+		} else {
+			return sexp, NewRuntimeError("E1006", reflect.TypeOf(proc).String())
 		}
 	} else if te, ok := sexp.(*TailRecursion); ok {
 		return te.SetParam(env)
