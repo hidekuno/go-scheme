@@ -86,6 +86,9 @@ var (
 		"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))",
 		"(define a (counter))",
 		"(define b (counter))",
+		"(define (step-counter s) (let ((c 0)) (lambda () (set! c (+ s c)) c)))",
+		"(define x (step-counter 10))",
+		"(define y (step-counter 100))",
 		"(define (gcm n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod))))",
 		"(define (lcm n m) (/(* n m)(gcm n m)))",
 		"(define hanoi (lambda (from to work n) (if (>= 0 n)(list)(append (hanoi from work to (- n 1))(list (list (cons from to) n))(hanoi work to from (- n 1))))))",
@@ -141,6 +144,17 @@ func TestLispSampleProgram(t *testing.T) {
 	if !checkLogicInt(exp, 2) {
 		t.Fatal("failed test: closure")
 	}
+	exp, _ = DoCoreLogic("(x)", rootEnv)
+	exp, _ = DoCoreLogic("(x)", rootEnv)
+	if !checkLogicInt(exp, 20) {
+		t.Fatal("failed test: closure")
+	}
+	exp, _ = DoCoreLogic("(y)", rootEnv)
+	exp, _ = DoCoreLogic("(y)", rootEnv)
+	if !checkLogicInt(exp, 200) {
+		t.Fatal("failed test: closure")
+	}
+
 	exp, _ = DoCoreLogic("(gcm 36 27)", rootEnv)
 	if !checkLogicInt(exp, 9) {
 		t.Fatal("failed test: gcm")
