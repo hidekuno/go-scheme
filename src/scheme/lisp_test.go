@@ -496,6 +496,15 @@ func TestBasicOperation(t *testing.T) {
 	if !checkLogicInt(exp, 30) {
 		t.Fatal("failed test: force, delay")
 	}
+	exp, _ = DoCoreLogic("(force (delay (+ 1 2)))", rootEnv)
+	if !checkLogicInt(exp, 3) {
+		t.Fatal("failed test: force, delay")
+	}
+	exp, _ = DoCoreLogic("(force (+ 1 1))", rootEnv)
+	if !checkLogicInt(exp, 2) {
+		t.Fatal("failed test: force, delay")
+	}
+
 	exp, _ = DoCoreLogic("(identity 100)", rootEnv)
 	if !checkLogicInt(exp, 100) {
 		t.Fatal("failed test: identity")
@@ -808,7 +817,6 @@ func TestErrCase(t *testing.T) {
 
 		{"(force)", "E1007"},
 		{"(force 1 2)", "E1007"},
-		{"(force 1)", "E1010"},
 
 		{"(identity 100 200)", "E1007"},
 		{"(identity)", "E1007"},
