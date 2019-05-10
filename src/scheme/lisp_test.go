@@ -110,6 +110,8 @@ var (
 		"(define fact/cps (lambda (n cont)(if (= n 0)(cont 1)(fact/cps (- n 1) (lambda (a) (cont (* n a)))))))",
 		"(define fact (lambda (n) (fact/cps n identity)))",
 		"(define fact/cont (lambda (n)  (call/cc (lambda (cont)  (if (= n 3) (cont n) (if (>= 1 n) 1 (* n (fact/cont (- n 1)))))))))",
+		"(define (testf x) (lambda () (* x 10)))",
+		"(define (create-testf  x) (testf (* 2 x)))",
 	}
 )
 
@@ -229,6 +231,10 @@ func TestLispSampleProgram(t *testing.T) {
 	if !checkLogicInt(exp, 60) {
 		t.Fatal("failed test: fact/cont")
 	}
+	exp, _ = DoCoreLogic("((create-testf 2))", rootEnv)
+	if !checkLogicInt(exp, 40) {
+		t.Fatal("failed test: create-testf")
+	}
 }
 func TestMathFunc(t *testing.T) {
 	var (
@@ -293,6 +299,10 @@ func TestListFunc(t *testing.T) {
 	if (exp.(*Boolean)).Value != true {
 		t.Fatal("failed test: null?")
 	}
+	exp, _ = DoCoreLogic("(null? (null? 10))", rootEnv)
+	if (exp.(*Boolean)).Value != false {
+		t.Fatal("failed test: null?")
+	}
 	exp, _ = DoCoreLogic("(length (list 1 2 3 4))", rootEnv)
 	if !checkLogicInt(exp, 4) {
 		t.Fatal("failed test: length")
@@ -333,8 +343,16 @@ func TestListFunc(t *testing.T) {
 	if !checkLogicList(exp, []int{10, 20, 30}) {
 		t.Fatal("failed test: map")
 	}
+	exp, _ = DoCoreLogic("(map (lambda (n) (* n 10))(list))", rootEnv)
+	if !checkLogicList(exp, []int{}) {
+		t.Fatal("failed test: map")
+	}
 	exp, _ = DoCoreLogic("(filter (lambda (n) (= n 1))(list 1 2 3))", rootEnv)
 	if !checkLogicList(exp, []int{1}) {
+		t.Fatal("failed test: filter")
+	}
+	exp, _ = DoCoreLogic("(filter (lambda (n) (= n 1))(list))", rootEnv)
+	if !checkLogicList(exp, []int{}) {
 		t.Fatal("failed test: filter")
 	}
 	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b))(list 1 2 3))", rootEnv)
@@ -641,7 +659,7 @@ func TestErrCase(t *testing.T) {
 		{"(not)", "E1007"},
 
 		{"((list 1 12) 10)", "E1006"},
-		{"(null? 10)", "E1005"},
+
 		{"(null? (list 1)(list 2))", "E1007"},
 		{"(null?)", "E1007"},
 
@@ -657,6 +675,7 @@ func TestErrCase(t *testing.T) {
 		{"(cdr (list 1)(list 2))", "E1007"},
 		{"(cdr)", "E1007"},
 		{"(cdr 10)", "E1005"},
+		{"(cdr (list))", "E1011"},
 
 		{"(cadr (list 1)(list 2))", "E1007"},
 		{"(cadr)", "E1007"},

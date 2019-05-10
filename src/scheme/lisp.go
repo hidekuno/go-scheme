@@ -851,18 +851,21 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 }
 
 // eval tail recursion
-func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) error {
+func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expression) {
 
 	if len(body.Value) == 0 {
-		return nil
+		return
 	}
 	v := body.Value
 	for i := 0; i < len(body.Value); i++ {
 		if l, ok := v[i].(*List); ok {
+			if len(l.Value) == 0 {
+				continue
+			}
 			if sym, ok := l.Value[0].(*Symbol); ok {
 				proc, err := eval(l.Value[0], env)
 				if err != nil {
-					return err
+					return
 				}
 				if let, ok := proc.(*LetLoop); ok && label == let.Name {
 					v[i] = NewTailRecursion(l.Value[1:], nameList)
@@ -877,7 +880,7 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // main logic
@@ -1158,7 +1161,7 @@ func BuildFunc() {
 				if l, ok := exp[0].(*List); ok {
 					return NewBoolean(0 == len(l.Value)), nil
 				} else {
-					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+					return NewBoolean(false), nil
 				}
 			})
 	}
@@ -1201,8 +1204,7 @@ func BuildFunc() {
 				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) <= 0 {
-						var v []Expression
-						return NewList(v), nil
+						return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
 					}
 					return NewList(l.Value[1:]), nil
 				} else if p, ok := exp[0].(*Pair); ok {
@@ -1824,8 +1826,8 @@ func BuildFunc() {
 		} else if err != nil {
 			panic(err)
 		}
+		defer func() { _ = fd.Close() }()
 		repl(fd, env)
-		fd.Close()
 		return NewNil(), nil
 	}
 }
