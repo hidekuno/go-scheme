@@ -96,7 +96,7 @@ var (
 		"(define qsort (lambda (l pred) (if (null? l) l (append (qsort (filter (lambda (n) (pred n (car l))) (cdr l)) pred) (cons (car l) (qsort (filter (lambda (n) (not (pred n (car l))))(cdr l)) pred))))))",
 		"(define comb (lambda (l n) (if (null? l) l (if (= n 1) (map (lambda (n) (list n)) l) (append (map (lambda (p) (cons (car l) p)) (comb (cdr l)(- n 1))) (comb (cdr l) n))))))",
 		"(define delete (lambda (x l) (filter (lambda (n) (not (= x n))) l)))",
-		"(define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b))(map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))",
+		"(define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b)) (list) (map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))",
 		"(define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))",
 		"(define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))",
 		"(define merge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(merge (cdr a) b))(cons (car b) (merge a (cdr b)))))))",
@@ -355,8 +355,12 @@ func TestListFunc(t *testing.T) {
 	if !checkLogicList(exp, []int{}) {
 		t.Fatal("failed test: filter")
 	}
-	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b))(list 1 2 3))", rootEnv)
+	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b)) 0 (list 1 2 3))", rootEnv)
 	if !checkLogicInt(exp, 6) {
+		t.Fatal("failed test: reduce")
+	}
+	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b)) (* 10 10) (list))", rootEnv)
+	if !checkLogicInt(exp, 100) {
 		t.Fatal("failed test: reduce")
 	}
 	exp, _ = DoCoreLogic("()", rootEnv)
@@ -516,7 +520,7 @@ func TestBasicOperation(t *testing.T) {
 		t.Fatal("failed test: force, call/cc")
 	}
 
-	exp, _ = DoCoreLogic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) (list 1 2 3 4 5))))", rootEnv)
+	exp, _ = DoCoreLogic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) 0 (list 1 2 3 4 5))))", rootEnv)
 	if !checkLogicInt(exp, 3) {
 		t.Fatal("failed test: call/cc")
 	}
@@ -712,10 +716,10 @@ func TestErrCase(t *testing.T) {
 		{"(filter (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
 		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
 
-		{"(reduce (lambda (a b) (+ a b)) 20)", "E1005"},
-		{"(reduce (list 1 12) (list 10))", "E1006"},
+		{"(reduce (lambda (a b) (+ a b)) (+ 1 2) 20)", "E1005"},
+		{"(reduce (list 1 12) 0 (list 10))", "E1006"},
 		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
-		{"(reduce (lambda (a b) (+ a b))(list 1)(list 1))", "E1007"},
+		{"(reduce (lambda (a b) (+ a b)) (list 1 2))", "E1007"},
 
 		{"(sqrt #t)", "E1003"},
 		{"(sqrt 11 10)", "E1007"},

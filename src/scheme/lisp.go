@@ -1417,21 +1417,22 @@ func BuildFunc() {
 	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
+				if len(exp) != 3 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
 				fn, ok := exp[0].(*Function)
 				if !ok {
 					return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
 				}
-				l, ok := exp[1].(*List)
+				l, ok := exp[2].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 				}
-
+				if len(l.Value) == 0 {
+					return exp[1], nil
+				}
 				param := make([]Expression, len(fn.ParamName.Value))
 				result := l.Value[0]
-
 				for _, c := range l.Value[1:] {
 					param[0] = result
 					param[1] = c
