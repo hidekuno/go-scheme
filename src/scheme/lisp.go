@@ -1724,9 +1724,10 @@ func BuildFunc() {
 		}
 		p, ok := e.(*Promise)
 		if !ok {
-			return nil, NewRuntimeError("E1010", reflect.TypeOf(e).String())
+			return e, nil
+		} else {
+			return eval(p.Body, p.Env)
 		}
-		return eval(p.Body, p.Env)
 	}
 	buildInFuncTbl["identity"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
