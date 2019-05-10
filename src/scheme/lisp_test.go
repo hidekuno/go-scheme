@@ -368,7 +368,10 @@ func TestListFunc(t *testing.T) {
 		t.Fatal("failed test: ()")
 	}
 	DoCoreLogic("(define cnt 0)", rootEnv)
-	DoCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
+	exp, _ = DoCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
+	if (exp.(*Nil)).String() != "nil" {
+		t.Fatal("failed test: for-each")
+	}
 	exp, _ = DoCoreLogic("cnt", rootEnv)
 	if !checkLogicInt(exp, 5) {
 		t.Fatal("failed test: for-each")
@@ -436,6 +439,10 @@ func TestBasicOperation(t *testing.T) {
 	exp, _ = DoCoreLogic("(modulo 18 12)", rootEnv)
 	if (exp.(*Integer)).Value != 6 {
 		t.Fatal("failed test", (exp.(*Integer)).Value)
+	}
+	exp, _ = DoCoreLogic("(> 3 1)", rootEnv)
+	if (exp.(*Boolean)).Value != true {
+		t.Fatal("failed test: >")
 	}
 	exp, _ = DoCoreLogic("(> 3 0.5)", rootEnv)
 	if (exp.(*Boolean)).Value != true {
@@ -611,6 +618,7 @@ func TestErrCase(t *testing.T) {
 
 	testCode := [][]string{
 		{"(", "E0001"},
+		{")", "E0002"},
 		{"(a (b", "E0002"},
 		{"(a))", "E0003"},
 		{"#\\abc", "E0004"},
@@ -836,6 +844,25 @@ func TestErrCase(t *testing.T) {
 	_, err = eval(NewFunction(rootEnv, NewList(nil), nil, "lambda"), rootEnv)
 	if !checkErrorCode(err, "E1009") {
 		t.Fatal("failed test: " + "E1009")
+	}
+	// Error()
+	_, err = DoCoreLogic(")", rootEnv)
+	if err != nil {
+		if false == strings.Contains(err.Error(), "Unexpected") {
+			t.Fatal("failed test: SyntaxError::Error()")
+		}
+	}
+	_, err = DoCoreLogic("undef", rootEnv)
+	if err != nil {
+		if false == strings.Contains(err.Error(), "Undefine variable") {
+			t.Fatal("failed test: RuntimeError::Error()")
+		}
+	}
+	err = NewRuntimeError("E1008", "a", "b")
+	if err != nil {
+		if false == strings.Contains(err.Error(), "Undefine variable") {
+			t.Fatal("failed test: RuntimeError::Error()")
+		}
 	}
 }
 func TestInteractive(t *testing.T) {
