@@ -52,7 +52,7 @@ func BuildGtkFunc() {
 	scheme.AddErrorMsg("E2002", "Cannot Read Image File")
 	scheme.AddErrorMsg("E2003", "Not Image")
 
-	draw_init := func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+	drawInit := func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
 		if len(exp) != 0 {
 			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
@@ -209,5 +209,5 @@ func BuildGtkFunc() {
 		execFinished = true
 		return scheme.NewNil(), nil
 	}
-	scheme.AddBuildInFunc("draw-init", draw_init)
+	scheme.AddBuildInFunc("draw-init", drawInit)
 }

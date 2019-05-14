@@ -24,7 +24,7 @@ const (
 	URL = "http://localhost:9000/message"
 )
 
-func broadcast_code(code string) {
+func broadcastCode(code string) {
 
 	ev := &web.Event{Type: "LISPCODE", Text: code}
 	data, _ := json.Marshal(ev)
@@ -46,7 +46,7 @@ func broadcast_code(code string) {
 		fmt.Println(err)
 	}
 }
-func do_client() {
+func doClient() {
 	reader := bufio.NewReaderSize(os.Stdin, 1024)
 	for {
 		fmt.Print("[Websocket] ")
@@ -58,7 +58,7 @@ func do_client() {
 		if line == "(quit)" {
 			break
 		}
-		broadcast_code(line)
+		broadcastCode(line)
 	}
 }
 
@@ -70,7 +70,7 @@ func main() {
 	flag.Parse()
 
 	if *c == true {
-		do_client()
+		doClient()
 
 	} else {
 		web.StartWebSocket()
