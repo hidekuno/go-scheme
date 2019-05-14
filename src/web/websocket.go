@@ -82,7 +82,7 @@ func message(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 func index(w http.ResponseWriter, r *http.Request) {
-	index_tmpl := `<!doctype html>
+	indexTmpl := `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -153,7 +153,7 @@ ul li {
 </body>
 </html>
 `
-	tpl := template.Must(template.New("wasm index").Parse(index_tmpl))
+	tpl := template.Must(template.New("wasm index").Parse(indexTmpl))
 	m := map[string]string{
 		"Date":     time.Now().Format("2006-01-02"),
 		"Resource": RESOURCEDIR,
