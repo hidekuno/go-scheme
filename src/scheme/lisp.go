@@ -405,14 +405,14 @@ func NewList(exp []Expression) *List {
 
 func (self *List) String() string {
 	var buffer bytes.Buffer
-	var make_string func(*List)
+	var makeString func(*List)
 
-	make_string = func(l *List) {
+	makeString = func(l *List) {
 		buffer.WriteString("(")
 
 		for _, i := range l.Value {
 			if j, ok := i.(*List); ok {
-				make_string(j)
+				makeString(j)
 
 			} else if j, ok := i.(Expression); ok {
 				buffer.WriteString(j.String())
@@ -423,7 +423,7 @@ func (self *List) String() string {
 		}
 		buffer.WriteString(")")
 	}
-	make_string(self)
+	makeString(self)
 	return buffer.String()
 }
 
