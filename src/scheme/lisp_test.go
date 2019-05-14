@@ -176,15 +176,15 @@ func TestLispSampleProgram(t *testing.T) {
 		t.Fatal("failed test: bsort")
 	}
 
-	prime_data := []int{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
+	prime := []int{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
 	exp, _ = DoCoreLogic("(prime (iota 30 2))", rootEnv)
-	if !checkLogicList(exp, prime_data) {
+	if !checkLogicList(exp, prime) {
 		t.Fatal("failed test: prime")
 	}
 
-	perm_data := [][]int{{1, 2}, {1, 3}, {2, 1}, {2, 3}, {3, 1}, {3, 2}}
+	perm := [][]int{{1, 2}, {1, 3}, {2, 1}, {2, 3}, {3, 1}, {3, 2}}
 	exp, _ = DoCoreLogic("(perm (list 1 2 3) 2)", rootEnv)
-	if !checkLogicMatrix(exp, perm_data) {
+	if !checkLogicMatrix(exp, perm) {
 		t.Fatal("failed test: perm")
 	}
 
