@@ -12,5 +12,13 @@ RUN go get github.com/mattn/go-gtk/gtk
 RUN go install github.com/mattn/go-gtk/gtk
 RUN go get github.com/gorilla/sessions
 RUN go install github.com/gorilla/sessions
-RUN mkdir go-scheme
+RUN go get golang.org/x/net/websocket
+RUN go install golang.org/x/net/websocket
+RUN git clone https://github.com/hidekuno/go-scheme
 ENV GOPATH ${HOME}/go-scheme:${HOME}/go
+WORKDIR $HOME/go-scheme/src
+RUN go build  -ldflags '-w -s' lisp_main.go
+RUN go build  -ldflags '-w -s' lisp_draw_main.go
+RUN go build  -ldflags '-w -s' web_api_main.go
+RUN go build  -ldflags '-w -s' web_wasm_main.go
+RUN GOARCH=wasm GOOS=js go build -o wasm/lisp.wasm lisp_wasm.go

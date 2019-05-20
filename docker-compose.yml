@@ -7,8 +7,6 @@ goscheme:
   ports:
     - 9000:9000
   stdin_open: true
-  volumes:
-    - ./:/root/go-scheme
   environment:
     - "TZ=Japan"
     - "DISPLAY=docker.for.mac.localhost:0"
