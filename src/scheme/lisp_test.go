@@ -863,6 +863,8 @@ func TestErrCase(t *testing.T) {
 		{"(load-file)", "E1007"},
 		{"(load-file 10)", "E1015"},
 		{"(load-file \"example/no.scm\")", "E1014"},
+		{"(load-file \"/tmp\")", "E1016"},
+		{"(load-file \"/etc/shadow\")", "E9999"},
 	}
 	for _, e := range testCode {
 		_, err = DoCoreLogic(e[0], rootEnv)
