@@ -536,52 +536,6 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 	return result, nil
 }
 
-// Let (lambda)
-type LetLoop struct {
-	Expression
-	ParamName List
-	Body      Expression
-	Name      string
-}
-
-func NewLetLoop(param *List, body Expression, name string) *LetLoop {
-	let := new(LetLoop)
-	let.ParamName = *param
-	let.Body = body
-	let.Name = name
-	return let
-}
-
-func (self *LetLoop) String() string {
-	return "Let Macro: "
-}
-func (self *LetLoop) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
-
-	if len(self.ParamName.Value) != len(exp) {
-		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-	}
-	body := self.Body.(*List)
-	evalTailRecursion(env, body, self.Name, self.ParamName.Value)
-
-	for i, c := range self.ParamName.Value {
-		pname := c.(*Symbol)
-		data, err := eval(exp[i], env)
-		if err != nil {
-			return nil, err
-		}
-		(*env).Set(pname.Value, data)
-	}
-	for {
-		ret, err := eval(body, env)
-		if err != nil {
-			return nil, err
-		}
-		if _, ok := ret.(*TailRecursion); !ok {
-			return ret, nil
-		}
-	}
-}
-
 // Promise
 type Promise struct {
 	Expression
@@ -832,10 +786,6 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		} else if fn, ok := proc.(*Function); ok {
 			// (proc 10 20)
 			return fn.Execute(v[1:], env)
-		} else if let, ok := proc.(*LetLoop); ok {
-			// (let loop ((a (list 1 2 3))(b 0))
-			//   (if (null? a) b (loop (cdr a)(+ b (car a)))))
-			return let.Execute(v[1:], env)
 		} else if k, ok := proc.(*Continuation); ok {
 			// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
 			k.Body = v[1]
@@ -867,10 +817,7 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 				if err != nil {
 					return
 				}
-				if let, ok := proc.(*LetLoop); ok && label == let.Name {
-					v[i] = NewTailRecursion(l.Value[1:], nameList)
-					continue
-				} else if fn, ok := proc.(*Function); ok && fn.Name != "lambda" && label == fn.Name {
+				if fn, ok := proc.(*Function); ok && fn.Name != "lambda" && label == fn.Name {
 					v[i] = NewTailRecursion(l.Value[1:], nameList)
 					continue
 				}
@@ -1666,13 +1613,12 @@ func BuildFunc() {
 			pname = append(pname, sym)
 			localEnv[sym.Value] = v
 		}
-		if letsym != nil {
-			(*env).Regist(letsym.Value, NewLetLoop(NewList(pname), exp[body], letsym.Value))
-		}
 
 		nse := NewSimpleEnv(env, &localEnv)
+		if letsym != nil {
+			localEnv[letsym.Value] = NewFunction(nse, NewList(pname), exp[body:], letsym.Value)
+		}
 		var lastExp Expression
-
 		for i := body; i < len(exp); i++ {
 			if e, err := eval(exp[i], nse); err == nil {
 				lastExp = e
@@ -1805,12 +1751,10 @@ func BuildFunc() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		t0 := time.Now()
-		if e, err := eval(exp[0], env); err != nil {
-			return e, err
-		}
+		e, err := eval(exp[0], env)
 		t1 := time.Now()
 		fmt.Println(t1.Sub(t0))
-		return NewNil(), nil
+		return e, err
 	}
 	buildInFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
