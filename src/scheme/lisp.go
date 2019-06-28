@@ -829,6 +829,19 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 	}
 	return
 }
+func evalMulti(exp []Expression, env *SimpleEnv) (Expression, error) {
+	var (
+		v   Expression
+		err error
+	)
+	for _, e := range exp {
+		v, err = eval(e, env)
+		if err != nil {
+			return v, err
+		}
+	}
+	return v, nil
+}
 
 // main logic
 func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
@@ -1730,7 +1743,7 @@ func BuildFunc() {
 			if !ok {
 				return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
 			}
-			if len(l.Value) != 2 {
+			if len(l.Value) < 2 {
 				return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
 			}
 			if _, ok := l.Value[0].(*List); ok {
@@ -1740,12 +1753,14 @@ func BuildFunc() {
 				}
 				if b, ok := b.(*Boolean); ok {
 					if b.Value {
-						return eval(l.Value[1], env)
+						return evalMulti(l.Value[1:], env)
 					}
+				} else {
+					return nil, NewRuntimeError("E1001")
 				}
 			} else if sym, ok := l.Value[0].(*Symbol); ok {
 				if sym.Value == "else" {
-					return eval(l.Value[1], env)
+					return evalMulti(l.Value[1:], env)
 				} else {
 					return nil, NewRuntimeError("E1012")
 				}
