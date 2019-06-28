@@ -934,39 +934,133 @@ func EvalCalcParam(exp []Expression, env *SimpleEnv, fn EvaledAllParamFunc) (Exp
 	return fn(args...)
 }
 
+// addl, subl, imul, idiv
+func calcOperate(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
+	if 1 >= len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	result, err := CreateNumber(exp[0])
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range exp[1:] {
+		prm, ok := i.(Number)
+		if !ok {
+			return nil, NewRuntimeError("E1003", reflect.TypeOf(i).String())
+		}
+
+		if _, ok := result.(*Float); ok {
+			if c, ok := i.(*Integer); ok {
+				prm = NewFloat(float64(c.Value))
+			}
+		}
+		if org, ok := result.(*Integer); ok {
+			if _, ok := i.(*Float); ok {
+				result = NewFloat(float64(org.Value))
+			}
+		}
+		result = calc(result, prm)
+	}
+	return result, nil
+}
+
+// gt,lt,ge,le
+func cmpOperate(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, error) {
+	if 2 != len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+
+	result, err := CreateNumber(exp[0])
+	if err != nil {
+		return nil, err
+	}
+	prm, ok := exp[1].(Number)
+	if !ok {
+		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[1]).String())
+	}
+	if _, ok := result.(*Float); ok {
+		if c, ok := prm.(*Integer); ok {
+			prm = NewFloat(float64(c.Value))
+		}
+	}
+	if org, ok := result.(*Integer); ok {
+		if c, ok := exp[1].(*Float); ok {
+			result = NewFloat(float64(org.Value))
+			prm = c
+		}
+	}
+	return NewBoolean(cmp(result, prm)), nil
+}
+
+// map,filter,reduce
+func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	fn, ok := exp[0].(*Function)
+	if !ok {
+		return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
+	}
+	l, ok := exp[1].(*List)
+	if !ok {
+		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+	}
+	var vaList []Expression
+	param := make([]Expression, 1)
+	for _, param[0] = range l.Value {
+		result, err := fn.Execute(param, nil)
+		if err != nil {
+			return nil, err
+		}
+		if k, ok := result.(*Continuation); ok {
+			return k, nil
+		}
+
+		vaList, err = lambda(result, param[0], vaList)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewList(vaList), nil
+}
+
+// and or not
+func logicalOperate(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
+	if len(exp) < 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	for _, e := range exp {
+		b, err := eval(e, env)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := b.(*Boolean); !ok {
+			return nil, NewRuntimeError("E1001", reflect.TypeOf(b).String())
+		}
+		if bcond == (b.(*Boolean)).Value {
+			return NewBoolean(bcond), nil
+		}
+	}
+	return NewBoolean(bret), nil
+}
+
+// math skelton
+func mathImpl(mathFunc func(float64) float64, exp ...Expression) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	if v, ok := exp[0].(*Float); ok {
+		return NewFloat(mathFunc(v.Value)), nil
+	} else if v, ok := exp[0].(*Integer); ok {
+		return NewFloat(mathFunc((float64)(v.Value))), nil
+	}
+	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
+}
+
 // Build Global environement.
 func BuildFunc() {
 	buildInFuncTbl = map[string]EvalFunc{}
 
-	// addl, subl,imul,idiv,modulo
-	calcOperate := func(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
-		if 1 >= len(exp) {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		result, err := CreateNumber(exp[0])
-		if err != nil {
-			return nil, err
-		}
-		for _, i := range exp[1:] {
-			prm, ok := i.(Number)
-			if !ok {
-				return nil, NewRuntimeError("E1003", reflect.TypeOf(i).String())
-			}
-
-			if _, ok := result.(*Float); ok {
-				if c, ok := i.(*Integer); ok {
-					prm = NewFloat(float64(c.Value))
-				}
-			}
-			if org, ok := result.(*Integer); ok {
-				if _, ok := i.(*Float); ok {
-					result = NewFloat(float64(org.Value))
-				}
-			}
-			result = calc(result, prm)
-		}
-		return result, nil
-	}
 	buildInFuncTbl["+"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
@@ -1020,33 +1114,6 @@ func BuildFunc() {
 				}
 				return NewInteger(prm[0].Value % prm[1].Value), nil
 			})
-	}
-	// gt,lt,ge,le
-	cmpOperate := func(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, error) {
-		if 2 != len(exp) {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-
-		result, err := CreateNumber(exp[0])
-		if err != nil {
-			return nil, err
-		}
-		prm, ok := exp[1].(Number)
-		if !ok {
-			return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[1]).String())
-		}
-		if _, ok := result.(*Float); ok {
-			if c, ok := prm.(*Integer); ok {
-				prm = NewFloat(float64(c.Value))
-			}
-		}
-		if org, ok := result.(*Integer); ok {
-			if c, ok := exp[1].(*Float); ok {
-				result = NewFloat(float64(org.Value))
-				prm = c
-			}
-		}
-		return NewBoolean(cmp(result, prm)), nil
 	}
 	buildInFuncTbl[">"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
@@ -1274,37 +1341,6 @@ func BuildFunc() {
 				return NewList(l), nil
 			})
 	}
-	// map,filter,reduce
-	listFunc := func(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
-		if len(exp) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		fn, ok := exp[0].(*Function)
-		if !ok {
-			return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
-		}
-		l, ok := exp[1].(*List)
-		if !ok {
-			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
-		}
-		var vaList []Expression
-		param := make([]Expression, 1)
-		for _, param[0] = range l.Value {
-			result, err := fn.Execute(param, nil)
-			if err != nil {
-				return nil, err
-			}
-			if k, ok := result.(*Continuation); ok {
-				return k, nil
-			}
-
-			vaList, err = lambda(result, param[0], vaList)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return NewList(vaList), nil
-	}
 	buildInFuncTbl["map"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
@@ -1395,18 +1431,6 @@ func BuildFunc() {
 				}
 				return result, nil
 			})
-	}
-	// math skelton
-	mathImpl := func(mathFunc func(float64) float64, exp ...Expression) (Expression, error) {
-		if len(exp) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		if v, ok := exp[0].(*Float); ok {
-			return NewFloat(mathFunc(v.Value)), nil
-		} else if v, ok := exp[0].(*Integer); ok {
-			return NewFloat(mathFunc((float64)(v.Value))), nil
-		}
-		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 	}
 	buildInFuncTbl["sqrt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
@@ -1628,25 +1652,6 @@ func BuildFunc() {
 		}
 		return lastExp, nil
 
-	}
-	// and or not
-	logicalOperate := func(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
-		if len(exp) < 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		for _, e := range exp {
-			b, err := eval(e, env)
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := b.(*Boolean); !ok {
-				return nil, NewRuntimeError("E1001", reflect.TypeOf(b).String())
-			}
-			if bcond == (b.(*Boolean)).Value {
-				return NewBoolean(bcond), nil
-			}
-		}
-		return NewBoolean(bret), nil
 	}
 	buildInFuncTbl["and"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return logicalOperate(exp, env, false, true)
