@@ -585,6 +585,17 @@ func TestBasicOperation(t *testing.T) {
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
 	}
+	exp, _ = DoCoreLogic("(define a 10)", rootEnv)
+	exp, _ = DoCoreLogic("(cond ((= a 10) 10 11)(else 20 30))", rootEnv)
+	if !checkLogicInt(exp, 11) {
+		t.Fatal("failed test: cond")
+	}
+	exp, _ = DoCoreLogic("(define a 100)", rootEnv)
+	exp, _ = DoCoreLogic("(cond ((= a 10) 10 11)(else 20 30))", rootEnv)
+	if !checkLogicInt(exp, 30) {
+		t.Fatal("failed test: cond")
+	}
+
 	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(if (= a b) #t))", rootEnv)
 	if _, ok := exp.(*Nil); !ok {
 		t.Fatal("failed test: NilClass")
@@ -841,6 +852,7 @@ func TestErrCase(t *testing.T) {
 		{"(cond (10))", "E1007"},
 		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
 		{"(cond (10 10))", "E1012"},
+		{"(cond ((+ 10 20) 10 11)(else 20 30))", "E1001"},
 
 		{"(quote)", "E1007"},
 		{"(quote 1 2)", "E1007"},
