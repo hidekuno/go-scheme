@@ -60,6 +60,7 @@ var (
 		"E1013": "Calculate A Division By Zero",
 		"E1014": "Not Found Program File",
 		"E1015": "Not String",
+		"E1016": "Not Program File",
 		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
@@ -1795,12 +1796,17 @@ func BuildFunc() {
 		if !ok {
 			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 		}
+		f, err := os.Stat(filename.Value)
+		if err != nil && os.IsNotExist(err) {
+			return nil, NewRuntimeError("E1014")
+		}
+		if err != nil || !f.Mode().IsRegular() {
+			return nil, NewRuntimeError("E1016")
+		}
 
 		fd, err := os.Open(filename.Value)
-		if os.IsNotExist(err) {
-			return nil, NewRuntimeError("E1014")
-		} else if err != nil {
-			panic(err)
+		if err != nil {
+			return nil, NewRuntimeError("E9999")
 		}
 		defer func() { _ = fd.Close() }()
 		repl(fd, env)
