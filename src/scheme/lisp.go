@@ -1057,6 +1057,25 @@ func mathImpl(mathFunc func(float64) float64, exp ...Expression) (Expression, er
 	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 }
 
+// imul, skelton
+func idivImpl(idivFunc func(int, int) int, exp ...Expression) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	var prm []*Integer
+	for _, e := range exp {
+		v, ok := e.(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
+		}
+		prm = append(prm, v)
+	}
+	if prm[1].Value == 0 {
+		return nil, NewRuntimeError("E1013")
+	}
+	return NewInteger(idivFunc(prm[0].Value, prm[1].Value)), nil
+}
+
 // Build Global environement.
 func BuildFunc() {
 	buildInFuncTbl = map[string]EvalFunc{}
@@ -1094,25 +1113,16 @@ func BuildFunc() {
 				return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 			})
 	}
-	buildInFuncTbl["quotient"] = buildInFuncTbl["/"]
+	buildInFuncTbl["quotient"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return idivImpl(func(a int, b int) int { return a / b }, exp...)
+			})
+	}
 	buildInFuncTbl["modulo"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
-				var prm []*Integer
-				for _, e := range exp {
-					v, ok := e.(*Integer)
-					if !ok {
-						return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
-					}
-					prm = append(prm, v)
-				}
-				if prm[1].Value == 0 {
-					return nil, NewRuntimeError("E1013")
-				}
-				return NewInteger(prm[0].Value % prm[1].Value), nil
+				return idivImpl(func(a int, b int) int { return a % b }, exp...)
 			})
 	}
 	buildInFuncTbl[">"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
