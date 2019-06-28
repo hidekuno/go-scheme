@@ -627,9 +627,10 @@ func TestErrCase(t *testing.T) {
 
 	testCode := [][]string{
 		{"(", "E0001"},
-		{")", "E0002"},
 		{"(a (b", "E0002"},
+		{")", "E0003"},
 		{"(a))", "E0003"},
+		{"1)", "E0003"},
 		{"#\\abc", "E0004"},
 
 		{"(+ 10.2)", "E1007"},
@@ -856,7 +857,7 @@ func TestErrCase(t *testing.T) {
 	// Error()
 	_, err = DoCoreLogic(")", rootEnv)
 	if err != nil {
-		if false == strings.Contains(err.Error(), "Unexpected") {
+		if false == strings.Contains(err.Error(), "Extra close") {
 			t.Fatal("failed test: SyntaxError::Error()")
 		}
 	}

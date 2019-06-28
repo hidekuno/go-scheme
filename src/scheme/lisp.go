@@ -702,7 +702,7 @@ func parse(tokens []string) (Expression, int, error) {
 		return item, count, nil
 
 	} else if ")" == token {
-		return nil, 0, NewSyntaxError("E0002")
+		return nil, 0, NewSyntaxError("E0003")
 	} else {
 		atomType, err := atom(token)
 		return atomType, 1, err
