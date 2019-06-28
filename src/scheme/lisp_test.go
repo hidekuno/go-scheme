@@ -436,6 +436,10 @@ func TestBasicOperation(t *testing.T) {
 	if (exp.(*Float)).Value != 3 {
 		t.Fatal("failed test", (exp.(*Float)).Value)
 	}
+	exp, _ = DoCoreLogic("(quotient 18 12)", rootEnv)
+	if (exp.(*Integer)).Value != 1 {
+		t.Fatal("failed test", (exp.(*Integer)).Value)
+	}
 	exp, _ = DoCoreLogic("(modulo 18 12)", rootEnv)
 	if (exp.(*Integer)).Value != 6 {
 		t.Fatal("failed test", (exp.(*Integer)).Value)
@@ -650,6 +654,11 @@ func TestErrCase(t *testing.T) {
 		{"(/)", "E1007"},
 		{"(/ 10 0)", "E1013"},
 		{"(/ 10 2 0 3)", "E1013"},
+
+		{"(quotient 1)", "E1007"},
+		{"(quotient 10 3 2)", "E1007"},
+		{"(quotient 10 2.5)", "E1002"},
+		{"(quotient 10 0)", "E1013"},
 
 		{"(modulo 1)", "E1007"},
 		{"(modulo 10 3 2)", "E1007"},
