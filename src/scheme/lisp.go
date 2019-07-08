@@ -506,9 +506,6 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 				if err != nil {
 					return nil, err
 				}
-				if k, ok := v.(*Continuation); ok {
-					return k, nil
-				}
 				nse.Regist(sym.Value, v)
 			} else {
 				nse.Regist(sym.Value, exp[idx])
@@ -555,22 +552,6 @@ func (self *Promise) String() string {
 	return "Promise: "
 }
 
-// Continuation
-type Continuation struct {
-	Expression
-	Body Expression
-	Env  *SimpleEnv
-}
-
-func NewContinuation() *Continuation {
-	k := new(Continuation)
-	return k
-}
-
-func (self *Continuation) String() string {
-	return "Continuation: "
-}
-
 // TailRecursion
 type TailRecursion struct {
 	Expression
@@ -592,9 +573,6 @@ func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 		v, err := eval(self.param[i], env)
 		if err != nil {
 			return nil, err
-		}
-		if k, ok := v.(*Continuation); ok {
-			return k, nil
 		}
 		values = append(values, v)
 	}
@@ -787,11 +765,6 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		} else if fn, ok := proc.(*Function); ok {
 			// (proc 10 20)
 			return fn.Execute(v[1:], env)
-		} else if k, ok := proc.(*Continuation); ok {
-			// (* 3 (call/cc (lambda (k)  (+ 1 (k 2)))))
-			k.Body = v[1]
-			k.Env = env
-			return k, nil
 		} else {
 			return sexp, NewRuntimeError("E1006", reflect.TypeOf(proc).String())
 		}
@@ -940,9 +913,6 @@ func EvalCalcParam(exp []Expression, env *SimpleEnv, fn EvaledAllParamFunc) (Exp
 		if err != nil {
 			return e, err
 		}
-		if k, ok := c.(*Continuation); ok {
-			return k, nil
-		}
 		args = append(args, c)
 	}
 	return fn(args...)
@@ -1026,10 +996,6 @@ func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, e
 		if err != nil {
 			return nil, err
 		}
-		if k, ok := result.(*Continuation); ok {
-			return k, nil
-		}
-
 		vaList, err = lambda(result, param[0], vaList)
 		if err != nil {
 			return nil, err
@@ -1448,10 +1414,6 @@ func BuildFunc() {
 					if err != nil {
 						return nil, err
 					}
-					if k, ok := result.(*Continuation); ok {
-						return k, nil
-					}
-
 				}
 				return result, nil
 			})
@@ -1709,31 +1671,6 @@ func BuildFunc() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		return eval(exp[0], env)
-	}
-	buildInFuncTbl["call/cc"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		e, err := eval(exp[0], env)
-		if err != nil {
-			return nil, err
-		}
-		lambda, ok := e.(*Function)
-		if !ok {
-			return nil, NewRuntimeError("E1006", reflect.TypeOf(e).String())
-		}
-		param := make([]Expression, 1)
-		param[0] = NewContinuation()
-
-		e, err = lambda.Execute(param, nil)
-		if err != nil {
-			return nil, err
-		}
-		if k, ok := e.(*Continuation); ok {
-			return eval(k.Body, k.Env)
-		} else {
-			return e, nil
-		}
 	}
 	buildInFuncTbl["cond"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) < 1 {
