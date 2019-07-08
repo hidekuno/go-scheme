@@ -109,7 +109,6 @@ var (
 		"(define inf-list (lambda (generator inits limit)(let loop ((l (make-generator generator inits))(c limit)) (if (>= 0 c) (list)(cons (stream-car l)(loop (stream-cdr l)(- c 1)))))))",
 		"(define fact/cps (lambda (n cont)(if (= n 0)(cont 1)(fact/cps (- n 1) (lambda (a) (cont (* n a)))))))",
 		"(define fact (lambda (n) (fact/cps n identity)))",
-		"(define fact/cont (lambda (n)  (call/cc (lambda (cont)  (if (= n 3) (cont n) (if (>= 1 n) 1 (* n (fact/cont (- n 1)))))))))",
 		"(define (testf x) (lambda () (* x 10)))",
 		"(define (create-testf  x) (testf (* 2 x)))",
 	}
@@ -226,10 +225,6 @@ func TestLispSampleProgram(t *testing.T) {
 	exp, _ = DoCoreLogic("(fact 5)", rootEnv)
 	if !checkLogicInt(exp, 120) {
 		t.Fatal("failed test: fact")
-	}
-	exp, _ = DoCoreLogic("(fact/cont 5)", rootEnv)
-	if !checkLogicInt(exp, 60) {
-		t.Fatal("failed test: fact/cont")
 	}
 	exp, _ = DoCoreLogic("((create-testf 2))", rootEnv)
 	if !checkLogicInt(exp, 40) {
