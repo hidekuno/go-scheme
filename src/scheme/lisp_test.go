@@ -371,6 +371,11 @@ func TestListFunc(t *testing.T) {
 	if !checkLogicInt(exp, 5) {
 		t.Fatal("failed test: for-each")
 	}
+	DoCoreLogic("(define 山 25)", rootEnv)
+	exp, _ = DoCoreLogic("山", rootEnv)
+	if !checkLogicInt(exp, 25) {
+		t.Fatal("failed test: for-each")
+	}
 }
 func TestBasicOperation(t *testing.T) {
 	var (
