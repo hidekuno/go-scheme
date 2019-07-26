@@ -592,7 +592,7 @@ func (self *TailRecursion) String() string {
 func tokenize(s string) []string {
 	var token []string
 	stringMode := false
-	symbolName := make([]byte, 0, 1024)
+	symbolName := make([]rune, 0, 1024)
 	from := 0
 
 	s = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s)
@@ -615,14 +615,15 @@ func tokenize(s string) []string {
 			} else if c == ' ' {
 				// Nop
 			} else {
-				symbolName = append(symbolName, s[i])
-				if len(s)-1 == i {
+				n := len(string(c)) // for multibyte
+				symbolName = append(symbolName, c)
+				if len(s)-n == i {
 					token = append(token, string(symbolName))
 				} else {
-					switch s[i+1] {
+					switch s[i+n] {
 					case '(', ')', ' ':
 						token = append(token, string(symbolName))
-						symbolName = make([]byte, 0, 1024)
+						symbolName = make([]rune, 0, 1024)
 					}
 				}
 			}
@@ -633,14 +634,6 @@ func tokenize(s string) []string {
 			fmt.Println(c)
 		}
 	}
-	return token
-}
-
-// Tenuki lex.
-func tokenizeEasy(s string) []string {
-	s = strings.Replace(s, "(", " ( ", -1)
-	s = strings.Replace(s, ")", " ) ", -1)
-	token := strings.Fields(s)
 	return token
 }
 
