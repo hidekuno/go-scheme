@@ -636,14 +636,6 @@ func tokenize(s string) []string {
 	return token
 }
 
-// Tenuki lex.
-func tokenizeEasy(s string) []string {
-	s = strings.Replace(s, "(", " ( ", -1)
-	s = strings.Replace(s, ")", " ) ", -1)
-	token := strings.Fields(s)
-	return token
-}
-
 // Create abstract syntax tree.
 func parse(tokens []string) (Expression, int, error) {
 
