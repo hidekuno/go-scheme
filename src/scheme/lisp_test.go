@@ -512,33 +512,6 @@ func TestBasicOperation(t *testing.T) {
 	if (exp.(*String)).Value != "ABC" {
 		t.Fatal("failed test: identity")
 	}
-	exp, _ = DoCoreLogic("(* 3 (call/cc (lambda (k)  (- 1 (k 2)))))", rootEnv)
-	if !checkLogicInt(exp, 6) {
-		t.Fatal("failed test: call/cc")
-	}
-	DoCoreLogic("(define hoge (lambda (a b) a))", rootEnv)
-	exp, _ = DoCoreLogic("(* 3 (call/cc (lambda (k)  (hoge 1 (k 2)))))", rootEnv)
-	if !checkLogicInt(exp, 6) {
-		t.Fatal("failed test: call/cc")
-	}
-	exp, _ = DoCoreLogic("(* 3 (let ((n 3)) (call/cc (lambda (k) (+ 1 (k n))))))", rootEnv)
-	if !checkLogicInt(exp, 9) {
-		t.Fatal("failed test: call/cc")
-	}
-	exp, _ = DoCoreLogic("(call/cc (lambda (k) 10))", rootEnv)
-	if !checkLogicInt(exp, 10) {
-		t.Fatal("failed test: call/cc")
-	}
-
-	exp, _ = DoCoreLogic("(call/cc (lambda (k) (map (lambda (n) (map (lambda (m) (if (= m 6)(k m) (+ n m))) (iota 10)))(iota 10))))", rootEnv)
-	if !checkLogicInt(exp, 6) {
-		t.Fatal("failed test: force, call/cc")
-	}
-
-	exp, _ = DoCoreLogic("(call/cc (lambda (k) (reduce (lambda (a b) (if (= a 3)(k a)(+ a b))) 0 (list 1 2 3 4 5))))", rootEnv)
-	if !checkLogicInt(exp, 3) {
-		t.Fatal("failed test: call/cc")
-	}
 	exp, _ = DoCoreLogic("(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", rootEnv)
 	exp, _ = DoCoreLogic("(foo)", rootEnv)
 	if !checkLogicInt(exp, 11) {
@@ -605,7 +578,7 @@ func TestBasicOperation(t *testing.T) {
 	}
 	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(+ a b)(* a b))", rootEnv)
 	if !checkLogicInt(exp, 200) {
-		t.Fatal("failed test: call/cc")
+		t.Fatal("failed test: let")
 	}
 	exp, _ = DoCoreLogic("#\\tab", rootEnv)
 	if (exp.(*Char)).Value != 0x09 {
@@ -836,11 +809,6 @@ func TestErrCase(t *testing.T) {
 
 		{"(identity 100 200)", "E1007"},
 		{"(identity)", "E1007"},
-
-		{"(call/cc)", "E1007"},
-		{"(call/cc (lambda () #t))", "E1007"},
-		{"(call/cc (lambda (n) #t)(lambda (n) #t))", "E1007"},
-		{"(call/cc 10)", "E1006"},
 
 		{"(cond)", "E1007"},
 		{"(cond 10)", "E1005"},
