@@ -1,7 +1,7 @@
 ---
 goscheme:
   build: .
-  dockerfile: docker/Dockerfile
+  dockerfile: Dockerfile
   expose:
     - 9000
   ports:
