@@ -748,6 +748,11 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			return sexp, nil
 		}
 		v := sl.Value
+		if s, ok := v[0].(*Symbol); ok {
+			if f, ok := buildInFuncTbl[s.Value]; ok {
+				return f(v[1:], env)
+			}
+		}
 		proc, err := eval(v[0], env)
 		if err != nil {
 			return sexp, err
