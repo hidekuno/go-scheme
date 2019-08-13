@@ -12,8 +12,7 @@ https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
 
 - SICPの図形言語プログラムが動作するところまで確認した。
 
-![image](https://user-images.githubusercontent.com/22115777/44436239-11406600-a5ef-11e8-9860-0b3f73350114.png)
-
+<img src="https://user-images.githubusercontent.com/22115777/44436239-11406600-a5ef-11e8-9860-0b3f73350114.png" width=50%>
 
 ## 開発環境
 | Item   | Ver. |備考|
