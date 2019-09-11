@@ -453,7 +453,7 @@ func (self *Pair) String() string {
 
 // BuildInFunc
 type BuildInFunc struct {
-	Expression
+	Atom
 	Impl EvalFunc
 	name string
 }
@@ -691,6 +691,8 @@ func atom(token string) (Atom, error) {
 	} else {
 		if fvalue, err := strconv.ParseFloat(token, 64); err == nil {
 			atom = NewFloat(fvalue)
+		} else if f, ok := buildInFuncTbl[token]; ok {
+			atom = NewBuildInFunc(f, token)
 		} else {
 			switch token {
 			case "#t":
@@ -721,6 +723,7 @@ func atom(token string) (Atom, error) {
 				}
 			}
 		}
+
 	}
 	return atom, nil
 }
@@ -748,10 +751,8 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			return sexp, nil
 		}
 		v := sl.Value
-		if s, ok := v[0].(*Symbol); ok {
-			if f, ok := buildInFuncTbl[s.Value]; ok {
-				return f(v[1:], env)
-			}
+		if f, ok := v[0].(*BuildInFunc); ok {
+			return f.Execute(v[1:], env)
 		}
 		proc, err := eval(v[0], env)
 		if err != nil {
