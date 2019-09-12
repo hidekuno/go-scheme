@@ -346,14 +346,14 @@ func (self *Boolean) String() string {
 // Character Type
 type Char struct {
 	Atom
-	Value byte
+	Value rune
 	exp   string
 }
 
 func NewChar(v string) *Char {
 	b := new(Char)
 	b.exp = v
-	b.Value = v[2]
+	b.Value = []rune(v)[2]
 	return b
 }
 func (self *Char) String() string {
@@ -709,9 +709,9 @@ func atom(token string) (Atom, error) {
 					}
 					if v, ok := whitespaceChar[token]; ok {
 						char := NewChar(token)
-						char.Value = v
+						char.Value = rune(v)
 						atom = char
-					} else if len(token) == 3 {
+					} else if len([]rune(token)) == 3 {
 						atom = NewChar(token)
 					} else {
 						return nil, NewSyntaxError("E0004")
