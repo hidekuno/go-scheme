@@ -605,6 +605,10 @@ func TestBasicOperation(t *testing.T) {
 	if (exp.(*Char)).Value != 0x41 {
 		t.Fatal("failed test: char A")
 	}
+	exp, _ = DoCoreLogic("#\\山", rootEnv)
+	if (exp.(*Char)).Value != 23665 {
+		t.Fatal("failed test: char 山")
+	}
 }
 func TestErrCase(t *testing.T) {
 	var (
