@@ -7,7 +7,7 @@ Go言語によるScheme(subset版)の実装
 - さらに、WebAPIを実装してみた。
 
 ## 完成度合い
-- 簡単なプログラム(quick-sort, merge-sort, permutations,combination,Eratosthenes等)が動くレベル  
+- 簡単なプログラムが動くレベル  
 https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
 
 - SICPの図形言語プログラムが動作するところまで確認した。
