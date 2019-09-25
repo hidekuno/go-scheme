@@ -30,7 +30,20 @@ GOOS=linux
 GOPATH=${HOME}/go-scheme:${HOME}/go
 ```
 
-## その他
-インストールの方法、動かし方などは下記を参照
+## 動かし方
+### 動作条件
+- dockerが動いていること
+- Xサーバ(macの場合、XQuartz)が動いていること
 
-https://github.com/hidekuno/go-scheme/wiki
+### macOS
+```
+docker pull hidekuno/go-scheme
+docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/lisp_draw_main
+```
+
+### Linux
+```
+docker pull hidekuno/go-scheme
+xhost +
+docker run -i --name go-scheme -e DISPLAY=172.16.43.12:0.0 hidekuno/go-scheme /root/go-scheme/src/lisp_draw_main
+```
