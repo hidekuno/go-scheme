@@ -45,5 +45,5 @@ docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/g
 ```
 docker pull hidekuno/go-scheme
 xhost +
-docker run -i --name go-scheme -e DISPLAY=172.16.43.12:0.0 hidekuno/go-scheme /root/go-scheme/src/lisp_draw_main
+docker run -i --name go-scheme -e DISPLAY=${HOSTIP}:0.0 hidekuno/go-scheme /root/lisp_draw_main
 ```
