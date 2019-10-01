@@ -769,7 +769,7 @@ func TestLoadFile(t *testing.T) {
 		{"(load-file 10)", "E1015"},
 		{"(load-file \"example/no.scm\")", "E1014"},
 		{"(load-file \"/tmp\")", "E1016"},
-		{"(load-file \"/etc/shadow\")", "E9999"},
+		{"(load-file \"/etc/sudoers\")", "E9999"},
 	}
 	executeTest(testCode, "load-file", t)
 }
@@ -888,28 +888,6 @@ func TestErrCase(t *testing.T) {
 	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
-	testCode := [][]string{
-
-		{"(set! 10 10)", "E1004"},
-		{"(set! a)", "E1007"},
-		{"(set! a 10 11)", "E1007"},
-		{"(set! hoge 10)", "E1008"},
-
-		{"(time)", "E1007"},
-		{"(time #\\abc)", "E0004"},
-		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
-		{"(load-file)", "E1007"},
-		{"(load-file 10)", "E1015"},
-		{"(load-file \"example/no.scm\")", "E1014"},
-		{"(load-file \"/tmp\")", "E1016"},
-		{"(load-file \"/etc/shadow\")", "E9999"},
-	}
-	for _, e := range testCode {
-		_, err = DoCoreLogic(e[0], rootEnv)
-		if !checkErrorCode(err, e[1]) {
-			t.Fatal("failed test: " + e[0])
-		}
-	}
 	// Impossible absolute, But Program bug is except
 	_, err = eval(NewFunction(rootEnv, NewList(nil), nil, "lambda"), rootEnv)
 	if !checkErrorCode(err, "E1009") {
