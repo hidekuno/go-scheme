@@ -16,56 +16,35 @@ import (
 	"testing"
 )
 
-func checkHanoi(exp Expression) bool {
-	if l, ok := exp.(*List); ok {
-		if len(l.Value) == 7 {
-			return true
-		}
-	}
-	return false
-}
-func checkLogicMatrix(exp Expression, items [][]int) bool {
-	if l, ok := exp.(*List); ok {
-		for i, e := range l.Value {
-			if _, ok := e.(*List); !ok {
-				return false
-			}
-			for j, r := range (e.(*List)).Value {
-				if !checkLogicInt(r, items[i][j]) {
-					return false
+func executeTest(testCode [][]string, testName string, t *testing.T) {
+
+	BuildFunc()
+	rootEnv := NewSimpleEnv(nil, nil)
+	for i, c := range testCode {
+		exp, err := DoCoreLogic(c[0], rootEnv)
+		if err != nil {
+			if e, ok := err.(*SyntaxError); ok {
+				if e.MsgCode != c[1] {
+					t.Log(i)
+					t.Fatal("failed "+testName+" test", e.MsgCode)
 				}
+			} else if e, ok := err.(*RuntimeError); ok {
+				if e.MsgCode != c[1] {
+					t.Log(i)
+					t.Fatal("failed "+testName+" test", e.MsgCode)
+				}
+			} else {
+				t.Log(i)
+				t.Fatal("failed "+testName+" test", err.Error())
+			}
+		} else {
+			if exp.String() != c[1] {
+				t.Log(i)
+				t.Fatal("failed "+testName+" test", exp)
 			}
 		}
-		return true
-	} else {
-		return false
 	}
 }
-func checkLogicList(exp Expression, items []int) bool {
-
-	if l, ok := exp.(*List); ok {
-		for i, e := range l.Value {
-			if !checkLogicInt(e, items[i]) {
-				return false
-			}
-		}
-		return true
-	} else {
-		return false
-	}
-}
-
-func checkLogicInt(exp Expression, v int) bool {
-	if i, ok := exp.(*Integer); ok {
-		if i.Value != v {
-			return false
-		}
-	} else {
-		return false
-	}
-	return true
-}
-
 func checkErrorCode(err error, errCode string) bool {
 	if e, ok := err.(*SyntaxError); ok {
 		if e.MsgCode == errCode {
@@ -114,12 +93,687 @@ var (
 	}
 )
 
-func TestCheckFunclist(t *testing.T) {
-	BuildFunc()
-	for key, _ := range buildInFuncTbl {
-		t.Log(key)
+func TestAtom(t *testing.T) {
+	testCode := [][]string{
+		{"10", "10"},
+		{"10.5", "10.5"},
+		{"\"ABC\"", "\"ABC\""},
+		{"\"AB\\\"C\"", "\"AB\\\"C\""},
+		{"\"(A B C)\"", "\"(A B C)\""},
+		{"\"(\"", "\"(\""},
+		{"\"  a  \"", "\"  a  \""},
+		{"#t", "#t"},
+		{"#f", "#f"},
+		{"#\\tab", "#\\tab"},
+		{"#\\space", "#\\space"},
+		{"#\\newline", "#\\newline"},
+		{"#\\return", "#\\return"},
+		{"#\\A", "#\\A"},
+
+		{"(", "E0001"},
+		{"(a (b", "E0002"},
+		{")", "E0003"},
+		{"(a))", "E0003"},
+		{"1)", "E0003"},
+		{"#\\abc", "E0004"},
 	}
+	executeTest(testCode, "atom", t)
 }
+func TestAtomUTF8(t *testing.T) {
+	testCode := [][]string{
+		{"#\\山", "#\\山"},
+		{"\"山田太郎\"", "\"山田太郎\""},
+		{"\"山田(太郎\"", "\"山田(太郎\""},
+		{"(define 山 25)", "山"},
+		{"山", "25"},
+	}
+	executeTest(testCode, "atom_utf8", t)
+}
+func TestPlus(t *testing.T) {
+	testCode := [][]string{
+		{"(+ 1 2)", "3"},
+		{"(+ 3 1.5)", "4.5"},
+		{"(+ 1 1.5 1.25)", "3.75"},
+
+		{"(+ 10.2)", "E1007"},
+		{"(+ )", "E1007"},
+		{"(+ #t 10.2)", "E1003"},
+	}
+	executeTest(testCode, "plus", t)
+}
+func TestMinus(t *testing.T) {
+	testCode := [][]string{
+		{"(- 6 1)", "5"},
+		{"(- 3 1.5 0.25)", "1.25"},
+		{"(- 5.75 1.5)", "4.25"},
+
+		{"(- 10.2 #f)", "E1003"},
+		{"(- 10.2)", "E1007"},
+		{"(-)", "E1007"},
+	}
+	executeTest(testCode, "minus", t)
+}
+func TestMulti(t *testing.T) {
+	testCode := [][]string{
+		{"(* 3 6)", "18"},
+		{"(* 0.5 5.75)", "2.875"},
+		{"(* 2 0.5 1.25)", "1.25"},
+
+		{"(* 10.2 #f)", "E1003"},
+		{"(* 10.2)", "E1007"},
+		{"(*)", "E1007"},
+	}
+	executeTest(testCode, "multi", t)
+}
+func TestDiv(t *testing.T) {
+	testCode := [][]string{
+		{"(/ 4 3)", "1"},
+		{"(/ 0.75 0.25)", "3"},
+		{"(/ 9.5 5)", "1.9"},
+		{"(/ 3 0.5 2)", "3"},
+
+		{"(/ 10.2 #f)", "E1003"},
+		{"(/ 10.2)", "E1007"},
+		{"(/)", "E1007"},
+		{"(/ 10 0)", "E1013"},
+		{"(/ 10 2 0 3)", "E1013"},
+	}
+	executeTest(testCode, "div", t)
+}
+func TestModulo(t *testing.T) {
+	testCode := [][]string{
+		{"(modulo 18 12)", "6"},
+		{"(modulo 11 (+ 1 2))", "2"},
+		{"(modulo  3 5)", "3"},
+
+		{"(modulo 1)", "E1007"},
+		{"(modulo 10 3 2)", "E1007"},
+		{"(modulo 10 2.5)", "E1002"},
+		{"(modulo 10 0)", "E1013"},
+	}
+	executeTest(testCode, "modulo", t)
+}
+func TestQuotient(t *testing.T) {
+	testCode := [][]string{
+		{"(quotient 18 12)", "1"},
+		{"(quotient 11 (+ 1 2))", "3"},
+		{"(quotient 3 5)", "0"},
+
+		{"(quotient 1)", "E1007"},
+		{"(quotient 10 3 2)", "E1007"},
+		{"(quotient 10 2.5)", "E1002"},
+		{"(quotient 10 0)", "E1013"},
+	}
+	executeTest(testCode, "quotient", t)
+}
+func TestEq(t *testing.T) {
+	testCode := [][]string{
+		{"(= 5 5)", "#t"},
+		{"(= 5.5 5.5)", "#t"},
+		{"(= 5 5.0)", "#t"},
+		{"(= 5.0 5)", "#t"},
+		{"(= 5 6)", "#f"},
+		{"(= 5.5 6.6)", "#f"},
+		{"(= 5 6.6)", "#f"},
+		{"(= 5.0 6)", "#f"},
+		{"(= (+ 1 1)(+ 0 2))", "#t"},
+
+		{"(= 10 3 2)", "E1007"},
+		{"(= 10.2 #f)", "E1003"},
+		{"(= 10.2)", "E1007"},
+		{"(=)", "E1007"},
+	}
+	executeTest(testCode, "eq", t)
+}
+func TestThan(t *testing.T) {
+	testCode := [][]string{
+		{"(> 6 5)", "#t"},
+		{"(> 6.5 5.5)", "#t"},
+		{"(> 6.1 6)", "#t"},
+		{"(> 6 5.9)", "#t"},
+		{"(> 6 6)", "#f"},
+		{"(> 4.5 5.5)", "#f"},
+		{"(> 4 5.5)", "#f"},
+		{"(> 4.5 5)", "#f"},
+		{"(> (+ 3 3) 5)", "#t"},
+
+		{"(> 10 3 2)", "E1007"},
+		{"(> 10.2 #f)", "E1003"},
+		{"(> 10.2)", "E1007"},
+		{"(>)", "E1007"},
+	}
+	executeTest(testCode, "than", t)
+}
+func TestLess(t *testing.T) {
+	testCode := [][]string{
+		{"(< 5 6)", "#t"},
+		{"(< 5.6 6.5)", "#t"},
+		{"(< 5 6.1)", "#t"},
+		{"(< 5 6.5)", "#t"},
+		{"(> 6 6)", "#f"},
+		{"(> 6.5 6.6)", "#f"},
+		{"(> 6 6.0)", "#f"},
+		{"(> 5.9 6)", "#f"},
+		{"(< 5 (+ 3 3))", "#t"},
+
+		{"(< 10.2 #f)", "E1003"},
+		{"(< 10 3 2)", "E1007"},
+		{"(< 10.2)", "E1007"},
+		{"(<)", "E1007"},
+	}
+	executeTest(testCode, "less", t)
+}
+func TestThanEq(t *testing.T) {
+	testCode := [][]string{
+		{"(>= 6 6)", "#t"},
+		{"(>= 6 5)", "#t"},
+		{"(>= 6.1 5)", "#t"},
+		{"(>= 7.6 7.6)", "#t"},
+		{"(>= 6.3 5.2)", "#t"},
+		{"(>= 6 5.1)", "#t"},
+		{"(>= 5 6)", "#f"},
+		{"(>= 5.1 6.2)", "#f"},
+		{"(>= 5.9 6)", "#f"},
+		{"(>= 5 6.1)", "#f"},
+		{"(>= (+ 2 3 1) 6)", "#t"},
+
+		{"(>= 10 3 2)", "E1007"},
+		{"(>= 10.2 #f)", "E1003"},
+		{"(>= 10.2)", "E1007"},
+		{"(>=)", "E1007"},
+	}
+	executeTest(testCode, "than_eq", t)
+}
+func TestLessEq(t *testing.T) {
+	testCode := [][]string{
+		{"(<= 6 6)", "#t"},
+		{"(<= 6 5)", "#f"},
+		{"(<= 6.1 5)", "#f"},
+		{"(<= 7.6 7.6)", "#t"},
+		{"(<= 6.3 5.2)", "#f"},
+		{"(<= 6 5.1)", "#f"},
+		{"(<= 5 6)", "#t"},
+		{"(<= 5.1 6.2)", "#t"},
+		{"(<= 5.9 6)", "#t"},
+		{"(<= 5 6.1)", "#t"},
+		{"(<= (+ 3 3) 6)", "#t"},
+
+		{"(<= 10.2 #f)", "E1003"},
+		{"(<= 10 3 2)", "E1007"},
+		{"(<= 10.2)", "E1007"},
+		{"(<=)", "E1007"},
+	}
+	executeTest(testCode, "less_eq", t)
+}
+func TestNot(t *testing.T) {
+	testCode := [][]string{
+		{"(not (= 0.75 0.75))", "#f"},
+		{"(not (= 0.15 0.75))", "#t"},
+
+		{"(not 10)", "E1001"},
+		{"(not #t #f)", "E1007"},
+		{"(not)", "E1007"},
+	}
+	executeTest(testCode, "not", t)
+}
+func TestAnd(t *testing.T) {
+	testCode := [][]string{
+		{"(and (= 1 1)(= 2 2))", "#t"},
+		{"(and (= 1 1)(= 2 3))", "#f"},
+		{"(and (= 2 1)(= 2 2))", "#f"},
+		{"(and (= 0 1)(= 2 3))", "#f"},
+		{"(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< a c)))", "#t"},
+		{"(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< c a)))", "#f"},
+
+		{"(and #t)", "E1007"},
+		{"(and 10.2 0 1)", "E1001"},
+	}
+	executeTest(testCode, "and", t)
+}
+func TestOr(t *testing.T) {
+	testCode := [][]string{
+		{"(and (= 1 1)(= 2 2))", "#t"},
+		{"(and (= 1 1)(= 2 3))", "#f"},
+		{"(and (= 2 1)(= 2 2))", "#f"},
+		{"(and (= 0 1)(= 2 3))", "#f"},
+		{"(let ((a 10)(b 20)(c 30)) (or (= a b)(< b c)))", "#t"},
+		{"(let ((a 10)(b 20)(c 30)) (or (= c a)(< c b)))", "#f"},
+
+		{"(or #t)", "E1007"},
+		{"(or 10.2 0 1)", "E1001"},
+	}
+	executeTest(testCode, "or", t)
+}
+func TestIf(t *testing.T) {
+	testCode := [][]string{
+		{"(if (= 10 10) #\\a)", "#\\a"},
+		{"(if (= 10 11) #\\a)", "nil"},
+		{"(if (<= 1 6) #\\a #\\b)", "#\\a"},
+		{"(if (<= 9 6) #\\a #\\b)", "#\\b"},
+		{"(let ((a 10)(b 20))(if (= a b) #t))", "nil"},
+
+		{"(if 10 1 2)", "E1001"},
+		{"(if (= 10 10))", "E1007"},
+	}
+	executeTest(testCode, "if", t)
+}
+func TestCond(t *testing.T) {
+	testCode := [][]string{
+		{"(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", "\"ok\""},
+		{"(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", "\"ng\""},
+		{"(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", "\"sankaku\""},
+		{"(let ((a 10)(b 20))(cond ((= a b) #t)))", "nil"},
+		{"(define a 10)", "a"},
+		{"(cond ((= a 10) 10 11)(else 20 30))", "11"},
+		{"(define a 100)", "a"},
+		{"(cond ((= a 10) 10 11)(else 20 30))", "30"},
+
+		{"(cond)", "E1007"},
+		{"(cond 10)", "E1005"},
+		{"(cond (10))", "E1007"},
+		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
+		{"(cond (10 10))", "E1012"},
+		{"(cond ((+ 10 20) 10 11)(else 20 30))", "E1001"},
+	}
+	executeTest(testCode, "cond", t)
+}
+func TestDelayForce(t *testing.T) {
+	testCode := [][]string{
+		{"(force (+ 1 1))", "2"},
+		{"(force ((lambda (a) (delay (* 10 a))) 3))", "30"},
+		{"(force (delay (+ 1 2)))", "3"},
+
+		{"(delay)", "E1007"},
+		{"(delay 1 2)", "E1007"},
+		{"(force)", "E1007"},
+		{"(force 1 2)", "E1007"},
+	}
+	executeTest(testCode, "delay_force", t)
+}
+func TestIdentity(t *testing.T) {
+	testCode := [][]string{
+		{"(identity 100)", "100"},
+		{"(identity \"ABC\")", "\"ABC\""},
+
+		{"(identity 100 200)", "E1007"},
+		{"(identity)", "E1007"},
+	}
+	executeTest(testCode, "identity", t)
+}
+func TestDefine(t *testing.T) {
+	testCode := [][]string{
+		{"(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", "foo"},
+		{"(foo)", "11"},
+		{"(define a 100)", "a"},
+		{"a", "100"},
+		{"(define\ta\t200)", "a"},
+		{"a", "200"},
+		{"(define\na\n300)", "a"},
+		{"a", "300"},
+		{"(define\r\na\r\n400)", "a"},
+		{"a", "400"},
+
+		{"(define 10 10)", "E1004"},
+		{"(define a)", "E1007"},
+		{"(define a 10 11)", "E1007"},
+		{"(define (a))", "E1007"},
+		{"(define 10 11)", "E1004"},
+		{"(define (fuga 1 b) (+ a b))", "E1004"},
+		{"hoge", "E1008"},
+	}
+	executeTest(testCode, "identity", t)
+}
+func TestQuote(t *testing.T) {
+	testCode := [][]string{
+		{"(quote a)", "a"},
+		{"(quote (a b c))", "(a b c)"},
+
+		{"(quote)", "E1007"},
+		{"(quote 1 2)", "E1007"},
+	}
+	executeTest(testCode, "quote", t)
+}
+func TestLet(t *testing.T) {
+	testCode := [][]string{
+		{"(let ((a 10)(b 20))(+ a b)(* a b))", "200"},
+
+		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
+		{"(let ((a 10)))", "E1007"},
+		{"(let 10 ((a 10)))", "E1004"},
+		{"(let loop ((a 10)))", "E1007"},
+		{"(let loop 10 19)", "E1005"},
+		{"(let ((a))(+ 1 1))", "E1007"},
+		{"(let ((a 10)) b a)", "E1008"},
+		{"(let ((1 1)(a 0)) a)", "E1004"},
+	}
+	executeTest(testCode, "let", t)
+}
+func TestLambda(t *testing.T) {
+	testCode := [][]string{
+		{"((lambda (a b)(+ a b)) 1 2)", "3"},
+		{"(define hoge (lambda (a b) (+ a b)))", "hoge"},
+		{"(hoge 6 8)", "14"},
+		{"(define hoge (lambda (a b) b))", "hoge"},
+		{"(hoge 6 8)", "8"},
+
+		{"(lambda a (+ a b))", "E1005"},
+		{"(lambda (+ n m))", "E1007"},
+		{"(lambda 10 11)", "E1005"},
+		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
+		{"((lambda (n m) (+ n m)) 1)", "E1007"},
+		{"(lambda (1 1) (+ 1 2))", "E1004"},
+	}
+	executeTest(testCode, "lambda", t)
+}
+func TestList(t *testing.T) {
+	testCode := [][]string{
+		{"(list 1 2 3)", "(1 2 3)"},
+
+		{"((list 1 12) 10)", "E1006"},
+	}
+	executeTest(testCode, "list", t)
+}
+func TestNull(t *testing.T) {
+	testCode := [][]string{
+		{"(null? (list 1 2 3))", "#f"},
+		{"(null? (list))", "#t"},
+		{"(null? (null? 10))", "#f"},
+
+		{"(null? (list 1)(list 2))", "E1007"},
+		{"(null?)", "E1007"},
+	}
+	executeTest(testCode, "null?", t)
+}
+func TestLength(t *testing.T) {
+	testCode := [][]string{
+		{"(length (list 1 2 3 4))", "4"},
+
+		{"(length 10)", "E1005"},
+		{"(length (list 1)(list 2))", "E1007"},
+		{"(length)", "E1007"},
+	}
+	executeTest(testCode, "length", t)
+}
+func TestCar(t *testing.T) {
+	testCode := [][]string{
+		{"(car (list 10 20 30 40))", "10"},
+
+		{"(car 10)", "E1005"},
+		{"(car (list 1)(list 2))", "E1007"},
+		{"(car)", "E1007"},
+		{"(car (list))", "E1011"},
+	}
+	executeTest(testCode, "car", t)
+}
+
+func TestCdr(t *testing.T) {
+	testCode := [][]string{
+		{"(cdr (cons 10 20))", "20"},
+
+		{"(cdr (list 1)(list 2))", "E1007"},
+		{"(cdr)", "E1007"},
+		{"(cdr 10)", "E1005"},
+		{"(cdr (list))", "E1011"},
+	}
+	executeTest(testCode, "cdr", t)
+}
+
+func TestCadr(t *testing.T) {
+	testCode := [][]string{
+		{"(cadr (list 1 2 3 4))", "2"},
+
+		{"(cadr (list 1)(list 2))", "E1007"},
+		{"(cadr)", "E1007"},
+		{"(cadr (list 1))", "E1011"},
+	}
+	executeTest(testCode, "cadr", t)
+}
+
+func TestCons(t *testing.T) {
+	testCode := [][]string{
+		{"(car (cons 100 200))", "100"},
+		{"(cdr (cons 100 200))", "200"},
+
+		{"(cons 1 (list 1)(list 2))", "E1007"},
+		{"(cons 1)", "E1007"},
+	}
+	executeTest(testCode, "cons", t)
+}
+
+func TestAppend(t *testing.T) {
+	testCode := [][]string{
+		{"(append (list 1 2)(list 3 4))", "(1 2 3 4)"},
+
+		{"(append 10 10)", "E1005"},
+		{"(append (list 1))", "E1007"},
+	}
+	executeTest(testCode, "append", t)
+}
+
+func TestLast(t *testing.T) {
+	testCode := [][]string{
+		{"(last (list 1 2 3))", "3"},
+
+		{"(last 10)", "E1005"},
+		{"(last (list 1)(list 2))", "E1007"},
+		{"(last)", "E1007"},
+		{"(last (list))", "E1011"},
+	}
+	executeTest(testCode, "last", t)
+}
+
+func TestReverse(t *testing.T) {
+	testCode := [][]string{
+		{"(reverse (list 1 2 3))", "(3 2 1)"},
+
+		{"(reverse 10)", "E1005"},
+		{"(reverse (list 1)(list 2))", "E1007"},
+		{"(reverse)", "E1007"},
+	}
+	executeTest(testCode, "reverse", t)
+}
+
+func TestIota(t *testing.T) {
+	testCode := [][]string{
+		{"(iota 5 2)", "(2 3 4 5 6)"},
+
+		{"(iota 10.2 1)", "E1002"},
+		{"(iota 1 10.2)", "E1002"},
+		{"(iota)", "E1007"},
+		{"(iota 1 2 3)", "E1007"},
+	}
+	executeTest(testCode, "iota", t)
+}
+
+func TestMap(t *testing.T) {
+	testCode := [][]string{
+		{"(map (lambda (n) (* n 10))(list 1 2 3))", "(10 20 30)"},
+		{"(map (lambda (n) (* n 10))(list))", "()"},
+
+		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(map (list 1 12) (list 10))", "E1006"},
+		{"(map (lambda (n) (* n 10)))", "E1007"},
+		{"(map (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+	}
+	executeTest(testCode, "map", t)
+}
+
+func TestFilter(t *testing.T) {
+	testCode := [][]string{
+		{"(filter (lambda (n) (= n 1))(list 1 2 3))", "(1)"},
+		{"(filter (lambda (n) (= n 1))(list))", "()"},
+
+		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(filter (list 1 12) (list 10))", "E1006"},
+		{"(filter (lambda (n) (* n 10)))", "E1007"},
+		{"(filter (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
+	}
+	executeTest(testCode, "filter", t)
+}
+
+func TestReduce(t *testing.T) {
+	testCode := [][]string{
+		{"(reduce (lambda (a b) (+ a b)) 0 (list 1 2 3))", "6"},
+		{"(reduce (lambda (a b) (+ a b)) (* 10 10) (list))", "100"},
+
+		{"(reduce (lambda (a b) (+ a b)) (+ 1 2) 20)", "E1005"},
+		{"(reduce (list 1 12) 0 (list 10))", "E1006"},
+		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
+		{"(reduce (lambda (a b) (+ a b)) (list 1 2))", "E1007"},
+	}
+	executeTest(testCode, "reduce", t)
+}
+func TestForEach(t *testing.T) {
+	testCode := [][]string{
+		{"(define cnt 0)", "cnt"},
+		{"(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", "nil"},
+		{"cnt", "5"},
+
+		{"(for-each (lambda (n) (* n 10)) 20)", "E1005"},
+		{"(for-each (list 1 12) (list 10))", "E1006"},
+		{"(for-each (lambda (n) (* n 10)))", "E1007"},
+		{"(for-each (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
+	}
+	executeTest(testCode, "for-each", t)
+}
+func TestSqrt(t *testing.T) {
+	testCode := [][]string{
+		{"(sqrt 9)", "3"},
+
+		{"(sqrt #t)", "E1003"},
+		{"(sqrt 11 10)", "E1007"},
+		{"(sqrt)", "E1007"},
+	}
+	executeTest(testCode, "sqrt", t)
+}
+func TestSin(t *testing.T) {
+
+	testCode := [][]string{
+		{"(sin (/ (* 30 (* (atan 1) 4)) 180))", "0.49999999999999994"},
+
+		{"(sin #t)", "E1003"},
+		{"(sin 11 10)", "E1007"},
+		{"(sin)", "E1007"},
+	}
+	executeTest(testCode, "sin", t)
+}
+
+func TestCos(t *testing.T) {
+
+	testCode := [][]string{
+		{"(cos (/ (* 60 (* (atan 1) 4))180))", "0.5000000000000001"},
+
+		{"(cos #t)", "E1003"},
+		{"(cos 11 10)", "E1007"},
+		{"(cos)", "E1007"},
+	}
+	executeTest(testCode, "cos", t)
+}
+
+func TestTan(t *testing.T) {
+
+	testCode := [][]string{
+		{"(tan (/ (* 45 (* (atan 1) 4)) 180))", "1"},
+
+		{"(tan #t)", "E1003"},
+		{"(tan 11 10)", "E1007"},
+		{"(tan)", "E1007"},
+	}
+	executeTest(testCode, "tan", t)
+}
+
+func TestAtan(t *testing.T) {
+	testCode := [][]string{
+		{"(* 4 (atan 1))", "3.141592653589793"},
+
+		{"(atan #t)", "E1003"},
+		{"(atan 11 10)", "E1007"},
+		{"(atan)", "E1007"},
+	}
+	executeTest(testCode, "atan", t)
+}
+
+func TestLog(t *testing.T) {
+	testCode := [][]string{
+		{"(/ (log 8)(log 2))", "3"},
+
+		{"(log #t)", "E1003"},
+		{"(log 11 10)", "E1007"},
+		{"(log)", "E1007"},
+	}
+	executeTest(testCode, "log", t)
+}
+
+func TestExp(t *testing.T) {
+	testCode := [][]string{
+		{"(exp (/ (log 8) 3))", "2"},
+
+		{"(exp #t)", "E1003"},
+		{"(exp 11 10)", "E1007"},
+		{"(exp)", "E1007"},
+	}
+	executeTest(testCode, "exp", t)
+}
+
+func TestRandInteger(t *testing.T) {
+	testCode := [][]string{
+		{"(rand-init 10.2)", "E1007"},
+		{"(rand-integer 10.2)", "E1002"},
+		{"(rand-integer)", "E1007"},
+		{"(rand-integer 11 9)", "E1007"},
+	}
+	executeTest(testCode, "rand-integer", t)
+}
+
+func TestExpt(t *testing.T) {
+
+	testCode := [][]string{
+		{"(expt 2 0)", "1"},
+		{"(expt 2 1)", "2"},
+		{"(expt 2 3)", "8"},
+
+		{"(expt 10)", "E1007"},
+		{"(expt 10 10 10)", "E1007"},
+		{"(expt 11.5 10)", "E1002"},
+		{"(expt 11 12.5)", "E1002"},
+	}
+	executeTest(testCode, "expt", t)
+}
+
+func TestSet(t *testing.T) {
+	testCode := [][]string{
+		{"(define a 10)", "a"},
+		{"(set! a 20)", "20"},
+		{"a", "20"},
+
+		{"(set! 10 10)", "E1004"},
+		{"(set! a)", "E1007"},
+		{"(set! a 10 11)", "E1007"},
+		{"(set! hoge 10)", "E1008"},
+	}
+	executeTest(testCode, "set!", t)
+}
+
+func TestTime(t *testing.T) {
+	testCode := [][]string{
+		{"(time)", "E1007"},
+		{"(time #\\abc)", "E0004"},
+	}
+	executeTest(testCode, "time", t)
+}
+
+func TestLoadFile(t *testing.T) {
+	testCode := [][]string{
+		{"(load-file)", "E1007"},
+		{"(load-file 10)", "E1015"},
+		{"(load-file \"example/no.scm\")", "E1014"},
+		{"(load-file \"/tmp\")", "E1016"},
+		{"(load-file \"/etc/shadow\")", "E9999"},
+	}
+	executeTest(testCode, "load-file", t)
+}
+
 func TestLispSampleProgram(t *testing.T) {
 	var (
 		exp Expression
@@ -131,483 +785,100 @@ func TestLispSampleProgram(t *testing.T) {
 	}
 
 	exp, _ = DoCoreLogic("(let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))", rootEnv)
-	if !checkLogicInt(exp, 6) {
+	if exp.String() != "6" {
 		t.Fatal("failed test: let loop")
 	}
 	exp, _ = DoCoreLogic("(a)", rootEnv)
 	exp, _ = DoCoreLogic("(a)", rootEnv)
 	exp, _ = DoCoreLogic("(a)", rootEnv)
-	if !checkLogicInt(exp, 3) {
+	if exp.String() != "3" {
 		t.Fatal("failed test: closure")
 	}
 	exp, _ = DoCoreLogic("(b)", rootEnv)
 	exp, _ = DoCoreLogic("(b)", rootEnv)
-	if !checkLogicInt(exp, 2) {
+	if exp.String() != "2" {
 		t.Fatal("failed test: closure")
 	}
 	exp, _ = DoCoreLogic("(x)", rootEnv)
 	exp, _ = DoCoreLogic("(x)", rootEnv)
-	if !checkLogicInt(exp, 20) {
+
+	if exp.String() != "20" {
 		t.Fatal("failed test: closure")
 	}
 	exp, _ = DoCoreLogic("(y)", rootEnv)
 	exp, _ = DoCoreLogic("(y)", rootEnv)
-	if !checkLogicInt(exp, 200) {
+	if exp.String() != "200" {
 		t.Fatal("failed test: closure")
 	}
 
 	exp, _ = DoCoreLogic("(gcm 36 27)", rootEnv)
-	if !checkLogicInt(exp, 9) {
+	if exp.String() != "9" {
 		t.Fatal("failed test: gcm")
 	}
 	exp, _ = DoCoreLogic("(lcm 36 27)", rootEnv)
-	if !checkLogicInt(exp, 108) {
+	if exp.String() != "108" {
 		t.Fatal("failed test: lcm")
 	}
 
-	testSortData := []int{0, 2, 3, 6, 7, 8, 9, 14, 19, 27, 36}
 	exp, _ = DoCoreLogic("(qsort test-list (lambda (a b)(< a b)))", rootEnv)
-	if !checkLogicList(exp, testSortData) {
+	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
 		t.Fatal("failed test: qsort")
 	}
 	exp, _ = DoCoreLogic("(bsort test-list)", rootEnv)
-	if !checkLogicList(exp, testSortData) {
+	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
 		t.Fatal("failed test: bsort")
 	}
 
-	prime := []int{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
 	exp, _ = DoCoreLogic("(prime (iota 30 2))", rootEnv)
-	if !checkLogicList(exp, prime) {
+	if exp.String() != "(2 3 5 7 11 13 17 19 23 29 31)" {
 		t.Fatal("failed test: prime")
 	}
 
-	perm := [][]int{{1, 2}, {1, 3}, {2, 1}, {2, 3}, {3, 1}, {3, 2}}
 	exp, _ = DoCoreLogic("(perm (list 1 2 3) 2)", rootEnv)
-	if !checkLogicMatrix(exp, perm) {
+	if exp.String() != "((1 2) (1 3) (2 1) (2 3) (3 1) (3 2))" {
 		t.Fatal("failed test: perm")
 	}
 
-	comb := [][]int{{1, 2}, {1, 3}, {2, 3}}
 	exp, _ = DoCoreLogic("(comb (list 1 2 3) 2)", rootEnv)
-	if !checkLogicMatrix(exp, comb) {
+	if exp.String() != "((1 2) (1 3) (2 3))" {
 		t.Fatal("failed test: comb")
 	}
 	exp, _ = DoCoreLogic("(hanoi \"a\" \"b\" \"c\" 3)", rootEnv)
-	if !checkHanoi(exp) {
+	if exp.String() != "(((\"a\" . \"b\") 1) ((\"a\" . \"c\") 2) ((\"b\" . \"c\") 1) ((\"a\" . \"b\") 3) ((\"c\" . \"a\") 1) ((\"c\" . \"b\") 2) ((\"a\" . \"b\") 1))" {
 		t.Fatal("failed test: hanoi")
 	}
 	exp, _ = DoCoreLogic("(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", rootEnv)
-	if !checkLogicList(exp, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
+	if exp.String() != "(1 2 3 4 5 6 7 8 9 10)" {
 		t.Fatal("failed test: merge")
 	}
 	exp, _ = DoCoreLogic("(take (list 2 4 6 8 10) 3)", rootEnv)
-	if !checkLogicList(exp, []int{2, 4, 6}) {
+	if exp.String() != "(2 4 6)" {
 		t.Fatal("failed test: take")
 	}
 	exp, _ = DoCoreLogic("(drop (list 2 4 6 8 10) 3)", rootEnv)
-	if !checkLogicList(exp, []int{8, 10}) {
+	if exp.String() != "(8 10)" {
 		t.Fatal("failed test: drop")
 	}
 	exp, _ = DoCoreLogic("(msort test-list)", rootEnv)
-	if !checkLogicList(exp, testSortData) {
+	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
 		t.Fatal("failed test: bsort")
 	}
-	fibonacci := []int{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}
 	exp, _ = DoCoreLogic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", rootEnv)
-	if !checkLogicList(exp, fibonacci) {
+	if exp.String() != "(0 1 1 2 3 5 8 13 21 34)" {
 		t.Fatal("failed test: fibonacci")
 	}
 
 	exp, _ = DoCoreLogic("(fact/cps 5 (lambda (a) (+ 80 a)))", rootEnv)
-	if !checkLogicInt(exp, 200) {
+	if exp.String() != "200" {
 		t.Fatal("failed test: fact/cps")
 	}
 	exp, _ = DoCoreLogic("(fact 5)", rootEnv)
-	if !checkLogicInt(exp, 120) {
+	if exp.String() != "120" {
 		t.Fatal("failed test: fact")
 	}
 	exp, _ = DoCoreLogic("((create-testf 2))", rootEnv)
-	if !checkLogicInt(exp, 40) {
+	if exp.String() != "40" {
 		t.Fatal("failed test: create-testf")
-	}
-}
-func TestMathFunc(t *testing.T) {
-	var (
-		exp Expression
-	)
-	BuildFunc()
-	rootEnv := NewSimpleEnv(nil, nil)
-
-	exp, _ = DoCoreLogic("(sqrt 9)", rootEnv)
-	if exp.(*Float).Value != 3.0 {
-		t.Fatal("failed test: sqrt")
-	}
-	exp, _ = DoCoreLogic("(cos (/ (* 60 (* (atan 1) 4))180))", rootEnv)
-	if exp.(*Float).Value != 0.5000000000000001 {
-		t.Fatal("failed test: cos")
-	}
-	exp, _ = DoCoreLogic("(sin (/ (* 30 (* (atan 1) 4)) 180))", rootEnv)
-	if exp.(*Float).Value != 0.49999999999999994 {
-		t.Fatal("failed test: sin")
-	}
-	exp, _ = DoCoreLogic("(tan (/ (* 45 (* (atan 1) 4)) 180))", rootEnv)
-	if exp.(*Float).Value != 1.0 {
-		t.Fatal("failed test: tan")
-	}
-	exp, _ = DoCoreLogic("(/ (log 8)(log 2))", rootEnv)
-	if exp.(*Float).Value != 3.0 {
-		t.Fatal("failed test: log")
-	}
-	exp, _ = DoCoreLogic("(exp (/ (log 8) 3))", rootEnv)
-	if exp.(*Float).Value != 2.0 {
-		t.Fatal("failed test: exp")
-	}
-	exp, _ = DoCoreLogic("(expt 2 0)", rootEnv)
-	if exp.(*Integer).Value != 1 {
-		t.Fatal("failed test: expt")
-	}
-	exp, _ = DoCoreLogic("(expt 2 1)", rootEnv)
-	if exp.(*Integer).Value != 2 {
-		t.Fatal("failed test: expt")
-	}
-	exp, _ = DoCoreLogic("(expt 2 3)", rootEnv)
-	if exp.(*Integer).Value != 8 {
-		t.Fatal("failed test: expt")
-	}
-}
-func TestListFunc(t *testing.T) {
-	var (
-		exp Expression
-	)
-	BuildFunc()
-	rootEnv := NewSimpleEnv(nil, nil)
-
-	exp, _ = DoCoreLogic("(list 1 2 3)", rootEnv)
-	if !checkLogicList(exp, []int{1, 2, 3}) {
-		t.Fatal("failed test: list")
-	}
-	exp, _ = DoCoreLogic("(null? (list 1 2 3))", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: null?")
-	}
-	exp, _ = DoCoreLogic("(null? (list))", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: null?")
-	}
-	exp, _ = DoCoreLogic("(null? (null? 10))", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: null?")
-	}
-	exp, _ = DoCoreLogic("(length (list 1 2 3 4))", rootEnv)
-	if !checkLogicInt(exp, 4) {
-		t.Fatal("failed test: length")
-	}
-	exp, _ = DoCoreLogic("(car (list 10 20 30 40))", rootEnv)
-	if !checkLogicInt(exp, 10) {
-		t.Fatal("failed test: car")
-	}
-	exp, _ = DoCoreLogic("(cdr (cons 10 20))", rootEnv)
-	if !checkLogicInt(exp, 20) {
-		t.Fatal("failed test: cdr")
-	}
-	exp, _ = DoCoreLogic("(cadr (list 1 2 3 4))", rootEnv)
-	if !checkLogicInt(exp, 2) {
-		t.Fatal("failed test: cadr")
-	}
-	exp, _ = DoCoreLogic("(car (cons 100 200))", rootEnv)
-	if !checkLogicInt(exp, 100) {
-		t.Fatal("failed test: cons")
-	}
-	exp, _ = DoCoreLogic("(cdr (cons 100 200))", rootEnv)
-	if !checkLogicInt(exp, 200) {
-		t.Fatal("failed test: cons")
-	}
-	exp, _ = DoCoreLogic("(append (list 1 2)(list 3 4))", rootEnv)
-	if !checkLogicList(exp, []int{1, 2, 3, 4}) {
-		t.Fatal("failed test: append")
-	}
-	exp, _ = DoCoreLogic("(reverse (list 1 2 3))", rootEnv)
-	if !checkLogicList(exp, []int{3, 2, 1}) {
-		t.Fatal("failed test: list")
-	}
-	exp, _ = DoCoreLogic("(iota 5 2)", rootEnv)
-	if !checkLogicList(exp, []int{2, 3, 4, 5, 6}) {
-		t.Fatal("failed test: iota")
-	}
-	exp, _ = DoCoreLogic("(map (lambda (n) (* n 10))(list 1 2 3))", rootEnv)
-	if !checkLogicList(exp, []int{10, 20, 30}) {
-		t.Fatal("failed test: map")
-	}
-	exp, _ = DoCoreLogic("(map (lambda (n) (* n 10))(list))", rootEnv)
-	if !checkLogicList(exp, []int{}) {
-		t.Fatal("failed test: map")
-	}
-	exp, _ = DoCoreLogic("(filter (lambda (n) (= n 1))(list 1 2 3))", rootEnv)
-	if !checkLogicList(exp, []int{1}) {
-		t.Fatal("failed test: filter")
-	}
-	exp, _ = DoCoreLogic("(filter (lambda (n) (= n 1))(list))", rootEnv)
-	if !checkLogicList(exp, []int{}) {
-		t.Fatal("failed test: filter")
-	}
-	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b)) 0 (list 1 2 3))", rootEnv)
-	if !checkLogicInt(exp, 6) {
-		t.Fatal("failed test: reduce")
-	}
-	exp, _ = DoCoreLogic("(reduce (lambda (a b) (+ a b)) (* 10 10) (list))", rootEnv)
-	if !checkLogicInt(exp, 100) {
-		t.Fatal("failed test: reduce")
-	}
-	exp, _ = DoCoreLogic("()", rootEnv)
-	if len((exp.(*List)).Value) != 0 {
-		t.Fatal("failed test: ()")
-	}
-	DoCoreLogic("(define cnt 0)", rootEnv)
-	exp, _ = DoCoreLogic("(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", rootEnv)
-	if (exp.(*Nil)).String() != "nil" {
-		t.Fatal("failed test: for-each")
-	}
-	exp, _ = DoCoreLogic("cnt", rootEnv)
-	if !checkLogicInt(exp, 5) {
-		t.Fatal("failed test: for-each")
-	}
-	DoCoreLogic("(define 山 25)", rootEnv)
-	exp, _ = DoCoreLogic("山", rootEnv)
-	if !checkLogicInt(exp, 25) {
-		t.Fatal("failed test: for-each")
-	}
-}
-func TestBasicOperation(t *testing.T) {
-	var (
-		exp Expression
-	)
-	BuildFunc()
-	rootEnv := NewSimpleEnv(nil, nil)
-
-	exp, _ = DoCoreLogic("10", rootEnv)
-	if !checkLogicInt(exp, 10) {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("10.5", rootEnv)
-	if (exp.(*Float)).Value != 10.5 {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("\"ABC\"", rootEnv)
-	if (exp.(*String)).Value != "ABC" {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("\"AB\\\"C\"", rootEnv)
-	if (exp.(*String)).Value != "AB\\\"C" {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("\"(A B C)\"", rootEnv)
-	if (exp.(*String)).Value != "(A B C)" {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("\"(\"", rootEnv)
-	if (exp.(*String)).Value != "(" {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("\"  a  \"", rootEnv)
-	if (exp.(*String)).Value != "  a  " {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("#t", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("#f", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: atom")
-	}
-	exp, _ = DoCoreLogic("(+ 1 1.5 1.25)", rootEnv)
-	if (exp.(*Float)).Value != 3.75 {
-		t.Fatal("failed test", (exp.(*Float)).Value)
-	}
-	exp, _ = DoCoreLogic("(- 3 1.5 0.25)", rootEnv)
-	if (exp.(*Float)).Value != 1.25 {
-		t.Fatal("failed test", (exp.(*Float)).Value)
-	}
-	exp, _ = DoCoreLogic("(* 2 0.5 1.25)", rootEnv)
-	if (exp.(*Float)).Value != 1.25 {
-		t.Fatal("failed test", (exp.(*Float)).Value)
-	}
-	exp, _ = DoCoreLogic("(/ 3 0.5 2)", rootEnv)
-	if (exp.(*Float)).Value != 3 {
-		t.Fatal("failed test", (exp.(*Float)).Value)
-	}
-	exp, _ = DoCoreLogic("(quotient 18 12)", rootEnv)
-	if (exp.(*Integer)).Value != 1 {
-		t.Fatal("failed test", (exp.(*Integer)).Value)
-	}
-	exp, _ = DoCoreLogic("(modulo 18 12)", rootEnv)
-	if (exp.(*Integer)).Value != 6 {
-		t.Fatal("failed test", (exp.(*Integer)).Value)
-	}
-	exp, _ = DoCoreLogic("(> 3 1)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: >")
-	}
-	exp, _ = DoCoreLogic("(> 3 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: >")
-	}
-	exp, _ = DoCoreLogic("(>= 3 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: >=")
-	}
-	exp, _ = DoCoreLogic("(>= 0.5 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: >=")
-	}
-	exp, _ = DoCoreLogic("(< 0.25 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: <")
-	}
-	exp, _ = DoCoreLogic("(<= 0.25 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: <=")
-	}
-	exp, _ = DoCoreLogic("(<= 0.5 0.5)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: <=")
-	}
-	exp, _ = DoCoreLogic("(= 0.75 0.75)", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: =")
-	}
-	exp, _ = DoCoreLogic("(not (= 0.75 0.75))", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: not")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< a c)))", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: and")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20)(c 30)) (and (< a b)(< a c)(< c a)))", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: and")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20)(c 30)) (or (= a b)(< b c)))", rootEnv)
-	if (exp.(*Boolean)).Value != true {
-		t.Fatal("failed test: or")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20)(c 30)) (or (= c a)(< c b)))", rootEnv)
-	if (exp.(*Boolean)).Value != false {
-		t.Fatal("failed test: or")
-	}
-	exp, _ = DoCoreLogic("(force ((lambda (a) (delay (* 10 a))) 3))", rootEnv)
-	if !checkLogicInt(exp, 30) {
-		t.Fatal("failed test: force, delay")
-	}
-	exp, _ = DoCoreLogic("(force (delay (+ 1 2)))", rootEnv)
-	if !checkLogicInt(exp, 3) {
-		t.Fatal("failed test: force, delay")
-	}
-	exp, _ = DoCoreLogic("(force (+ 1 1))", rootEnv)
-	if !checkLogicInt(exp, 2) {
-		t.Fatal("failed test: force, delay")
-	}
-
-	exp, _ = DoCoreLogic("(identity 100)", rootEnv)
-	if !checkLogicInt(exp, 100) {
-		t.Fatal("failed test: identity")
-	}
-	exp, _ = DoCoreLogic("(identity \"ABC\")", rootEnv)
-	if (exp.(*String)).Value != "ABC" {
-		t.Fatal("failed test: identity")
-	}
-	exp, _ = DoCoreLogic("(define foo (lambda () (define hoge (lambda (a) (+ 1 a))) (hoge 10)))", rootEnv)
-	exp, _ = DoCoreLogic("(foo)", rootEnv)
-	if !checkLogicInt(exp, 11) {
-		t.Fatal("failed test: nested define")
-	}
-	exp, _ = DoCoreLogic("(define a 100)", rootEnv)
-	exp, _ = DoCoreLogic("a", rootEnv)
-	if !checkLogicInt(exp, 100) {
-		t.Fatal("failed test: simple define")
-	}
-	exp, _ = DoCoreLogic("(define\ta\t200)", rootEnv)
-	exp, _ = DoCoreLogic("a", rootEnv)
-	if !checkLogicInt(exp, 200) {
-		t.Fatal("failed test: tab define")
-	}
-	exp, _ = DoCoreLogic("(define\na\n300)", rootEnv)
-	exp, _ = DoCoreLogic("a", rootEnv)
-	if !checkLogicInt(exp, 300) {
-		t.Fatal("failed test: newline define")
-	}
-	exp, _ = DoCoreLogic("(define\r\na\r\n400)", rootEnv)
-	exp, _ = DoCoreLogic("a", rootEnv)
-	if !checkLogicInt(exp, 400) {
-		t.Fatal("failed test: newline define")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", rootEnv)
-	if (exp.(*String)).Value != "ok" {
-		t.Fatal("failed test: cond")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", rootEnv)
-	if (exp.(*String)).Value != "ng" {
-		t.Fatal("failed test: cond")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", rootEnv)
-	if (exp.(*String)).Value != "sankaku" {
-		t.Fatal("failed test: cond")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(cond ((= a b) #t)))", rootEnv)
-	if _, ok := exp.(*Nil); !ok {
-		t.Fatal("failed test: NilClass")
-	}
-	exp, _ = DoCoreLogic("(define a 10)", rootEnv)
-	exp, _ = DoCoreLogic("(cond ((= a 10) 10 11)(else 20 30))", rootEnv)
-	if !checkLogicInt(exp, 11) {
-		t.Fatal("failed test: cond")
-	}
-	exp, _ = DoCoreLogic("(define a 100)", rootEnv)
-	exp, _ = DoCoreLogic("(cond ((= a 10) 10 11)(else 20 30))", rootEnv)
-	if !checkLogicInt(exp, 30) {
-		t.Fatal("failed test: cond")
-	}
-
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(if (= a b) #t))", rootEnv)
-	if _, ok := exp.(*Nil); !ok {
-		t.Fatal("failed test: NilClass")
-	}
-	exp, _ = DoCoreLogic("(quote a)", rootEnv)
-	if _, ok := exp.(*Symbol); !ok {
-		t.Fatal("failed test: quote")
-	}
-	exp, _ = DoCoreLogic("(quote (a b c))", rootEnv)
-	if _, ok := exp.(*List); !ok {
-		t.Fatal("failed test: quote")
-	}
-	exp, _ = DoCoreLogic("(let ((a 10)(b 20))(+ a b)(* a b))", rootEnv)
-	if !checkLogicInt(exp, 200) {
-		t.Fatal("failed test: let")
-	}
-	exp, _ = DoCoreLogic("#\\tab", rootEnv)
-	if (exp.(*Char)).Value != 0x09 {
-		t.Fatal("failed test: char tab")
-	}
-	exp, _ = DoCoreLogic("#\\space", rootEnv)
-	if (exp.(*Char)).Value != 0x20 {
-		t.Fatal("failed test: char space")
-	}
-	exp, _ = DoCoreLogic("#\\newline", rootEnv)
-	if (exp.(*Char)).Value != 0x0A {
-		t.Fatal("failed test: char newline")
-	}
-	exp, _ = DoCoreLogic("#\\return", rootEnv)
-	if (exp.(*Char)).Value != 0x0D {
-		t.Fatal("failed test: char return")
-	}
-	exp, _ = DoCoreLogic("#\\A", rootEnv)
-	if (exp.(*Char)).Value != 0x41 {
-		t.Fatal("failed test: char A")
-	}
-	exp, _ = DoCoreLogic("#\\山", rootEnv)
-	if (exp.(*Char)).Value != 23665 {
-		t.Fatal("failed test: char 山")
 	}
 }
 func TestErrCase(t *testing.T) {
@@ -618,216 +889,11 @@ func TestErrCase(t *testing.T) {
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	testCode := [][]string{
-		{"(", "E0001"},
-		{"(a (b", "E0002"},
-		{")", "E0003"},
-		{"(a))", "E0003"},
-		{"1)", "E0003"},
-		{"#\\abc", "E0004"},
-
-		{"(+ 10.2)", "E1007"},
-		{"(+ )", "E1007"},
-		{"(+ #t 10.2)", "E1003"},
-
-		{"(- 10.2 #f)", "E1003"},
-		{"(- 10.2)", "E1007"},
-		{"(-)", "E1007"},
-
-		{"(* 10.2 #f)", "E1003"},
-		{"(* 10.2)", "E1007"},
-		{"(*)", "E1007"},
-
-		{"(/ 10.2 #f)", "E1003"},
-		{"(/ 10.2)", "E1007"},
-		{"(/)", "E1007"},
-		{"(/ 10 0)", "E1013"},
-		{"(/ 10 2 0 3)", "E1013"},
-
-		{"(quotient 1)", "E1007"},
-		{"(quotient 10 3 2)", "E1007"},
-		{"(quotient 10 2.5)", "E1002"},
-		{"(quotient 10 0)", "E1013"},
-
-		{"(modulo 1)", "E1007"},
-		{"(modulo 10 3 2)", "E1007"},
-		{"(modulo 10 2.5)", "E1002"},
-		{"(modulo 10 0)", "E1013"},
-
-		{"(> 10 3 2)", "E1007"},
-		{"(> 10.2 #f)", "E1003"},
-		{"(> 10.2)", "E1007"},
-
-		{"(< 10.2 #f)", "E1003"},
-		{"(< 10 3 2)", "E1007"},
-		{"(< 10.2)", "E1007"},
-
-		{"(>= 10 3 2)", "E1007"},
-		{"(>= 10.2 #f)", "E1003"},
-		{"(>= 10.2)", "E1007"},
-
-		{"(<= 10.2 #f)", "E1003"},
-		{"(<= 10 3 2)", "E1007"},
-		{"(<= 10.2)", "E1007"},
-
-		{"(= 10.2 #f)", "E1003"},
-		{"(= 10 3 2)", "E1007"},
-		{"(= 10.2)", "E1007"},
-
-		{"(not 10)", "E1001"},
-		{"(not #t #f)", "E1007"},
-		{"(not)", "E1007"},
-
-		{"((list 1 12) 10)", "E1006"},
-
-		{"(null? (list 1)(list 2))", "E1007"},
-		{"(null?)", "E1007"},
-
-		{"(length 10)", "E1005"},
-		{"(length (list 1)(list 2))", "E1007"},
-		{"(length)", "E1007"},
-
-		{"(car 10)", "E1005"},
-		{"(car (list 1)(list 2))", "E1007"},
-		{"(car)", "E1007"},
-		{"(car (list))", "E1011"},
-
-		{"(cdr (list 1)(list 2))", "E1007"},
-		{"(cdr)", "E1007"},
-		{"(cdr 10)", "E1005"},
-		{"(cdr (list))", "E1011"},
-
-		{"(cadr (list 1)(list 2))", "E1007"},
-		{"(cadr)", "E1007"},
-		{"(cadr (list 1))", "E1011"},
-
-		{"(cons 1 (list 1)(list 2))", "E1007"},
-		{"(cons 1)", "E1007"},
-
-		{"(append 10 10)", "E1005"},
-		{"(append (list 1))", "E1007"},
-
-		{"(last 10)", "E1005"},
-		{"(last (list 1)(list 2))", "E1007"},
-		{"(last)", "E1007"},
-		{"(last (list))", "E1011"},
-
-		{"(reverse 10)", "E1005"},
-		{"(reverse (list 1)(list 2))", "E1007"},
-		{"(reverse)", "E1007"},
-
-		{"(iota 10.2 1)", "E1002"},
-		{"(iota 1 10.2)", "E1002"},
-		{"(iota)", "E1007"},
-		{"(iota 1 2 3)", "E1007"},
-
-		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
-		{"(map (list 1 12) (list 10))", "E1006"},
-		{"(map (lambda (n) (* n 10)))", "E1007"},
-		{"(map (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
-
-		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
-		{"(filter (list 1 12) (list 10))", "E1006"},
-		{"(filter (lambda (n) (* n 10)))", "E1007"},
-		{"(filter (lambda (n) (* n 10))(list 1)(list 1))", "E1007"},
-		{"(filter (lambda (n) 10.1) (list 1 2))", "E1001"},
-
-		{"(reduce (lambda (a b) (+ a b)) (+ 1 2) 20)", "E1005"},
-		{"(reduce (list 1 12) 0 (list 10))", "E1006"},
-		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
-		{"(reduce (lambda (a b) (+ a b)) (list 1 2))", "E1007"},
-
-		{"(sqrt #t)", "E1003"},
-		{"(sqrt 11 10)", "E1007"},
-		{"(sqrt)", "E1007"},
-
-		{"(sin #t)", "E1003"},
-		{"(sin 11 10)", "E1007"},
-		{"(sin)", "E1007"},
-
-		{"(cos #t)", "E1003"},
-		{"(cos 11 10)", "E1007"},
-		{"(cos)", "E1007"},
-
-		{"(tan #t)", "E1003"},
-		{"(tan 11 10)", "E1007"},
-		{"(tan)", "E1007"},
-
-		{"(atan #t)", "E1003"},
-		{"(atan 11 10)", "E1007"},
-		{"(atan)", "E1007"},
-
-		{"(log #t)", "E1003"},
-		{"(log 11 10)", "E1007"},
-		{"(log)", "E1007"},
-
-		{"(exp #t)", "E1003"},
-		{"(exp 11 10)", "E1007"},
-		{"(exp)", "E1007"},
-
-		{"(rand-init 10.2)", "E1007"},
-		{"(rand-integer 10.2)", "E1002"},
-		{"(rand-integer)", "E1007"},
-		{"(rand-integer 11 9)", "E1007"},
-
-		{"(expt 10)", "E1007"},
-		{"(expt 10 10 10)", "E1007"},
-		{"(expt 11.5 10)", "E1002"},
-		{"(expt 11 12.5)", "E1002"},
-
-		{"(if 10 1 2)", "E1001"},
-		{"(if (= 10 10))", "E1007"},
-
-		{"(define 10 10)", "E1004"},
-		{"(define a)", "E1007"},
-		{"(define a 10 11)", "E1007"},
-		{"(define (a))", "E1007"},
-		{"(define 10 11)", "E1004"},
-		{"(define (fuga 1 b) (+ a b))", "E1004"},
 
 		{"(set! 10 10)", "E1004"},
 		{"(set! a)", "E1007"},
 		{"(set! a 10 11)", "E1007"},
 		{"(set! hoge 10)", "E1008"},
-		{"hoge", "E1008"},
-
-		{"(lambda a (+ a b))", "E1005"},
-		{"(lambda (+ n m))", "E1007"},
-		{"(lambda 10 11)", "E1005"},
-		{"((lambda (n m) (+ n m)) 1 2 3)", "E1007"},
-		{"((lambda (n m) (+ n m)) 1)", "E1007"},
-		{"(lambda (1 1) (+ 1 2))", "E1004"},
-
-		{"(let ((a 10)))", "E1007"},
-		{"(let 10 ((a 10)))", "E1004"},
-		{"(let loop ((a 10)))", "E1007"},
-		{"(let loop 10 19)", "E1005"},
-		{"(let ((a))(+ 1 1))", "E1007"},
-		{"(let ((a 10)) b a)", "E1008"},
-		{"(let ((1 1)(a 0)) a)", "E1004"},
-
-		{"(and #t)", "E1007"},
-		{"(and 10.2 0 1)", "E1001"},
-		{"(or #t)", "E1007"},
-		{"(or 10.2 0 1)", "E1001"},
-
-		{"(delay)", "E1007"},
-		{"(delay 1 2)", "E1007"},
-
-		{"(force)", "E1007"},
-		{"(force 1 2)", "E1007"},
-
-		{"(identity 100 200)", "E1007"},
-		{"(identity)", "E1007"},
-
-		{"(cond)", "E1007"},
-		{"(cond 10)", "E1005"},
-		{"(cond (10))", "E1007"},
-		{"(let ((a 10)(b 20))(cond ((= a b) #t)(lse #f)))", "E1012"},
-		{"(cond (10 10))", "E1012"},
-		{"(cond ((+ 10 20) 10 11)(else 20 30))", "E1001"},
-
-		{"(quote)", "E1007"},
-		{"(quote 1 2)", "E1007"},
 
 		{"(time)", "E1007"},
 		{"(time #\\abc)", "E0004"},
@@ -940,17 +1006,17 @@ func TestRecursive(t *testing.T) {
 	DoCoreLogic("(define (fact n result)(if (>= 1 n) result (fact (- n 1) (* result n))))", rootEnv)
 
 	exp, _ = DoCoreLogic("(fact 5 1)", rootEnv)
-	if !checkLogicInt(exp, 120) {
+	if exp.String() != "120" {
 		t.Fatal("failed test: tail recursive")
 	}
 
 	exp, _ = DoCoreLogic("(let loop ((i 0)) (if (<= 1000000 i) i (loop (+ 1 i))))", rootEnv)
-	if !checkLogicInt(exp, 1000000) {
+	if exp.String() != "1000000" {
 		t.Fatal("failed test: tail recursive")
 	}
 
 	exp, _ = DoCoreLogic("(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 50 i) j k)(loop (+ 1 i) j k))))", rootEnv)
-	if !checkLogicInt(exp, 1000000) {
+	if exp.String() != "1000000" {
 		t.Fatal("failed test: tail recursive")
 	}
 }
