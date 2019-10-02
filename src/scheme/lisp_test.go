@@ -45,19 +45,6 @@ func executeTest(testCode [][]string, testName string, t *testing.T) {
 		}
 	}
 }
-func checkErrorCode(err error, errCode string) bool {
-	if e, ok := err.(*SyntaxError); ok {
-		if e.MsgCode == errCode {
-			return true
-		}
-	}
-	if e, ok := err.(*RuntimeError); ok {
-		if e.MsgCode == errCode {
-			return true
-		}
-	}
-	return false
-}
 
 var (
 	program = []string{
@@ -436,6 +423,7 @@ func TestQuote(t *testing.T) {
 func TestLet(t *testing.T) {
 	testCode := [][]string{
 		{"(let ((a 10)(b 20))(+ a b)(* a b))", "200"},
+		{"(let loop ((i 0)(j 0)) (if (<= 10 i) (+ i j) (loop (+ i 1)(+ j 2))))", "30"},
 
 		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
 		{"(let ((a 10)))", "E1007"},
@@ -769,7 +757,7 @@ func TestLoadFile(t *testing.T) {
 		{"(load-file 10)", "E1015"},
 		{"(load-file \"example/no.scm\")", "E1014"},
 		{"(load-file \"/tmp\")", "E1016"},
-		{"(load-file \"/etc/shadow\")", "E9999"},
+		{"(load-file \"/etc/sudoers\")", "E9999"},
 	}
 	executeTest(testCode, "load-file", t)
 }
@@ -843,8 +831,8 @@ func TestLispSampleProgram(t *testing.T) {
 	if exp.String() != "((1 2) (1 3) (2 3))" {
 		t.Fatal("failed test: comb")
 	}
-	exp, _ = DoCoreLogic("(hanoi \"a\" \"b\" \"c\" 3)", rootEnv)
-	if exp.String() != "(((\"a\" . \"b\") 1) ((\"a\" . \"c\") 2) ((\"b\" . \"c\") 1) ((\"a\" . \"b\") 3) ((\"c\" . \"a\") 1) ((\"c\" . \"b\") 2) ((\"a\" . \"b\") 1))" {
+	exp, _ = DoCoreLogic("(hanoi (quote a)(quote b)(quote c) 3)", rootEnv)
+	if exp.String() != "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))" {
 		t.Fatal("failed test: hanoi")
 	}
 	exp, _ = DoCoreLogic("(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", rootEnv)
@@ -888,32 +876,14 @@ func TestErrCase(t *testing.T) {
 	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 
-	testCode := [][]string{
-
-		{"(set! 10 10)", "E1004"},
-		{"(set! a)", "E1007"},
-		{"(set! a 10 11)", "E1007"},
-		{"(set! hoge 10)", "E1008"},
-
-		{"(time)", "E1007"},
-		{"(time #\\abc)", "E0004"},
-		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
-		{"(load-file)", "E1007"},
-		{"(load-file 10)", "E1015"},
-		{"(load-file \"example/no.scm\")", "E1014"},
-		{"(load-file \"/tmp\")", "E1016"},
-		{"(load-file \"/etc/shadow\")", "E9999"},
-	}
-	for _, e := range testCode {
-		_, err = DoCoreLogic(e[0], rootEnv)
-		if !checkErrorCode(err, e[1]) {
-			t.Fatal("failed test: " + e[0])
-		}
-	}
 	// Impossible absolute, But Program bug is except
 	_, err = eval(NewFunction(rootEnv, NewList(nil), nil, "lambda"), rootEnv)
-	if !checkErrorCode(err, "E1009") {
-		t.Fatal("failed test: " + "E1009")
+	if err != nil {
+		if false == strings.Contains(err.Error(), "Not Enough Data Type") {
+			t.Fatal("failed test: E1009")
+		}
+	} else {
+		t.Fatal("failed test2: E1009")
 	}
 	// Error()
 	_, err = DoCoreLogic(")", rootEnv)
@@ -921,18 +891,24 @@ func TestErrCase(t *testing.T) {
 		if false == strings.Contains(err.Error(), "Extra close") {
 			t.Fatal("failed test: SyntaxError::Error()")
 		}
+	} else {
+		t.Fatal("failed test2: SyntaxError::Error()")
 	}
 	_, err = DoCoreLogic("undef", rootEnv)
 	if err != nil {
 		if false == strings.Contains(err.Error(), "Undefine variable") {
 			t.Fatal("failed test: RuntimeError::Error()")
 		}
+	} else {
+		t.Fatal("failed test2: SyntaxError::Error()")
 	}
 	err = NewRuntimeError("E1008", "a", "b")
 	if err != nil {
 		if false == strings.Contains(err.Error(), "Undefine variable") {
 			t.Fatal("failed test: RuntimeError::Error()")
 		}
+	} else {
+		t.Fatal("failed test: RuntimeError::Error()")
 	}
 }
 func TestInteractive(t *testing.T) {
