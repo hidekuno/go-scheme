@@ -750,7 +750,14 @@ func TestTime(t *testing.T) {
 	}
 	executeTest(testCode, "time", t)
 }
+func TestBegin(t *testing.T) {
+	testCode := [][]string{
+		{"(begin 1 2)", "2"},
 
+		{"(begin)", "E1007"},
+	}
+	executeTest(testCode, "load-file", t)
+}
 func TestLoadFile(t *testing.T) {
 	testCode := [][]string{
 		{"(load-file)", "E1007"},
