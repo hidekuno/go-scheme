@@ -14,7 +14,7 @@
                 (sierpinski x0 y0 xx0 yy0 xx2 yy2 (- c 1))
                 (sierpinski x1 y1 xx0 yy0 xx1 yy1 (- c 1))
                 (sierpinski x2 y2 xx2 yy2 xx1 yy1 (- c 1)))
-      (let ((hoge 0))
+      (begin
         (draw-line x0 y0 x1 y1)
         (draw-line x1 y1 x2 y2)
         (draw-line x2 y2 x0 y0))))
