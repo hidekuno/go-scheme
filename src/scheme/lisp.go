@@ -1723,6 +1723,21 @@ func BuildFunc() {
 		fmt.Println(t1.Sub(t0))
 		return e, err
 	}
+	buildInFuncTbl["begin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		var lastExp Expression
+		for _, e := range exp {
+			result, err := eval(e, env)
+			if err != nil {
+				return nil, err
+			}
+			lastExp = result
+		}
+		return lastExp, nil
+	}
 	buildInFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 		if len(exp) != 1 {

@@ -14,7 +14,7 @@
           (xb (+ x1  (*    tcos (- x1 x0) alpha) (*    tsin (- y1 y0) alpha))))
       (draw-line x0 y0 x1 y1)
       (if (>= 0 c)
-          ((lambda () (draw-line x1 y1 xa ya) (draw-line x1 y1 xb yb)))
-          ((lambda () (tree x1 y1 xa ya (- c 1))(tree x1  y1  xb  yb (- c 1))))))))
+          (begin (draw-line x1 y1 xa ya)(draw-line x1 y1 xb yb))
+          (begin (tree x1 y1 xa ya (- c 1))(tree x1  y1  xb  yb (- c 1)))))))
 
 (tree 300 400 300 300 12)
