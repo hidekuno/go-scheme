@@ -763,6 +763,18 @@ func TestBegin(t *testing.T) {
 	}
 	executeTest(testCode, "load-file", t)
 }
+func TestDisplay(t *testing.T) {
+	testCode := [][]string{
+		{"(display)", "E1007"},
+	}
+	executeTest(testCode, "newline", t)
+}
+func TestNewLine(t *testing.T) {
+	testCode := [][]string{
+		{"(newline 10)", "E1007"},
+	}
+	executeTest(testCode, "newline", t)
+}
 func TestLoadFile(t *testing.T) {
 	testCode := [][]string{
 		{"(load-file)", "E1007"},
@@ -964,7 +976,6 @@ func TestInteractive(t *testing.T) {
 			t.Fatal(s)
 			t.Fatal(string(errbuf))
 		}
-		t.Log(s)
 	}
 	iostub("(+ 1 2.5)", "3.5")
 	iostub("((lambda \n(n m)(+ n m))\n 10 20)", "30")
