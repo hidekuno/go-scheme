@@ -1729,6 +1729,26 @@ func BuildFunc() {
 		}
 		return evalMulti(exp, env)
 	}
+	buildInFuncTbl["display"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		for _, e := range exp {
+			v, err := eval(e, env)
+			if err != nil {
+				return v, err
+			}
+			fmt.Print(v.String())
+		}
+		return NewNil(), nil
+	}
+	buildInFuncTbl["newline"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 0 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		fmt.Println("")
+		return NewNil(), nil
+	}
 	buildInFuncTbl["load-file"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 		if len(exp) != 1 {
