@@ -719,12 +719,17 @@ func TestExpt(t *testing.T) {
 	testCode := [][]string{
 		{"(expt 2 0)", "1"},
 		{"(expt 2 1)", "2"},
-		{"(expt 2 3)", "8"},
+		{"(expt 2 (+ 1 2))", "8"},
+		{"(define a 4)", "a"},
+		{"(expt 2 a)", "16"},
+		{"(expt 2.0 3.0)", "8"},
+		{"(expt 2.0 3)", "8"},
+		{"(expt 2 3.0)", "8"},
 
 		{"(expt 10)", "E1007"},
 		{"(expt 10 10 10)", "E1007"},
-		{"(expt 11.5 10)", "E1002"},
-		{"(expt 11 12.5)", "E1002"},
+		{"(expt 11.5 #f)", "E1003"},
+		{"(expt #t 12.5)", "E1003"},
 	}
 	executeTest(testCode, "expt", t)
 }
