@@ -1466,24 +1466,23 @@ func BuildFunc() {
 		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 	}
 	buildInFuncTbl["expt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-
-		m, ok := exp[0].(*Integer)
-		if !ok {
-			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
-		}
-		n, ok := exp[1].(*Integer)
-		if !ok {
-			return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
-		}
-
-		result := 1
-		for i := 0; i < n.Value; i++ {
-			result *= m.Value
-		}
-		return NewInteger(result), nil
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if len(exp) != 2 {
+					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				}
+				f := []float64{0.0, 0.0}
+				for i, e := range exp {
+					if n, ok := e.(*Float); ok {
+						f[i] = n.Value
+					} else if n, ok := e.(*Integer); ok {
+						f[i] = (float64)(n.Value)
+					} else {
+						return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
+					}
+				}
+				return NewFloat(math.Pow(f[0], f[1])), nil
+			})
 	}
 	// syntax keyword implements
 	buildInFuncTbl["if"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
