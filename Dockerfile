@@ -9,7 +9,7 @@ ENV PATH ${PATH}:/usr/local/go/bin:${GOPATH}/bin
 RUN go get github.com/mattn/go-gtk/gtk && go install github.com/mattn/go-gtk/gtk
 
 WORKDIR $HOME
-RUN git clone https://github.com/hidekuno/go-scheme && git clone https://github.com/hidekuno/rust-elisp
+RUN git clone https://github.com/hidekuno/go-scheme && git clone https://github.com/hidekuno/picture-language
 ENV GOPATH ${HOME}/go-scheme:${HOME}/go
 WORKDIR $HOME/go-scheme/src
 RUN go build  -ldflags '-w -s' lisp_main.go && go build  -ldflags '-w -s' lisp_draw_main.go
@@ -20,5 +20,5 @@ MAINTAINER hidekuno@gmail.com
 RUN apt-get update && apt-get -y install libgtk2.0-0
 COPY --from=builder /root/go-scheme/src/lisp_main /root/
 COPY --from=builder /root/go-scheme/src/lisp_draw_main /root/
-COPY --from=builder /root/rust-elisp/glisp/samples /root/
-COPY --from=builder /root/go-scheme/examples /root/
+COPY --from=builder /root/picture-language /root/
+COPY --from=builder /root/go-scheme/samples /root/
