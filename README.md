@@ -10,7 +10,7 @@ Go言語によるScheme(subset版)の実装
 - 簡単なプログラムが動くレベル  
 https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
 
-- SICPの図形言語プログラムが動作するところまで確認した。
+- SICPの図形言語プログラムが動作するところまで確認した。(https://github.com/hidekuno/picture-language)
 
 <img src="https://user-images.githubusercontent.com/22115777/44436239-11406600-a5ef-11e8-9860-0b3f73350114.png" width=50%>
 
