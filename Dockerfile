@@ -20,5 +20,5 @@ MAINTAINER hidekuno@gmail.com
 RUN apt-get update && apt-get -y install libgtk2.0-0
 COPY --from=builder /root/go-scheme/src/lisp_main /root/
 COPY --from=builder /root/go-scheme/src/lisp_draw_main /root/
-COPY --from=builder /root/picture-language /root/
-COPY --from=builder /root/go-scheme/samples /root/
+COPY --from=builder /root/picture-language/fractal/ /root/picture-language/fractal/
+COPY --from=builder /root/picture-language/sicp/ /root/picture-language/sicp/
