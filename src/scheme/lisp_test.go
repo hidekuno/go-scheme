@@ -408,7 +408,7 @@ func TestDefine(t *testing.T) {
 		{"(define (fuga 1 b) (+ a b))", "E1004"},
 		{"hoge", "E1008"},
 	}
-	executeTest(testCode, "identity", t)
+	executeTest(testCode, "define", t)
 }
 func TestQuote(t *testing.T) {
 	testCode := [][]string{
@@ -767,7 +767,7 @@ func TestDisplay(t *testing.T) {
 	testCode := [][]string{
 		{"(display)", "E1007"},
 	}
-	executeTest(testCode, "newline", t)
+	executeTest(testCode, "display", t)
 }
 func TestNewLine(t *testing.T) {
 	testCode := [][]string{
