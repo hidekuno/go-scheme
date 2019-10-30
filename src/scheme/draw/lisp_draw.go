@@ -206,6 +206,37 @@ func BuildGtkFunc() {
 					return nil, scheme.NewRuntimeError("E2003", reflect.TypeOf(exp[0]).String())
 				})
 		})
+		scheme.AddBuildInFunc("gtk-major-version", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			return scheme.NewInteger(int(gtk.MajorVersion())), nil
+		})
+		scheme.AddBuildInFunc("gtk-minor-version", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			return scheme.NewInteger(int(gtk.MinorVersion())), nil
+		})
+		scheme.AddBuildInFunc("gtk-micro-version", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			return scheme.NewInteger(int(gtk.MicroVersion())), nil
+		})
+		scheme.AddBuildInFunc("screen-width", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			return scheme.NewInteger(draw.ScreenWidth - 2), nil
+		})
+		scheme.AddBuildInFunc("screen-height", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			if len(exp) != 0 {
+				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			return scheme.NewInteger(draw.ScreenHeight - 2), nil
+		})
+
 		execFinished = true
 		return scheme.NewNil(), nil
 	}
