@@ -22,6 +22,11 @@ import (
 	"fractal"
 )
 
+const (
+	ScreenWidth  = 720
+	ScreenHeight = 560
+)
+
 func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) {
 
 	var (
@@ -176,7 +181,8 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	// DrawingArea
 	//--------------------------------------------------------
 	canvas := gtk.NewDrawingArea()
-	canvas.SetSizeRequest(720, 560)
+	canvas.SetSizeRequest(ScreenWidth, ScreenHeight)
+
 	canvas.Connect("configure-event", func() {
 
 		if fg != nil {
