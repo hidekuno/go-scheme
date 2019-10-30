@@ -2,7 +2,7 @@
    Go lang 4th study program.
    This is test program for mini scheme subset.
 
-   ex.) go test -v lisp_go draw.go lisp.go lisp_draw_test.go
+   ex.) go test -v lisp_draw.go lisp_draw_test.go
 
    hidekuno@gmail.com
 */
@@ -144,4 +144,39 @@ func TestRotate270Image(t *testing.T) {
 		{"(rotate270-image #t)", "E2003"},
 	}
 	executeTest(testCode, "rotate270-image", t)
+}
+func TestGtkMajorVersion(t *testing.T) {
+	testCode := [][]string{
+		{"(gtk-major-version)", "2"},
+		{"(gtk-major-version 1)", "E1007"},
+	}
+	executeTest(testCode, "gtk-major-version", t)
+}
+func TestGtkMinorVersion(t *testing.T) {
+	testCode := [][]string{
+		{"(gtk-minor-version)", "24"},
+		{"(gtk-minor-version 1)", "E1007"},
+	}
+	executeTest(testCode, "gtk-minor-version", t)
+}
+func TestGtkMicroVersion(t *testing.T) {
+	testCode := [][]string{
+		{"(gtk-micro-version)", "31"},
+		{"(gtk-micro-version 1)", "E1007"},
+	}
+	executeTest(testCode, "gtk-micro-version", t)
+}
+func TestGetScreenWidth(t *testing.T) {
+	testCode := [][]string{
+		{"(screen-width)", "718"},
+		{"(screen-width 1)", "E1007"},
+	}
+	executeTest(testCode, "screen-width", t)
+}
+func TestGetScreenHeight(t *testing.T) {
+	testCode := [][]string{
+		{"(screen-height)", "558"},
+		{"(screen-height 1)", "E1007"},
+	}
+	executeTest(testCode, "screen-height", t)
 }
