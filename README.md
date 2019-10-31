@@ -17,7 +17,7 @@ Go言語によるScheme(subset版)の実装
 |--------|--------|--------|
 | OS     | CentOS | draw系を使わなければ特になし|
 | Gtk+   | 2.24.31||
-| golang   | 1.13||
+| golang   | 1.13.1||
 | go-gtk | release-0.1|https://github.com/mattn/go-gtk|
 | gorilla/sessions|v1.1.2|https://github.com/gorilla/sessions|
 
