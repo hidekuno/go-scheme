@@ -39,6 +39,8 @@ docker pull hidekuno/go-scheme
 docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/lisp_draw_main
 ```
 
+<img src="https://user-images.githubusercontent.com/22115777/68912921-e9619300-079c-11ea-976c-340252936eb1.png" width=80%>
+
 ### Linux
 ```
 docker pull hidekuno/go-scheme
