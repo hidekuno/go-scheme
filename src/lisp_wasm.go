@@ -13,7 +13,8 @@ import (
 
 var rootEnv *scheme.SimpleEnv
 
-func eval(i []js.Value) {
+func eval(this js.Value,vs []js.Value) interface{}{
+
 	document := js.Global().Get("document")
 	text := document.Call("getElementById", "sExpression")
 	result := document.Call("getElementById", "calcResult")
@@ -22,9 +23,10 @@ func eval(i []js.Value) {
 	if err != nil {
 		result.Set("innerText", err.Error())
 		println(err.Error())
-		return
+		return err.Error()
 	}
 	result.Set("innerText", exp.String())
+	return exp.String()
 }
 
 func main() {
@@ -33,6 +35,6 @@ func main() {
 	scheme.BuildFunc()
 	rootEnv = scheme.NewSimpleEnv(nil, nil)
 
-	js.Global().Set("eval", js.NewCallback(eval))
+	js.Global().Set("eval", js.FuncOf(eval))
 	select {}
 }
