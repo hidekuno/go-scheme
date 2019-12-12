@@ -779,13 +779,33 @@ func TestLoadFile(t *testing.T) {
 	testCode := [][]string{
 		{"(load-file)", "E1007"},
 		{"(load-file 10)", "E1015"},
+		{"(load-file a)", "E1008"},
 		{"(load-file \"example/no.scm\")", "E1014"},
 		{"(load-file \"/tmp\")", "E1016"},
 		{"(load-file \"/etc/sudoers\")", "E9999"},
 	}
 	executeTest(testCode, "load-file", t)
 }
-
+func TestGetEnvironment(t *testing.T) {
+	testCode := [][]string{
+		{"(get-environment-variable)", "E1007"},
+		{"(get-environment-variable 10)", "E1015"},
+		{"(get-environment-variable a)", "E1008"},
+		{"(get-environment-variable \"HOME\")", "\"" + os.Getenv("HOME") + "\""},
+	}
+	executeTest(testCode, "get-environment-variable", t)
+}
+func TestStringAppend(t *testing.T) {
+	testCode := [][]string{
+		{"(string-append \"a\" \"b\")", "\"ab\""},
+		{"(string-append \"a\" \"b\"  \"c\")", "\"abc\""},
+		{"(string-append)", "E1007"},
+		{"(string-append 10)", "E1007"},
+		{"(string-append a b)", "E1008"},
+		{"(string-append \"a\" 10)", "E1015"},
+	}
+	executeTest(testCode, "string-append", t)
+}
 func TestLispSampleProgram(t *testing.T) {
 	var (
 		exp Expression
