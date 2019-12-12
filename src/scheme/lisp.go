@@ -368,7 +368,7 @@ type String struct {
 
 func NewString(p string) *String {
 	v := new(String)
-	v.Value = p[1 : len(p)-1]
+	v.Value = p
 	return v
 }
 
@@ -717,7 +717,7 @@ func atom(token string) (Atom, error) {
 						return nil, NewSyntaxError("E0004")
 					}
 				} else if (len(token) > 1) && (token[0] == '"') && (token[len(token)-1] == '"') {
-					atom = NewString(token)
+					atom = NewString(token[1 : len(token)-1])
 				} else {
 					atom = NewSymbol(token)
 				}
@@ -1754,7 +1754,11 @@ func BuildFunc() {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		filename, ok := exp[0].(*String)
+		v, err := eval(exp[0], env)
+		if err != nil {
+			return v, err
+		}
+		filename, ok := v.(*String)
 		if !ok {
 			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 		}
@@ -1773,6 +1777,39 @@ func BuildFunc() {
 		defer func() { _ = fd.Close() }()
 		repl(fd, env)
 		return NewNil(), nil
+	}
+	//srfi-98
+	buildInFuncTbl["get-environment-variable"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		v, err := eval(exp[0], env)
+		if err != nil {
+			return v, err
+		}
+		s, ok := v.(*String)
+		if !ok {
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+		}
+		return NewString(os.Getenv(s.Value)), nil
+	}
+	buildInFuncTbl["string-append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		ret := make([]string, 0, len(exp))
+		for _, e := range exp {
+			v, err := eval(e, env)
+			if err != nil {
+				return v, err
+			}
+			s, ok := v.(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+			}
+			ret = append(ret, s.Value)
+		}
+		return NewString(strings.Join(ret, "")), nil
 	}
 }
 
