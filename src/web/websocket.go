@@ -92,8 +92,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 <style type="text/css">
 <!--
 .result {
-  left:     200px;
-  position: relative;
+//  position: relative;
   background-color: whitegray;
   font-size: 1.0em;
   font-family: -webkit-body;
@@ -114,30 +113,12 @@ ul li {
 
 <body>
   <script src="{{.Resource}}/wasm_exec.js"></script>
-  <script>
-    if (!WebAssembly.instantiateStreaming) { // polyfill
-      WebAssembly.instantiateStreaming = async (resp, importObject) => {
-        const source = await (await resp).arrayBuffer();
-        return await WebAssembly.instantiate(source, importObject);
-      };
-    }
-    const go = new Go();
-    let mod, inst;
-    WebAssembly.instantiateStreaming(fetch("{{.Resource}}/lisp.wasm"), go.importObject).then(async (result) => {
-      mod = result.module;
-      inst = result.instance;
-      console.clear();
-      await go.run(inst);
-    }).catch((err) => {
-      console.error(err);
-    });
-  </script>
-
+  <script src="{{.Resource}}/go.js"></script>
   <center><h2>Mini&nbsp;<span style="color:#FFE900">Scheme&nbsp;</span>Web&nbsp;<span style="color:#28AFB0">Assembly&nbsp;</span>Demo&nbsp;<span style="color:#E53D00">Program</span></h2></center>
 
   <center>
   <div id="head" class="row">
-    <p id="calcResult" style="text-align: left;" class="result">&nbsp;</p>
+    <p id="calcResult" style="text-align: center;" class="result">&nbsp;</p>
   </div>
   <div id="body" class="row">
     <textarea id="sExpression" style="font-size: 16px; width: 920px; height:320px;" name="sexpression" cols="128" rows="30"></textarea>

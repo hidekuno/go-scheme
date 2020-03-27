@@ -4,3 +4,4 @@ lisp_draw_main
 main.test
 lisp.cprof
 lisp.mprof
+web_wasm_main
