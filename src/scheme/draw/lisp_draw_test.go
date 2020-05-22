@@ -9,7 +9,9 @@
 package draw
 
 import (
+	"os/exec"
 	"scheme"
+	"strings"
 	"testing"
 )
 
@@ -41,6 +43,13 @@ func executeTest(testCode [][]string, testName string, t *testing.T) {
 			}
 		}
 	}
+}
+func getGtkVersion(t *testing.T) []string {
+	v, err := exec.Command("pkg-config", "--modversion", "gtk+-2.0").Output()
+	if err != nil {
+		t.Fatal("failed ", err.Error())
+	}
+	return strings.Split(strings.TrimRight(string(v), "\n"), ".")
 }
 func TestBuildFunc(t *testing.T) {
 	scheme.BuildFunc()
@@ -146,22 +155,28 @@ func TestRotate270Image(t *testing.T) {
 	executeTest(testCode, "rotate270-image", t)
 }
 func TestGtkMajorVersion(t *testing.T) {
+	v := getGtkVersion(t)
+
 	testCode := [][]string{
-		{"(gtk-major-version)", "2"},
+		{"(gtk-major-version)", v[0]},
 		{"(gtk-major-version 1)", "E1007"},
 	}
 	executeTest(testCode, "gtk-major-version", t)
 }
 func TestGtkMinorVersion(t *testing.T) {
+	v := getGtkVersion(t)
+
 	testCode := [][]string{
-		{"(gtk-minor-version)", "24"},
+		{"(gtk-minor-version)", v[1]},
 		{"(gtk-minor-version 1)", "E1007"},
 	}
 	executeTest(testCode, "gtk-minor-version", t)
 }
 func TestGtkMicroVersion(t *testing.T) {
+	v := getGtkVersion(t)
+
 	testCode := [][]string{
-		{"(gtk-micro-version)", "31"},
+		{"(gtk-micro-version)", v[2]},
 		{"(gtk-micro-version 1)", "E1007"},
 	}
 	executeTest(testCode, "gtk-micro-version", t)
