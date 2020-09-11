@@ -12,15 +12,6 @@ Go言語によるScheme(subset版)の実装
 - SICPの図形言語プログラムが動作するところまで確認した。
     - https://github.com/hidekuno/picture-language
 
-## 開発環境
-| Item   | Ver. |備考|
-|--------|--------|--------|
-| OS     | CentOS | draw系を使わなければ特になし|
-| Gtk+   | 2.24.31||
-| golang   | 1.13.1||
-| go-gtk | release-0.1|https://github.com/mattn/go-gtk|
-| gorilla/sessions|v1.1.2|https://github.com/gorilla/sessions|
-
 ## 変数
 ```
 GOARCH=amd64
