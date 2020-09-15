@@ -7,11 +7,11 @@
 package draw
 
 import (
-	"draw"
 	"reflect"
-	"scheme"
 	"strconv"
 
+	"github.com/hidekuno/go-scheme/draw"
+	"github.com/hidekuno/go-scheme/scheme"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"

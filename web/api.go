@@ -18,11 +18,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"scheme"
 	"strconv"
 	"strings"
 
 	"github.com/gorilla/sessions"
+	"github.com/hidekuno/go-scheme/scheme"
 )
 
 var (

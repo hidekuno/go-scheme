@@ -8,9 +8,10 @@ package experiment
 
 import (
 	"fmt"
-	"scheme"
 	"strconv"
 	"time"
+
+	"github.com/hidekuno/go-scheme/scheme"
 )
 
 func BuildGoFunc() {
