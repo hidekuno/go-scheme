@@ -15,5 +15,5 @@ const (
 	KochMax       = 12
 	TreeMax       = 20
 	SierpinskiMax = 16
-	SampleImage   = "../images/glenda.png"
+	SampleImage   = "src/github.com/hidekuno/go-scheme/draw/images/glenda.png"
 )

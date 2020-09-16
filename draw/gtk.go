@@ -13,6 +13,8 @@ package draw
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hidekuno/go-scheme/draw/fractal"
@@ -148,7 +150,7 @@ func BuildGtkApp(titleName string) (*gdk.Pixmap, *gdk.Window, *gdk.GC, *gdk.GC) 
 	menuitem = gtk.NewMenuItemWithMnemonic("_Simple")
 	menuitem.Connect("activate", func() {
 		pixmap.GetDrawable().DrawRectangle(bg, true, 0, 0, -1, -1)
-		orgPixbuf, err := gdkpixbuf.NewPixbufFromFile(SampleImage)
+		orgPixbuf, err := gdkpixbuf.NewPixbufFromFile(filepath.Join(os.Getenv("GOPATH"), SampleImage))
 		if err != nil {
 			fmt.Println(err.Error())
 			return
