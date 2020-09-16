@@ -12,7 +12,7 @@ WORKDIR $HOME
 ENV GOPATH ${HOME}/go
 RUN go get github.com/hidekuno/go-scheme && git clone https://github.com/hidekuno/picture-language
 
-WORKDIR $GOPATH/github.com/hidekuno/go-scheme
+WORKDIR $GOPATH/src/github.com/hidekuno/go-scheme
 RUN go build -o lisp -ldflags '-w -s' cmd/lisp/main.go && go build -o glisp -ldflags '-w -s' cmd/lisp/draw/main.go
 
 FROM ubuntu:18.04 as go-scheme
