@@ -10,9 +10,10 @@ package draw
 
 import (
 	"os/exec"
-	"scheme"
 	"strings"
 	"testing"
+
+	"github.com/hidekuno/go-scheme/scheme"
 )
 
 func executeTest(testCode [][]string, testName string, t *testing.T) {
@@ -87,7 +88,7 @@ func TestDrawLine(t *testing.T) {
 }
 func TestCreateImageFromFile(t *testing.T) {
 	testCode := [][]string{
-		{"(create-image-from-file \"../../../images/duke.png\")", "Pixbuf: "},
+		{"(create-image-from-file \"../../draw/images/duke.png\")", "Pixbuf: "},
 
 		{"(create-image-from-file)", "E1007"},
 		{"(create-image-from-file \"hoge.gif\")", "E2002"},
@@ -97,7 +98,7 @@ func TestCreateImageFromFile(t *testing.T) {
 }
 func TestDrawImage(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../../images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
 		{"(draw-image img 10 10)", "nil"},
 
 		{"(draw-image 10 10)", "E1007"},
@@ -110,7 +111,7 @@ func TestDrawImage(t *testing.T) {
 }
 func TestScaleImage(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../../images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
 		{"(scale-image img 90 90)", "Pixbuf: "},
 
 		{"(scale-image 10 10)", "E1007"},
@@ -123,7 +124,7 @@ func TestScaleImage(t *testing.T) {
 }
 func TestRotate90Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../../images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
 		{"(rotate90-image img)", "Pixbuf: "},
 
 		{"(rotate90-image)", "E1007"},
@@ -134,7 +135,7 @@ func TestRotate90Image(t *testing.T) {
 }
 func TestRotate180Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../../images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
 		{"(rotate180-image img)", "Pixbuf: "},
 
 		{"(rotate180-image)", "E1007"},
@@ -145,7 +146,7 @@ func TestRotate180Image(t *testing.T) {
 }
 func TestRotate270Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../../images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
 		{"(rotate270-image img)", "Pixbuf: "},
 
 		{"(rotate270-image)", "E1007"},
