@@ -16,7 +16,7 @@ Go言語によるScheme(subset版)の実装
 ```
 GOARCH=amd64
 GOOS=linux
-GOPATH=${HOME}/go-scheme:${HOME}/go
+GOPATH=${HOME}/go
 ```
 
 ## 動かし方
@@ -27,7 +27,7 @@ GOPATH=${HOME}/go-scheme:${HOME}/go
 ### macOS
 ```
 docker pull hidekuno/go-scheme
-docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/lisp_draw_main
+docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/glisp
 ```
 
 <img src="https://user-images.githubusercontent.com/22115777/68912921-e9619300-079c-11ea-976c-340252936eb1.png" width=80%>
@@ -36,12 +36,12 @@ docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/g
 ```
 docker pull hidekuno/go-scheme
 xhost +
-docker run -it --name go-scheme -e DISPLAY=${HOSTIP}:0.0 hidekuno/go-scheme /root/lisp_draw_main
+docker run -it --name go-scheme -e DISPLAY=${HOSTIP}:0.0 hidekuno/go-scheme /root/glisp
 ```
 ### Xサーバが動いていない環境向け(replのみ版)
 ```
 docker pull hidekuno/go-scheme
-docker run -it --name go-scheme hidekuno/go-scheme /root/lisp_main
+docker run -it --name go-scheme hidekuno/go-scheme /root/lisp
 ```
 
 <img src="https://user-images.githubusercontent.com/22115777/67071430-783eb800-f1bd-11e9-9a94-18c3b371ab39.png" width=80%>
