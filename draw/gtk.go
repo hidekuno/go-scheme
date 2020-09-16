@@ -15,11 +15,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hidekuno/go-scheme/draw/fractal"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
-
-	"fractal"
 )
 
 const (

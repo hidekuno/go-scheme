@@ -13,7 +13,8 @@ package main
 */
 import (
 	"runtime"
-	"web"
+
+	"github.com/hidekuno/go-scheme/web"
 )
 
 // Main

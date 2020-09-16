@@ -18,8 +18,9 @@ ex.2
 
 import (
 	"runtime"
-	"scheme"
-	"scheme/experiment"
+
+	"github.com/hidekuno/go-scheme/scheme"
+	"github.com/hidekuno/go-scheme/scheme/experiment"
 )
 
 // Main

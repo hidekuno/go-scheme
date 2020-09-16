@@ -17,7 +17,8 @@ import (
 	"os"
 	"runtime"
 	"time"
-	"web"
+
+	"github.com/hidekuno/go-scheme/web"
 )
 
 const (

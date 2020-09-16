@@ -4,16 +4,17 @@ package main
    Go lang 3rd study program.
    hidekuno@gmail.com
 
-   GOARCH=wasm GOOS=js go build -o wasm/lisp.wasm lisp_wasm.go
+   GOARCH=wasm GOOS=js go build -o lisp.wasm lisp_wasm.go
 */
 import (
-	"scheme"
 	"syscall/js"
+
+	"github.com/hidekuno/go-scheme/scheme"
 )
 
 var rootEnv *scheme.SimpleEnv
 
-func eval(this js.Value,vs []js.Value) interface{}{
+func eval(this js.Value, vs []js.Value) interface{} {
 
 	document := js.Global().Get("document")
 	text := document.Call("getElementById", "sExpression")
