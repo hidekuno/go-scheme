@@ -8,6 +8,7 @@ package experiment
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 func BuildGoFunc() {
 
 	scheme.AddBuildInFunc("go-append", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
-		if len(exp) < 2 {
+		if len(exp) != 2 {
 			return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 
@@ -41,7 +42,16 @@ func BuildGoFunc() {
 		}()
 		<-finish
 		<-finish
-		return scheme.NewList(append((exp1.(*scheme.List)).Value, (exp2.(*scheme.List)).Value...)), nil
+
+		v1, ok := exp1.(*scheme.List)
+		if !ok {
+			return nil, scheme.NewRuntimeError("E1005", reflect.TypeOf(exp1).String())
+		}
+		v2, ok := exp2.(*scheme.List)
+		if !ok {
+			return nil, scheme.NewRuntimeError("E1005", reflect.TypeOf(exp2).String())
+		}
+		return scheme.NewList(append(v1.Value, v2.Value...)), nil
 	})
 }
 
