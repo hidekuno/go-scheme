@@ -12,6 +12,22 @@ import (
 	"strings"
 )
 
+// String Type
+type String struct {
+	Atom
+	Value string
+}
+
+func NewString(p string) *String {
+	v := new(String)
+	v.Value = p
+	return v
+}
+
+func (self *String) String() string {
+	return "\"" + self.Value + "\""
+}
+
 // Build Global environement.
 func buildStringFunc() {
 
