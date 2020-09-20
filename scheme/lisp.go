@@ -8,7 +8,6 @@ package scheme
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -61,50 +60,6 @@ var (
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
 )
 
-// env structure
-type SimpleEnv struct {
-	EnvTable *Environment
-	Parent   *SimpleEnv
-}
-
-func NewSimpleEnv(parent *SimpleEnv, et *Environment) *SimpleEnv {
-	v := new(SimpleEnv)
-	v.Parent = parent
-	if et != nil {
-		v.EnvTable = et
-	} else {
-		env := Environment{}
-		v.EnvTable = &env
-	}
-	return v
-}
-func (self *SimpleEnv) Find(key string) (Expression, bool) {
-	if v, ok := (*self.EnvTable)[key]; ok {
-		return v, true
-	}
-	for c := self.Parent; c != nil; c = c.Parent {
-		if v, ok := (*c.EnvTable)[key]; ok {
-			return v, true
-		}
-	}
-	return nil, false
-}
-func (self *SimpleEnv) Regist(key string, exp Expression) {
-	(*self.EnvTable)[key] = exp
-}
-func (self *SimpleEnv) Set(key string, exp Expression) {
-	if _, ok := (*self.EnvTable)[key]; ok {
-		(*self.EnvTable)[key] = exp
-		return
-	}
-	for c := self.Parent; c != nil; c = c.Parent {
-		if _, ok := (*c.EnvTable)[key]; ok {
-			(*c.EnvTable)[key] = exp
-			return
-		}
-	}
-}
-
 // Error(syntax, runtime)
 type SyntaxError struct {
 	MsgCode           string
@@ -156,150 +111,6 @@ type Atom interface {
 	// Because Expression is different
 	Dummy() Any
 }
-type Number interface {
-	Atom
-	Add(Number) Number
-	Sub(Number) Number
-	Mul(Number) Number
-	Div(Number) Number
-	Equal(Number) bool
-	Greater(Number) bool
-	Less(Number) bool
-	GreaterEqual(Number) bool
-	LessEqual(Number) bool
-}
-
-func CreateNumber(exp Expression) (Number, error) {
-	if v, ok := exp.(*Integer); ok {
-		return NewInteger(v.Value), nil
-	}
-	if v, ok := exp.(*Float); ok {
-		return NewFloat(v.Value), nil
-	}
-	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
-}
-
-// Integer Type
-type Integer struct {
-	Number
-	Value int
-}
-
-func NewInteger(p int) *Integer {
-	v := new(Integer)
-	v.Value = p
-	return v
-}
-
-func (self *Integer) Add(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value += v.Value
-	return self
-}
-func (self *Integer) Sub(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value -= v.Value
-	return self
-}
-func (self *Integer) Mul(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value *= v.Value
-	return self
-}
-func (self *Integer) Div(p Number) Number {
-	v, _ := p.(*Integer)
-	if v.Value == 0 {
-		panic(NewRuntimeError("E1013"))
-	}
-	self.Value /= v.Value
-	return self
-}
-
-func (self *Integer) Equal(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value == v.Value
-}
-func (self *Integer) Greater(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value > v.Value
-}
-func (self *Integer) Less(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value < v.Value
-}
-func (self *Integer) GreaterEqual(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value >= v.Value
-}
-func (self *Integer) LessEqual(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value <= v.Value
-}
-
-func (self *Integer) String() string {
-	return strconv.Itoa(self.Value)
-}
-
-// Float Type
-type Float struct {
-	Number
-	Value float64
-}
-
-func NewFloat(p float64) *Float {
-	v := new(Float)
-	v.Value = p
-	return v
-}
-func (self *Float) Add(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value += v.Value
-	return self
-}
-func (self *Float) Sub(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value -= v.Value
-	return self
-}
-func (self *Float) Mul(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value *= v.Value
-	return self
-}
-func (self *Float) Div(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value /= v.Value
-	return self
-}
-func (self *Float) Equal(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value == v.Value
-}
-func (self *Float) Greater(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value > v.Value
-}
-func (self *Float) Less(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value < v.Value
-}
-func (self *Float) GreaterEqual(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value >= v.Value
-}
-func (self *Float) LessEqual(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value <= v.Value
-}
-func (self *Float) String() string {
-	return fmt.Sprint(self.Value)
-}
-func (self *Float) FormatString(prec int) string {
-	return strconv.FormatFloat(self.Value, 'f', prec, 64)
-}
-func (self *Float) LogFormatString(prec int) string {
-	return strconv.FormatFloat(self.Value, 'e', prec, 64)
-}
 
 // Symbol Type
 type Symbol struct {
@@ -338,39 +149,6 @@ func (self *Boolean) String() string {
 	return self.exp
 }
 
-// Character Type
-type Char struct {
-	Atom
-	Value rune
-	exp   string
-}
-
-func NewChar(v string) *Char {
-	b := new(Char)
-	b.exp = v
-	b.Value = []rune(v)[2]
-	return b
-}
-func (self *Char) String() string {
-	return self.exp
-}
-
-// String Type
-type String struct {
-	Atom
-	Value string
-}
-
-func NewString(p string) *String {
-	v := new(String)
-	v.Value = p
-	return v
-}
-
-func (self *String) String() string {
-	return "\"" + self.Value + "\""
-}
-
 // Nil Type
 type Nil struct {
 	Atom
@@ -385,65 +163,6 @@ func NewNil() *Nil {
 
 func (self *Nil) String() string {
 	return self.value
-}
-
-// List Type
-type List struct {
-	Expression
-	Value []Expression
-}
-
-func NewList(exp []Expression) *List {
-	l := new(List)
-	l.Value = exp
-	return l
-}
-
-func (self *List) String() string {
-	var buffer bytes.Buffer
-	var makeString func(*List)
-
-	makeString = func(l *List) {
-		buffer.WriteString("(")
-
-		for _, i := range l.Value {
-			if j, ok := i.(*List); ok {
-				makeString(j)
-
-			} else if j, ok := i.(Expression); ok {
-				buffer.WriteString(j.String())
-			}
-			if i != l.Value[len(l.Value)-1] {
-				buffer.WriteString(" ")
-			}
-		}
-		buffer.WriteString(")")
-	}
-	makeString(self)
-	return buffer.String()
-}
-
-// Pair Type
-type Pair struct {
-	Expression
-	Car Expression
-	Cdr Expression
-}
-
-func NewPair(car Expression, cdr Expression) *Pair {
-	p := new(Pair)
-	p.Car = car
-	p.Cdr = cdr
-	return p
-}
-func (self *Pair) String() string {
-	var buffer bytes.Buffer
-	buffer.WriteString("(")
-	buffer.WriteString(self.Car.String())
-	buffer.WriteString(" . ")
-	buffer.WriteString(self.Cdr.String())
-	buffer.WriteString(")")
-	return buffer.String()
 }
 
 // BuildInFunc

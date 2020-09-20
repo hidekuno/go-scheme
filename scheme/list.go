@@ -7,9 +7,69 @@
 package scheme
 
 import (
+	"bytes"
 	"reflect"
 	"strconv"
 )
+
+// List Type
+type List struct {
+	Expression
+	Value []Expression
+}
+
+func NewList(exp []Expression) *List {
+	l := new(List)
+	l.Value = exp
+	return l
+}
+
+func (self *List) String() string {
+	var buffer bytes.Buffer
+	var makeString func(*List)
+
+	makeString = func(l *List) {
+		buffer.WriteString("(")
+
+		for _, i := range l.Value {
+			if j, ok := i.(*List); ok {
+				makeString(j)
+
+			} else if j, ok := i.(Expression); ok {
+				buffer.WriteString(j.String())
+			}
+			if i != l.Value[len(l.Value)-1] {
+				buffer.WriteString(" ")
+			}
+		}
+		buffer.WriteString(")")
+	}
+	makeString(self)
+	return buffer.String()
+}
+
+// Pair Type
+type Pair struct {
+	Expression
+	Car Expression
+	Cdr Expression
+}
+
+func NewPair(car Expression, cdr Expression) *Pair {
+	p := new(Pair)
+	p.Car = car
+	p.Cdr = cdr
+	return p
+}
+func (self *Pair) String() string {
+	var buffer bytes.Buffer
+	buffer.WriteString("(")
+	buffer.WriteString(self.Car.String())
+	buffer.WriteString(" . ")
+	buffer.WriteString(self.Cdr.String())
+	buffer.WriteString(")")
+	return buffer.String()
+}
 
 // map,filter,reduce
 func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
