@@ -533,19 +533,23 @@ func evalMulti(exp []Expression, env *SimpleEnv) (Expression, error) {
 // main logic
 func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
 
+	var val Expression
 	token := tokenize(program)
-	ast, c, err := parse(token)
-	if err != nil {
-		return nil, err
-	}
 
-	if c != len(token) {
-		return nil, NewSyntaxError("E0003")
-	}
-
-	val, err := eval(ast, rootEnv)
-	if err != nil {
-		return nil, err
+	for {
+		ast, c, err := parse(token)
+		if err != nil {
+			return nil, err
+		}
+		val, err = eval(ast, rootEnv)
+		if err != nil {
+			return nil, err
+		}
+		if c == len(token) {
+			break
+		} else {
+			token = token[c:]
+		}
 	}
 	return val, nil
 }

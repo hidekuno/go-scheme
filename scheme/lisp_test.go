@@ -100,7 +100,8 @@ func TestAtom(t *testing.T) {
 		{"(", "E0001"},
 		{"(a (b", "E0002"},
 		{")", "E0003"},
-		{"(a))", "E0003"},
+		{"(list 10))", "E0003"},
+		{"(a))", "E1008"},
 		{"1)", "E0003"},
 		{"#\\abc", "E0004"},
 	}
@@ -115,6 +116,13 @@ func TestAtomUTF8(t *testing.T) {
 		{"山", "25"},
 	}
 	executeTest(testCode, "atom_utf8", t)
+}
+func TestDoCoreLogic(t *testing.T) {
+	testCode := [][]string{
+		{"(define a 100) a", "100"},
+		{"(define a 100) a (+ a 100)", "200"},
+	}
+	executeTest(testCode, "do_core_logic", t)
 }
 func TestLispSampleProgram(t *testing.T) {
 	var (
