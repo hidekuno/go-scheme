@@ -104,6 +104,9 @@ func TestAtom(t *testing.T) {
 		{"(a))", "E1008"},
 		{"1)", "E0003"},
 		{"#\\abc", "E0004"},
+		{"\"A", "E0004"},
+		{"A\"", "E0004"},
+		{"\"", "E0004"},
 	}
 	executeTest(testCode, "atom", t)
 }

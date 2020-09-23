@@ -303,7 +303,7 @@ func (self *TailRecursion) String() string {
 }
 
 // lex support  for  string
-func tokenize(s string) []string {
+func tokenize(s string) ([]string, error) {
 	var token []string
 	stringMode := false
 	symbolName := make([]rune, 0, 1024)
@@ -343,12 +343,15 @@ func tokenize(s string) []string {
 			}
 		}
 	}
+	if stringMode {
+		return token, NewSyntaxError("E0004")
+	}
 	if DEBUG {
 		for _, c := range token {
 			fmt.Println(c)
 		}
 	}
-	return token
+	return token, nil
 }
 
 // Create abstract syntax tree.
@@ -534,8 +537,11 @@ func evalMulti(exp []Expression, env *SimpleEnv) (Expression, error) {
 func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
 
 	var val Expression
-	token := tokenize(program)
 
+	token, err := tokenize(program)
+	if err != nil {
+		return NewNil(), err
+	}
 	for {
 		ast, c, err := parse(token)
 		if err != nil {
