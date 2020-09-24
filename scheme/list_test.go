@@ -122,12 +122,17 @@ func TestReverse(t *testing.T) {
 
 func TestIota(t *testing.T) {
 	testCode := [][]string{
+		{"(iota 10)", "(0 1 2 3 4 5 6 7 8 9)"},
 		{"(iota 5 2)", "(2 3 4 5 6)"},
+		{"(iota -10 0 1)", "()"},
+		{"(iota 1 10)", "(10)"},
+		{"(iota 10 1 -1)", "(1 0 -1 -2 -3 -4 -5 -6 -7 -8)"},
 
-		{"(iota 10.2 1)", "E1002"},
+		{"(iota 10.2 1 0)", "E1002"},
 		{"(iota 1 10.2)", "E1002"},
+		{"(iota 1 10 2.5)", "E1002"},
 		{"(iota)", "E1007"},
-		{"(iota 1 2 3)", "E1007"},
+		{"(iota 100 0 1 2)", "E1007"},
 	}
 	executeTest(testCode, "iota", t)
 }
