@@ -262,26 +262,24 @@ func buildListFunc() {
 	buildInFuncTbl["iota"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 && len(exp) != 2 {
+				if len(exp) < 1 || 3 < len(exp) {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
 				var l []Expression
-				max, ok := exp[0].(*Integer)
-				if !ok {
-					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
-				}
-				start := 0
-				if len(exp) == 2 {
-					v, ok := exp[1].(*Integer)
+				param := [3]int{0, 0, 1}
+				for i := 0; i < len(exp); i++ {
+					v, ok := exp[i].(*Integer)
 					if !ok {
-						return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+						return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[i]).String())
 					}
-					start = v.Value
+					param[i] = v.Value
 				}
-				for i := start; i < start+max.Value; i++ {
-					l = append(l, NewInteger(i))
+				max, start, step := param[0], param[1], param[2]
+				v := start
+				for i := start; i < start+max; i++ {
+					l = append(l, NewInteger(v))
+					v += step
 				}
-
 				return NewList(l), nil
 			})
 	}
