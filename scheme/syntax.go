@@ -262,6 +262,54 @@ func buildSyntaxFunc() {
 		}
 		return NewNil(), nil
 	}
+	buildInFuncTbl["case"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+
+		param := make([]Expression, 2)
+		v, err := eval(exp[0], env)
+		if err != nil {
+			return v, err
+		}
+		param[0] = v
+
+		if 2 <= len(exp) {
+			for _, e := range exp[1:] {
+				l, ok := e.(*List)
+				if !ok {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
+				}
+				if len(l.Value) < 2 {
+					return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
+				}
+				if p, ok := l.Value[0].(*List); ok {
+					for _, e := range p.Value {
+						v, err := eval(e, env)
+						if err != nil {
+							return nil, err
+						}
+						param[1] = v
+						if b, err := buildInFuncTbl["eqv?"](param, env); err == nil {
+							v, _ := b.(*Boolean)
+							if v.Value == true {
+								return evalMulti(l.Value[1:], env)
+							}
+						}
+					}
+				} else if sym, ok := l.Value[0].(*Symbol); ok {
+					if sym.Value == "else" {
+						return evalMulti(l.Value[1:], env)
+					} else {
+						return nil, NewRuntimeError("E1012")
+					}
+				} else {
+					return nil, NewRuntimeError("E1012")
+				}
+			}
+		}
+		return NewNil(), nil
+	}
 	buildInFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
