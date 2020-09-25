@@ -275,7 +275,4 @@ func buildSyntaxFunc() {
 		}
 		return evalMulti(exp, env)
 	}
-	buildMathFunc()
-	buildListFunc()
-	buildOperationFunc()
 }
