@@ -31,9 +31,14 @@ func buildUtilFunc() {
 		if err != nil {
 			return y, err
 		}
-		if _, ok := x.(Number); ok {
-			if _, ok := y.(Number); ok {
-				return cmpOperate(func(a Number, b Number) bool { return a.Equal(b) }, x, y)
+		if a, ok := x.(*Integer); ok {
+			if b, ok := y.(*Integer); ok {
+				return NewBoolean(a.Value == b.Value), nil
+			}
+		}
+		if a, ok := x.(*Float); ok {
+			if b, ok := y.(*Float); ok {
+				return NewBoolean(a.Value == b.Value), nil
 			}
 		}
 		if a, ok := x.(*Boolean); ok {
