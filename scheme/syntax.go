@@ -290,7 +290,7 @@ func buildSyntaxFunc() {
 							return nil, err
 						}
 						param[1] = v
-						if b, err := buildInFuncTbl["eqv?"](param, env); err == nil {
+						if b, err := eqv(param, env); err == nil {
 							v, _ := b.(*Boolean)
 							if v.Value == true {
 								return evalMulti(l.Value[1:], env)
