@@ -84,6 +84,30 @@ func TestCond(t *testing.T) {
 	}
 	executeTest(testCode, "cond", t)
 }
+func TestCase(t *testing.T) {
+	testCode := [][]string{
+		{"(case 10)", "nil"},
+		{"(case 10 ((1 2) \"A\"))", "nil"},
+		{"(case 10 (else 20))", "20"},
+		{"(case 10 (else))", "nil"},
+
+		{"(case 100 ((100 200) \"A\")(else \"B\"))", "\"A\""},
+		{"(case 300 ((100 200) \"A\")(else \"B\"))", "\"B\""},
+		{"(case 200 ((100 200) \"A\")(else \"B\"))", "\"A\""},
+		{"(case 300 ((100 200) \"A\")((300 400) \"B\")(else \"C\"))", "\"B\""},
+		{"(case 400 ((100 200) \"A\")((300 400) \"B\")(else \"C\"))", "\"B\""},
+		{"(case 500 ((100 200) \"A\")((300 400) \"B\")(else \"C\"))", "\"B\""},
+
+		{"(case)", "E1007"},
+		{"(case 10 (hoge 20))", "E1017"},
+		{"(case 10 10)", "E1005"},
+		{"(case 10 (20))", "E1017"},
+		{"(case a)", "E1008"},
+		{"(case 10 ((10 20) a))", "E1008"},
+		{"(case 10 ((20 30) 1)(else a))", "E1008"},
+	}
+	executeTest(testCode, "case", t)
+}
 func TestDelayForce(t *testing.T) {
 	testCode := [][]string{
 		{"(force (+ 1 1))", "2"},
