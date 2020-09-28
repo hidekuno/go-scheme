@@ -55,6 +55,7 @@ var (
 		"E1014": "Not Found Program File",
 		"E1015": "Not String",
 		"E1016": "Not Program File",
+		"E1017": "Not Case Gramar",
 		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)

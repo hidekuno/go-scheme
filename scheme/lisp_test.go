@@ -17,29 +17,36 @@ import (
 )
 
 func executeTest(testCode [][]string, testName string, t *testing.T) {
-
 	BuildFunc()
 	rootEnv := NewSimpleEnv(nil, nil)
 	for i, c := range testCode {
+
+		// ex. SEGV, BUS ERROR..
+		defer func() {
+			if err := recover(); err != nil {
+				t.Log(i)
+				t.Fatal("failed " + c[0])
+			}
+		}()
 		exp, err := DoCoreLogic(c[0], rootEnv)
 		if err != nil {
 			if e, ok := err.(*SyntaxError); ok {
 				if e.MsgCode != c[1] {
-					t.Log(i)
+					t.Log(c[0])
 					t.Fatal("failed "+testName+" test", e.MsgCode)
 				}
 			} else if e, ok := err.(*RuntimeError); ok {
 				if e.MsgCode != c[1] {
-					t.Log(i)
+					t.Log(c[0])
 					t.Fatal("failed "+testName+" test", e.MsgCode)
 				}
 			} else {
-				t.Log(i)
+				t.Log(c[0])
 				t.Fatal("failed "+testName+" test", err.Error())
 			}
 		} else {
 			if exp.String() != c[1] {
-				t.Log(i)
+				t.Log(c[0])
 				t.Fatal("failed "+testName+" test", exp)
 			}
 		}
