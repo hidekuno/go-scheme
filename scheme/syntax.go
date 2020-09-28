@@ -280,7 +280,7 @@ func buildSyntaxFunc() {
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
 				}
-				if len(l.Value) < 2 {
+				if len(l.Value) < 1 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
 				}
 				if p, ok := l.Value[0].(*List); ok {
@@ -293,18 +293,24 @@ func buildSyntaxFunc() {
 						if b, err := eqv(param, env); err == nil {
 							v, _ := b.(*Boolean)
 							if v.Value == true {
+								if len(l.Value) < 2 {
+									return l.Value[0], nil
+								}
 								return evalMulti(l.Value[1:], env)
 							}
 						}
 					}
 				} else if sym, ok := l.Value[0].(*Symbol); ok {
 					if sym.Value == "else" {
+						if len(l.Value) < 2 {
+							return NewInteger(0), nil
+						}
 						return evalMulti(l.Value[1:], env)
 					} else {
-						return nil, NewRuntimeError("E1012")
+						return nil, NewRuntimeError("E1017")
 					}
 				} else {
-					return nil, NewRuntimeError("E1012")
+					return nil, NewRuntimeError("E1017")
 				}
 			}
 		}
