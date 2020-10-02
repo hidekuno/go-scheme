@@ -34,6 +34,40 @@ func CreateNumber(exp Expression) (Number, error) {
 	}
 	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
 }
+func toInt(n Number) *Integer {
+	if v, ok := n.(*Integer); ok {
+		return v
+	} else if v, ok := n.(*Float); ok {
+		return NewInteger(int(v.Value))
+	}
+	tracer.Fatal("toInt(): Impossible error\n")
+	return NewInteger(1)
+}
+func toFloat(n Number) *Float {
+	if v, ok := n.(*Integer); ok {
+		return NewFloat(float64(v.Value))
+	} else if v, ok := n.(*Float); ok {
+		return v
+	}
+
+	tracer.Fatal("toFloat(): Impossible error\n")
+	return NewFloat(1.0)
+}
+func castNumber(x Number, y Number) (a Number, b Number) {
+	a = x
+	b = y
+	if _, ok := x.(*Float); ok {
+		if v, ok := y.(*Integer); ok {
+			b = NewFloat(float64(v.Value))
+		}
+	}
+	if v, ok := x.(*Integer); ok {
+		if _, ok := y.(*Float); ok {
+			a = NewFloat(float64(v.Value))
+		}
+	}
+	return a, b
+}
 
 // Integer Type
 type Integer struct {
@@ -41,29 +75,25 @@ type Integer struct {
 	Value int
 }
 
-func NewInteger(p int) *Integer {
+func NewInteger(n int) *Integer {
 	v := new(Integer)
-	v.Value = p
+	v.Value = n
 	return v
 }
-
-func (self *Integer) Add(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value += v.Value
+func (self *Integer) Add(n Number) Number {
+	self.Value += toInt(n).Value
 	return self
 }
-func (self *Integer) Sub(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value -= v.Value
+func (self *Integer) Sub(n Number) Number {
+	self.Value -= toInt(n).Value
 	return self
 }
-func (self *Integer) Mul(p Number) Number {
-	v, _ := p.(*Integer)
-	self.Value *= v.Value
+func (self *Integer) Mul(n Number) Number {
+	self.Value *= toInt(n).Value
 	return self
 }
-func (self *Integer) Div(p Number) Number {
-	v, _ := p.(*Integer)
+func (self *Integer) Div(n Number) Number {
+	v := toInt(n)
 	if v.Value == 0 {
 		panic(NewRuntimeError("E1013"))
 	}
@@ -71,25 +101,20 @@ func (self *Integer) Div(p Number) Number {
 	return self
 }
 
-func (self *Integer) Equal(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value == v.Value
+func (self *Integer) Equal(n Number) bool {
+	return self.Value == toInt(n).Value
 }
-func (self *Integer) Greater(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value > v.Value
+func (self *Integer) Greater(n Number) bool {
+	return self.Value > toInt(n).Value
 }
-func (self *Integer) Less(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value < v.Value
+func (self *Integer) Less(n Number) bool {
+	return self.Value < toInt(n).Value
 }
-func (self *Integer) GreaterEqual(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value >= v.Value
+func (self *Integer) GreaterEqual(n Number) bool {
+	return self.Value >= toInt(n).Value
 }
-func (self *Integer) LessEqual(p Number) bool {
-	v, _ := p.(*Integer)
-	return self.Value <= v.Value
+func (self *Integer) LessEqual(n Number) bool {
+	return self.Value <= toInt(n).Value
 }
 
 func (self *Integer) String() string {
@@ -102,50 +127,41 @@ type Float struct {
 	Value float64
 }
 
-func NewFloat(p float64) *Float {
+func NewFloat(n float64) *Float {
 	v := new(Float)
-	v.Value = p
+	v.Value = n
 	return v
 }
-func (self *Float) Add(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value += v.Value
+func (self *Float) Add(n Number) Number {
+	self.Value += toFloat(n).Value
 	return self
 }
-func (self *Float) Sub(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value -= v.Value
+func (self *Float) Sub(n Number) Number {
+	self.Value -= toFloat(n).Value
 	return self
 }
-func (self *Float) Mul(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value *= v.Value
+func (self *Float) Mul(n Number) Number {
+	self.Value *= toFloat(n).Value
 	return self
 }
-func (self *Float) Div(p Number) Number {
-	v, _ := p.(*Float)
-	self.Value /= v.Value
+func (self *Float) Div(n Number) Number {
+	self.Value /= toFloat(n).Value
 	return self
 }
-func (self *Float) Equal(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value == v.Value
+func (self *Float) Equal(n Number) bool {
+	return self.Value == toFloat(n).Value
 }
-func (self *Float) Greater(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value > v.Value
+func (self *Float) Greater(n Number) bool {
+	return self.Value > toFloat(n).Value
 }
-func (self *Float) Less(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value < v.Value
+func (self *Float) Less(n Number) bool {
+	return self.Value < toFloat(n).Value
 }
-func (self *Float) GreaterEqual(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value >= v.Value
+func (self *Float) GreaterEqual(n Number) bool {
+	return self.Value >= toFloat(n).Value
 }
-func (self *Float) LessEqual(p Number) bool {
-	v, _ := p.(*Float)
-	return self.Value <= v.Value
+func (self *Float) LessEqual(n Number) bool {
+	return self.Value <= toFloat(n).Value
 }
 func (self *Float) String() string {
 	return fmt.Sprint(self.Value)
