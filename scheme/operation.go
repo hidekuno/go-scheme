@@ -20,22 +20,12 @@ func calcOperate(calc func(Number, Number) Number, exp ...Expression) (Number, e
 	if err != nil {
 		return nil, err
 	}
-	for _, i := range exp[1:] {
-		prm, ok := i.(Number)
+	for _, e := range exp[1:] {
+		prm, ok := e.(Number)
 		if !ok {
-			return nil, NewRuntimeError("E1003", reflect.TypeOf(i).String())
+			return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
 		}
-
-		if _, ok := result.(*Float); ok {
-			if c, ok := i.(*Integer); ok {
-				prm = NewFloat(float64(c.Value))
-			}
-		}
-		if org, ok := result.(*Integer); ok {
-			if _, ok := i.(*Float); ok {
-				result = NewFloat(float64(org.Value))
-			}
-		}
+		result, prm = castNumber(result, prm)
 		result = calc(result, prm)
 	}
 	return result, nil
@@ -55,17 +45,8 @@ func cmpOperate(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, err
 	if !ok {
 		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[1]).String())
 	}
-	if _, ok := result.(*Float); ok {
-		if c, ok := prm.(*Integer); ok {
-			prm = NewFloat(float64(c.Value))
-		}
-	}
-	if org, ok := result.(*Integer); ok {
-		if c, ok := exp[1].(*Float); ok {
-			result = NewFloat(float64(org.Value))
-			prm = c
-		}
-	}
+
+	result, prm = castNumber(result, prm)
 	return NewBoolean(cmp(result, prm)), nil
 }
 
