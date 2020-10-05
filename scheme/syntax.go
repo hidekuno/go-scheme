@@ -321,22 +321,26 @@ func buildSyntaxFunc() {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 
-		f, err := eval(exp[1], env)
-		if err != nil {
-			return nil, err
-		}
 		e, err := eval(exp[1], env)
 		if err != nil {
 			return nil, err
 		}
-		v, ok := e.(*List)
+		l, ok := e.(*List)
 		if !ok {
-			return nil, NewRuntimeError("E1005", reflect.TypeOf(v).String())
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(l).String())
 		}
-
-		sexp := make([]Expression, 1+len(v.Value))
-		sexp[0] = f
-		copy(sexp[1:], v.Value)
+		sexp := make([]Expression, 1+len(l.Value))
+		sexp[0] = exp[0]
+		for i, e := range l.Value {
+			if m, ok := e.(*List); ok {
+				quote := make([]Expression, 2)
+				quote[0] = NewBuildInFunc(buildInFuncTbl["quote"], "key")
+				quote[1] = m
+				sexp[i+1] = NewList(quote)
+			} else {
+				sexp[i+1] = e
+			}
+		}
 		return eval(NewList(sexp), env)
 
 	}
