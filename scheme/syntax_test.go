@@ -146,6 +146,27 @@ func TestDefine(t *testing.T) {
 	}
 	executeTest(testCode, "define", t)
 }
+func TestApply(t *testing.T) {
+	testCode := [][]string{
+		{"(apply + (list 1 2 3))", "6"},
+		{"(apply + (list (+ 1 1) 2 3))", "7"},
+		{"(apply - (list 5 3 2))", "0"},
+		{"(apply (lambda (a b) (+ a b)) (list 1 2))", "3"},
+		{"(apply + (iota 10))", "45"},
+		{"(define hoge (lambda (a b) (* a b)))", "hoge"},
+		{"(apply hoge (list 3 4))", "12"},
+		{"(apply append (list (list 1 2 3)(list 4 5 6)))", "(1 2 3 4 5 6)"},
+		{"(apply (lambda (a) (map (lambda (n) (* n n)) a)) (list (list 1 2 3)))", "(1 4 9)"},
+
+		{"(apply)", "E1007"},
+		{"(apply -)", "E1007"},
+		{"(apply + (list 1 2)(lis 3 4))", "E1007"},
+		{"(apply + 10)", "E1005"},
+		{"(apply fuga (list 1 2))", "E1008"},
+	}
+
+	executeTest(testCode, "apply", t)
+}
 func TestQuote(t *testing.T) {
 	testCode := [][]string{
 		{"(quote a)", "a"},
