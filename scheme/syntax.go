@@ -316,6 +316,34 @@ func buildSyntaxFunc() {
 		}
 		return NewNil(), nil
 	}
+	buildInFuncTbl["apply"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+
+		e, err := eval(exp[1], env)
+		if err != nil {
+			return nil, err
+		}
+		l, ok := e.(*List)
+		if !ok {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(l).String())
+		}
+		sexp := make([]Expression, 1+len(l.Value))
+		sexp[0] = exp[0]
+		for i, e := range l.Value {
+			if m, ok := e.(*List); ok {
+				quote := make([]Expression, 2)
+				quote[0] = NewBuildInFunc(buildInFuncTbl["quote"], "key")
+				quote[1] = m
+				sexp[i+1] = NewList(quote)
+			} else {
+				sexp[i+1] = e
+			}
+		}
+		return eval(NewList(sexp), env)
+
+	}
 	buildInFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
