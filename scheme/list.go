@@ -71,7 +71,44 @@ func (self *Pair) String() string {
 	return buffer.String()
 }
 
-// map,filter,reduce
+func makeQuotedValue(fn Expression, e Expression, result Expression) *List {
+	sexp := NewList(make([]Expression, 0, 4))
+	sexp.Value = append(sexp.Value, fn)
+
+	if result != nil {
+		quote := NewList(make([]Expression, 2))
+		quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
+
+		if _, ok := result.(*List); ok {
+			quote.Value[1] = result
+			sexp.Value = append(sexp.Value, quote)
+
+		} else if _, ok := result.(*Symbol); ok {
+			quote.Value[1] = result
+			sexp.Value = append(sexp.Value, quote)
+
+		} else {
+			sexp.Value = append(sexp.Value, result)
+		}
+	}
+	quote := NewList(make([]Expression, 2))
+	quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
+
+	if _, ok := e.(*List); ok {
+		quote.Value[1] = e
+		sexp.Value = append(sexp.Value, quote)
+
+	} else if _, ok := e.(*Symbol); ok {
+		quote.Value[1] = e
+		sexp.Value = append(sexp.Value, quote)
+
+	} else {
+		sexp.Value = append(sexp.Value, e)
+	}
+	return sexp
+}
+
+// map,filter
 func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error), env *SimpleEnv, exp ...Expression) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -81,23 +118,9 @@ func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, e
 		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 	}
 	var result []Expression
-	sexp := NewList(make([]Expression, 2))
-	sexp.Value[0] = exp[0]
-
-	quote := NewList(make([]Expression, 2))
-	quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
 
 	for _, e := range l.Value {
-		if _, ok = e.(*List); ok {
-			quote.Value[1] = e
-			sexp.Value[1] = quote
-
-		} else if _, ok = e.(*Symbol); ok {
-			sexp.Value[1] = e
-			sexp.Value[1] = quote
-		} else {
-			sexp.Value[1] = e
-		}
+		sexp := makeQuotedValue(exp[0], e, nil)
 		v, err := eval(sexp, env)
 		if err != nil {
 			return nil, err
@@ -356,10 +379,6 @@ func buildListFunc() {
 				if len(exp) != 3 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				fn, ok := exp[0].(*Function)
-				if !ok {
-					return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
-				}
 				l, ok := exp[2].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
@@ -367,16 +386,14 @@ func buildListFunc() {
 				if len(l.Value) == 0 {
 					return exp[1], nil
 				}
-				param := make([]Expression, len(fn.ParamName.Value))
 				result := l.Value[0]
-				for _, c := range l.Value[1:] {
-					param[0] = result
-					param[1] = c
-					r, err := fn.Execute(param, nil)
-					result = r
+				for _, e := range l.Value[1:] {
+					sexp := makeQuotedValue(exp[0], e, result)
+					v, err := eval(sexp, env)
 					if err != nil {
 						return nil, err
 					}
+					result = v
 				}
 				return result, nil
 			})

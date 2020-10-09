@@ -168,9 +168,10 @@ func TestReduce(t *testing.T) {
 	testCode := [][]string{
 		{"(reduce (lambda (a b) (+ a b)) 0 (list 1 2 3))", "6"},
 		{"(reduce (lambda (a b) (+ a b)) (* 10 10) (list))", "100"},
+		{"(reduce (list 1 12) 0 (list 10))", "10"},
 
 		{"(reduce (lambda (a b) (+ a b)) (+ 1 2) 20)", "E1005"},
-		{"(reduce (list 1 12) 0 (list 10))", "E1006"},
+		{"(reduce (list 1 12) 0 (list 1 2))", "E1006"},
 		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
 		{"(reduce (lambda (a b) (+ a b)) (list 1 2))", "E1007"},
 	}
