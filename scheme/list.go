@@ -72,7 +72,12 @@ func (self *Pair) String() string {
 }
 
 func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
-	sexp := NewList(make([]Expression, 0, 4))
+	size := 4
+	if len(l) > size {
+		size = len(l) + 1
+	}
+
+	sexp := NewList(make([]Expression, 0, size))
 	sexp.Value = append(sexp.Value, fn)
 
 	if result != nil {
@@ -91,10 +96,10 @@ func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 			sexp.Value = append(sexp.Value, result)
 		}
 	}
-	quote := NewList(make([]Expression, 2))
-	quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
-
 	for _, e := range l {
+		quote := NewList(make([]Expression, 2))
+		quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
+
 		if _, ok := e.(*List); ok {
 			quote.Value[1] = e
 			sexp.Value = append(sexp.Value, quote)

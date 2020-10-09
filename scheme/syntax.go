@@ -329,19 +329,8 @@ func buildSyntaxFunc() {
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(l).String())
 		}
-		sexp := make([]Expression, 1+len(l.Value))
-		sexp[0] = exp[0]
-		for i, e := range l.Value {
-			if m, ok := e.(*List); ok {
-				quote := make([]Expression, 2)
-				quote[0] = NewBuildInFunc(buildInFuncTbl["quote"], "key")
-				quote[1] = m
-				sexp[i+1] = NewList(quote)
-			} else {
-				sexp[i+1] = e
-			}
-		}
-		return eval(NewList(sexp), env)
+		sexp := makeQuotedValue(exp[0], l.Value, nil)
+		return eval(sexp, env)
 
 	}
 	buildInFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
