@@ -125,7 +125,7 @@ func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, e
 		if err != nil {
 			return nil, err
 		}
-		result, err = lambda(sexp.Value[1], v, result)
+		result, err = lambda(e, v, result)
 		if err != nil {
 			return nil, err
 		}
