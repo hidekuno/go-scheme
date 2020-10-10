@@ -524,19 +524,6 @@ func evalTailRecursion(env *SimpleEnv, body *List, label string, nameList []Expr
 	}
 	return
 }
-func evalMulti(exp []Expression, env *SimpleEnv) (Expression, error) {
-	var (
-		v   Expression
-		err error
-	)
-	for _, e := range exp {
-		v, err = eval(e, env)
-		if err != nil {
-			return v, err
-		}
-	}
-	return v, nil
-}
 
 // main logic
 func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
