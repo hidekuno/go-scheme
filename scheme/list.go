@@ -71,7 +71,7 @@ func (self *Pair) String() string {
 	return buffer.String()
 }
 
-func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
+func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 	size := 4
 	if len(l) > size {
 		size = len(l) + 1
@@ -82,7 +82,7 @@ func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 
 	if result != nil {
 		quote := NewList(make([]Expression, 2))
-		quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
+		quote.Value[0] = NewBuildInFunc(Quote, "quote")
 
 		if _, ok := result.(*List); ok {
 			quote.Value[1] = result
@@ -98,7 +98,7 @@ func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 	}
 	for _, e := range l {
 		quote := NewList(make([]Expression, 2))
-		quote.Value[0] = NewBuildInFunc(buildInFuncTbl["quote"], "quote")
+		quote.Value[0] = NewBuildInFunc(Quote, "quote")
 
 		if _, ok := e.(*List); ok {
 			quote.Value[1] = e
@@ -116,7 +116,9 @@ func makeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 }
 
 // map,filter
-func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error), env *SimpleEnv, exp ...Expression) (Expression, error) {
+func doListFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error),
+	env *SimpleEnv, exp ...Expression) (Expression, error) {
+
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -127,7 +129,7 @@ func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, e
 	var result []Expression
 
 	for _, e := range l.Value {
-		sexp := makeQuotedValue(exp[0], []Expression{e}, nil)
+		sexp := MakeQuotedValue(exp[0], []Expression{e}, nil)
 		v, err := eval(sexp, env)
 		if err != nil {
 			return nil, err
@@ -333,7 +335,7 @@ func buildListFunc() {
 				lambda := func(org Expression, value Expression, result []Expression) ([]Expression, error) {
 					return append(result, value), nil
 				}
-				return listFunc(lambda, env, exp...)
+				return doListFunc(lambda, env, exp...)
 			})
 	}
 	buildInFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -377,7 +379,7 @@ func buildListFunc() {
 					}
 					return result, nil
 				}
-				return listFunc(lambda, env, exp...)
+				return doListFunc(lambda, env, exp...)
 			})
 	}
 	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -395,7 +397,7 @@ func buildListFunc() {
 				}
 				result := l.Value[0]
 				for _, e := range l.Value[1:] {
-					sexp := makeQuotedValue(exp[0], []Expression{e}, result)
+					sexp := MakeQuotedValue(exp[0], []Expression{e}, result)
 					v, err := eval(sexp, env)
 					if err != nil {
 						return nil, err
@@ -405,5 +407,4 @@ func buildListFunc() {
 				return result, nil
 			})
 	}
-
 }
