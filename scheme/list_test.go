@@ -141,6 +141,7 @@ func TestMap(t *testing.T) {
 	testCode := [][]string{
 		{"(map (lambda (n) (* n 10))(list 1 2 3))", "(10 20 30)"},
 		{"(map (lambda (n) (* n 10))(list))", "()"},
+		{"(map list (list 1 2 3))", "((1) (2) (3))"},
 
 		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(map (list 1 12) (list 10))", "E1006"},
@@ -154,6 +155,7 @@ func TestFilter(t *testing.T) {
 	testCode := [][]string{
 		{"(filter (lambda (n) (= n 1))(list 1 2 3))", "(1)"},
 		{"(filter (lambda (n) (= n 1))(list))", "()"},
+		{"(filter null? (list () 10 20))", "(())"},
 
 		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(filter (list 1 12) (list 10))", "E1006"},
@@ -168,9 +170,11 @@ func TestReduce(t *testing.T) {
 	testCode := [][]string{
 		{"(reduce (lambda (a b) (+ a b)) 0 (list 1 2 3))", "6"},
 		{"(reduce (lambda (a b) (+ a b)) (* 10 10) (list))", "100"},
+		{"(reduce (list 1 12) 0 (list 10))", "10"},
+		{"(reduce + 0 (list 1 2 3))", "6"},
 
 		{"(reduce (lambda (a b) (+ a b)) (+ 1 2) 20)", "E1005"},
-		{"(reduce (list 1 12) 0 (list 10))", "E1006"},
+		{"(reduce (list 1 12) 0 (list 1 2))", "E1006"},
 		{"(reduce (lambda (a b) (+ a b)))", "E1007"},
 		{"(reduce (lambda (a b) (+ a b)) (list 1 2))", "E1007"},
 	}

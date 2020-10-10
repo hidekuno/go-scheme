@@ -11,8 +11,15 @@ import (
 	"strconv"
 )
 
+func Quote(exp []Expression, env *SimpleEnv) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return exp[0], nil
+}
+
 // and or not
-func logicalOperate(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
+func doLogicalOperate(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
 	if len(exp) < 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -188,10 +195,10 @@ func buildSyntaxFunc() {
 
 	}
 	buildInFuncTbl["and"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return logicalOperate(exp, env, false, true)
+		return doLogicalOperate(exp, env, false, true)
 	}
 	buildInFuncTbl["or"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return logicalOperate(exp, env, true, false)
+		return doLogicalOperate(exp, env, true, false)
 	}
 	buildInFuncTbl["not"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
@@ -329,27 +336,11 @@ func buildSyntaxFunc() {
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(l).String())
 		}
-		sexp := make([]Expression, 1+len(l.Value))
-		sexp[0] = exp[0]
-		for i, e := range l.Value {
-			if m, ok := e.(*List); ok {
-				quote := make([]Expression, 2)
-				quote[0] = NewBuildInFunc(buildInFuncTbl["quote"], "key")
-				quote[1] = m
-				sexp[i+1] = NewList(quote)
-			} else {
-				sexp[i+1] = e
-			}
-		}
-		return eval(NewList(sexp), env)
+		sexp := MakeQuotedValue(exp[0], l.Value, nil)
+		return eval(sexp, env)
 
 	}
-	buildInFuncTbl["quote"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		return exp[0], nil
-	}
+	buildInFuncTbl["quote"] = Quote
 	buildInFuncTbl["begin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 
 		if len(exp) < 1 {

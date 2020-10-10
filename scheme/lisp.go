@@ -469,9 +469,13 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 			return sexp, nil
 		}
 		v := sl.Value
-		if f, ok := v[0].(*BuildInFunc); ok {
+		if b, ok := v[0].(*BuildInFunc); ok {
+			return b.Execute(v[1:], env)
+		}
+		if f, ok := v[0].(*Function); ok {
 			return f.Execute(v[1:], env)
 		}
+
 		proc, err := eval(v[0], env)
 		if err != nil {
 			return sexp, err

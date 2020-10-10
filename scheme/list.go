@@ -71,32 +71,75 @@ func (self *Pair) String() string {
 	return buffer.String()
 }
 
-// map,filter,reduce
-func listFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error), exp ...Expression) (Expression, error) {
+func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
+	size := 4
+	if len(l) > size {
+		size = len(l) + 1
+	}
+
+	sexp := NewList(make([]Expression, 0, size))
+	sexp.Value = append(sexp.Value, fn)
+
+	if result != nil {
+		quote := NewList(make([]Expression, 2))
+		quote.Value[0] = NewBuildInFunc(Quote, "quote")
+
+		if _, ok := result.(*List); ok {
+			quote.Value[1] = result
+			sexp.Value = append(sexp.Value, quote)
+
+		} else if _, ok := result.(*Symbol); ok {
+			quote.Value[1] = result
+			sexp.Value = append(sexp.Value, quote)
+
+		} else {
+			sexp.Value = append(sexp.Value, result)
+		}
+	}
+	for _, e := range l {
+		quote := NewList(make([]Expression, 2))
+		quote.Value[0] = NewBuildInFunc(Quote, "quote")
+
+		if _, ok := e.(*List); ok {
+			quote.Value[1] = e
+			sexp.Value = append(sexp.Value, quote)
+
+		} else if _, ok := e.(*Symbol); ok {
+			quote.Value[1] = e
+			sexp.Value = append(sexp.Value, quote)
+
+		} else {
+			sexp.Value = append(sexp.Value, e)
+		}
+	}
+	return sexp
+}
+
+// map,filter
+func doListFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error),
+	env *SimpleEnv, exp ...Expression) (Expression, error) {
+
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-	}
-	fn, ok := exp[0].(*Function)
-	if !ok {
-		return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
 	}
 	l, ok := exp[1].(*List)
 	if !ok {
 		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
 	}
-	var vaList []Expression
-	param := make([]Expression, 1)
-	for _, param[0] = range l.Value {
-		result, err := fn.Execute(param, nil)
+	var result []Expression
+
+	for _, e := range l.Value {
+		sexp := MakeQuotedValue(exp[0], []Expression{e}, nil)
+		v, err := eval(sexp, env)
 		if err != nil {
 			return nil, err
 		}
-		vaList, err = lambda(result, param[0], vaList)
+		result, err = lambda(e, v, result)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return NewList(vaList), nil
+	return NewList(result), nil
 }
 
 // Build Global environement.
@@ -289,10 +332,10 @@ func buildListFunc() {
 				if len(exp) != 2 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				lambda := func(result Expression, item Expression, vaList []Expression) ([]Expression, error) {
-					return append(vaList, result), nil
+				lambda := func(org Expression, value Expression, result []Expression) ([]Expression, error) {
+					return append(result, value), nil
 				}
-				return listFunc(lambda, exp...)
+				return doListFunc(lambda, env, exp...)
 			})
 	}
 	buildInFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -326,17 +369,17 @@ func buildListFunc() {
 				if len(exp) != 2 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				lambda := func(result Expression, item Expression, vaList []Expression) ([]Expression, error) {
-					b, ok := result.(*Boolean)
+				lambda := func(org Expression, value Expression, result []Expression) ([]Expression, error) {
+					b, ok := value.(*Boolean)
 					if !ok {
-						return nil, NewRuntimeError("E1001", reflect.TypeOf(result).String())
+						return nil, NewRuntimeError("E1001", reflect.TypeOf(value).String())
 					}
 					if b.Value {
-						return append(vaList, item), nil
+						return append(result, org), nil
 					}
-					return vaList, nil
+					return result, nil
 				}
-				return listFunc(lambda, exp...)
+				return doListFunc(lambda, env, exp...)
 			})
 	}
 	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -345,10 +388,6 @@ func buildListFunc() {
 				if len(exp) != 3 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				fn, ok := exp[0].(*Function)
-				if !ok {
-					return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
-				}
 				l, ok := exp[2].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
@@ -356,19 +395,16 @@ func buildListFunc() {
 				if len(l.Value) == 0 {
 					return exp[1], nil
 				}
-				param := make([]Expression, len(fn.ParamName.Value))
 				result := l.Value[0]
-				for _, c := range l.Value[1:] {
-					param[0] = result
-					param[1] = c
-					r, err := fn.Execute(param, nil)
-					result = r
+				for _, e := range l.Value[1:] {
+					sexp := MakeQuotedValue(exp[0], []Expression{e}, result)
+					v, err := eval(sexp, env)
 					if err != nil {
 						return nil, err
 					}
+					result = v
 				}
 				return result, nil
 			})
 	}
-
 }
