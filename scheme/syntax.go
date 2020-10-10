@@ -17,6 +17,22 @@ func Quote(exp []Expression, env *SimpleEnv) (Expression, error) {
 	}
 	return exp[0], nil
 }
+func Begin(exp []Expression, env *SimpleEnv) (Expression, error) {
+	if len(exp) < 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	var (
+		v   Expression
+		err error
+	)
+	for _, e := range exp {
+		v, err = eval(e, env)
+		if err != nil {
+			return v, err
+		}
+	}
+	return v, nil
+}
 
 // and or not
 func doLogicalOperate(exp []Expression, env *SimpleEnv, bcond bool, bret bool) (Expression, error) {
@@ -252,14 +268,14 @@ func buildSyntaxFunc() {
 				}
 				if b, ok := b.(*Boolean); ok {
 					if b.Value {
-						return evalMulti(l.Value[1:], env)
+						return Begin(l.Value[1:], env)
 					}
 				} else {
 					return nil, NewRuntimeError("E1001")
 				}
 			} else if sym, ok := l.Value[0].(*Symbol); ok {
 				if sym.Value == "else" {
-					return evalMulti(l.Value[1:], env)
+					return Begin(l.Value[1:], env)
 				} else {
 					return nil, NewRuntimeError("E1012")
 				}
@@ -303,7 +319,7 @@ func buildSyntaxFunc() {
 								if len(l.Value) < 2 {
 									return l.Value[0], nil
 								}
-								return evalMulti(l.Value[1:], env)
+								return Begin(l.Value[1:], env)
 							}
 						}
 					}
@@ -312,7 +328,7 @@ func buildSyntaxFunc() {
 						if len(l.Value) < 2 {
 							return NewInteger(0), nil
 						}
-						return evalMulti(l.Value[1:], env)
+						return Begin(l.Value[1:], env)
 					} else {
 						return nil, NewRuntimeError("E1017")
 					}
@@ -346,6 +362,6 @@ func buildSyntaxFunc() {
 		if len(exp) < 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		return evalMulti(exp, env)
+		return Begin(exp, env)
 	}
 }
