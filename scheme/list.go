@@ -332,10 +332,13 @@ func buildListFunc() {
 				if len(exp) != 2 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				lambda := func(org Expression, value Expression, result []Expression) ([]Expression, error) {
-					return append(result, value), nil
-				}
-				return doListFunc(lambda, env, exp...)
+
+				return doListFunc(
+					func(org Expression,
+						value Expression,
+						result []Expression) ([]Expression, error) {
+						return append(result, value), nil
+					}, env, exp...)
 			})
 	}
 	buildInFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -345,20 +348,13 @@ func buildListFunc() {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
 
-				fn, ok := exp[0].(*Function)
-				if !ok {
-					return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[0]).String())
-				}
-				l, ok := exp[1].(*List)
-				if !ok {
-					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
-				}
-				param := make([]Expression, 1)
-				for _, param[0] = range l.Value {
-					_, err := fn.Execute(param, nil)
-					if err != nil {
-						return nil, err
-					}
+				if _, err := doListFunc(
+					func(org Expression,
+						value Expression,
+						result []Expression) ([]Expression, error) {
+						return nil, nil
+					}, env, exp...); err != nil {
+					return nil, err
 				}
 				return NewNil(), nil
 			})
@@ -369,17 +365,20 @@ func buildListFunc() {
 				if len(exp) != 2 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				lambda := func(org Expression, value Expression, result []Expression) ([]Expression, error) {
-					b, ok := value.(*Boolean)
-					if !ok {
-						return nil, NewRuntimeError("E1001", reflect.TypeOf(value).String())
-					}
-					if b.Value {
-						return append(result, org), nil
-					}
-					return result, nil
-				}
-				return doListFunc(lambda, env, exp...)
+				return doListFunc(
+					func(org Expression,
+						value Expression,
+						result []Expression) ([]Expression, error) {
+						b, ok := value.(*Boolean)
+						if !ok {
+							return nil, NewRuntimeError("E1001", reflect.TypeOf(value).String())
+						}
+						if b.Value {
+							return append(result, org), nil
+						}
+						return result, nil
+					}, env, exp...)
+
 			})
 	}
 	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {

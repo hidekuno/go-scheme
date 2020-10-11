@@ -183,8 +183,9 @@ func TestReduce(t *testing.T) {
 func TestForEach(t *testing.T) {
 	testCode := [][]string{
 		{"(define cnt 0)", "cnt"},
-		{"(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 1 1 1 1))", "nil"},
-		{"cnt", "5"},
+		{"(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 2 3 4))", "nil"},
+		{"cnt", "10"},
+		{"(for-each display (iota 10))", "nil"},
 
 		{"(for-each (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(for-each (list 1 12) (list 10))", "E1006"},
