@@ -216,15 +216,11 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 	idx := 0
 	for _, v := range self.ParamName.Value {
 		if sym, ok := v.(*Symbol); ok {
-			if env != nil {
-				v, err := eval(exp[idx], env)
-				if err != nil {
-					return nil, err
-				}
-				nse.Regist(sym.Value, v)
-			} else {
-				nse.Regist(sym.Value, exp[idx])
+			v, err := eval(exp[idx], env)
+			if err != nil {
+				return nil, err
 			}
+			nse.Regist(sym.Value, v)
 			idx++
 		}
 	}
@@ -237,8 +233,7 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 			evalTailRecursion(nse, body, self.Name, self.ParamName.Value)
 		}
 		for {
-			result, err = eval(e, nse)
-			if err != nil {
+			if result, err = eval(e, nse); err != nil {
 				return nil, err
 			}
 			if _, ok := result.(*TailRecursion); !ok {
@@ -532,7 +527,7 @@ func DoCoreLogic(program string, rootEnv *SimpleEnv) (Expression, error) {
 
 	token, err := tokenize(program)
 	if err != nil {
-		return NewNil(), err
+		return nil, err
 	}
 	for {
 		ast, c, err := parse(token)
