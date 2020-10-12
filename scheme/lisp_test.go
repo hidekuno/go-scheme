@@ -52,41 +52,6 @@ func executeTest(testCode [][]string, testName string, t *testing.T) {
 		}
 	}
 }
-
-var (
-	program = []string{
-		"(define test-list (list 36 27 14 19 2 8 7 6 0 9 3))",
-		"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))",
-		"(define a (counter))",
-		"(define b (counter))",
-		"(define (step-counter s) (let ((c 0)) (lambda () (set! c (+ s c)) c)))",
-		"(define x (step-counter 10))",
-		"(define y (step-counter 100))",
-		"(define (gcm n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod))))",
-		"(define (lcm n m) (/(* n m)(gcm n m)))",
-		"(define hanoi (lambda (from to work n) (if (>= 0 n)(list)(append (hanoi from work to (- n 1))(list (list (cons from to) n))(hanoi work to from (- n 1))))))",
-		"(define prime (lambda (l) (if (> (car l)(sqrt (last l))) l (cons (car l)(prime (filter (lambda (n) (not (= 0 (modulo n (car l))))) (cdr l)))))))",
-		"(define qsort (lambda (l pred) (if (null? l) l (append (qsort (filter (lambda (n) (pred n (car l))) (cdr l)) pred) (cons (car l) (qsort (filter (lambda (n) (not (pred n (car l))))(cdr l)) pred))))))",
-		"(define comb (lambda (l n) (if (null? l) l (if (= n 1) (map (lambda (n) (list n)) l) (append (map (lambda (p) (cons (car l) p)) (comb (cdr l)(- n 1))) (comb (cdr l) n))))))",
-		"(define delete (lambda (x l) (filter (lambda (n) (not (= x n))) l)))",
-		"(define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b)) (list) (map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))",
-		"(define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))",
-		"(define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))",
-		"(define merge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(merge (cdr a) b))(cons (car b) (merge a (cdr b)))))))",
-		"(define take (lambda (l n)(if (>= 0 n) (list)(cons (car l)(take (cdr l)(- n 1))))))",
-		"(define drop (lambda (l n)(if (>= 0 n) l (drop (cdr l)(- n 1)))))",
-		"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(cadr l)) l (reverse l))(let ((mid (quotient n 2)))(merge (msort (take l mid))(msort (drop l mid)))))))))",
-		"(define stream-car (lambda (l)(car l)))",
-		"(define stream-cdr (lambda (l)(force (cdr l))))",
-		"(define make-generator (lambda (generator inits)(cons (car inits)(delay (make-generator generator (generator inits))))))",
-		"(define inf-list (lambda (generator inits limit)(let loop ((l (make-generator generator inits))(c limit)) (if (>= 0 c) (list)(cons (stream-car l)(loop (stream-cdr l)(- c 1)))))))",
-		"(define fact/cps (lambda (n cont)(if (= n 0)(cont 1)(fact/cps (- n 1) (lambda (a) (cont (* n a)))))))",
-		"(define fact (lambda (n) (fact/cps n identity)))",
-		"(define (testf x) (lambda () (* x 10)))",
-		"(define (create-testf  x) (testf (* 2 x)))",
-	}
-)
-
 func TestAtom(t *testing.T) {
 	testCode := [][]string{
 		{"10", "10"},
@@ -135,111 +100,65 @@ func TestDoCoreLogic(t *testing.T) {
 	executeTest(testCode, "do_core_logic", t)
 }
 func TestLispSampleProgram(t *testing.T) {
-	var (
-		exp Expression
-	)
-	BuildFunc()
-	rootEnv := NewSimpleEnv(nil, nil)
-	for _, p := range program {
-		exp, _ = DoCoreLogic(p, rootEnv)
-	}
 
-	exp, _ = DoCoreLogic("(let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))", rootEnv)
-	if exp.String() != "6" {
-		t.Fatal("failed test: let loop")
+	testCode := [][]string{
+		{"(define test-list (list 36 27 14 19 2 8 7 6 0 9 3))", "test-list"},
+		{"(define (counter) (let ((c 0)) (lambda () (set! c (+ 1 c)) c)))", "counter"},
+		{"(define a (counter))", "a"},
+		{"(define b (counter))", "b"},
+		{"(define (step-counter s) (let ((c 0)) (lambda () (set! c (+ s c)) c)))", "step-counter"},
+		{"(define x (step-counter 10))", "x"},
+		{"(define y (step-counter 100))", "y"},
+		{"(define (gcm n m) (let ((mod (modulo n m))) (if (= 0 mod) m (gcm m mod))))", "gcm"},
+		{"(define (lcm n m) (/(* n m)(gcm n m)))", "lcm"},
+		{"(define hanoi (lambda (from to work n) (if (>= 0 n)(list)(append (hanoi from work to (- n 1))(list (list (cons from to) n))(hanoi work to from (- n 1))))))", "hanoi"},
+		{"(define prime (lambda (l) (if (> (car l)(sqrt (last l))) l (cons (car l)(prime (filter (lambda (n) (not (= 0 (modulo n (car l))))) (cdr l)))))))", "prime"},
+		{"(define qsort (lambda (l pred) (if (null? l) l (append (qsort (filter (lambda (n) (pred n (car l))) (cdr l)) pred) (cons (car l) (qsort (filter (lambda (n) (not (pred n (car l))))(cdr l)) pred))))))", "qsort"},
+		{"(define comb (lambda (l n) (if (null? l) l (if (= n 1) (map (lambda (n) (list n)) l) (append (map (lambda (p) (cons (car l) p)) (comb (cdr l)(- n 1))) (comb (cdr l) n))))))", "comb"},
+		{"(define delete (lambda (x l) (filter (lambda (n) (not (= x n))) l)))", "delete"},
+		{"(define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b)) (list) (map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))", "perm"},
+		{"(define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))", "bubble-iter"},
+		{"(define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))", "bsort"},
+		{"(define merge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(merge (cdr a) b))(cons (car b) (merge a (cdr b)))))))", "merge"},
+		{"(define take (lambda (l n)(if (>= 0 n) (list)(cons (car l)(take (cdr l)(- n 1))))))", "take"},
+		{"(define drop (lambda (l n)(if (>= 0 n) l (drop (cdr l)(- n 1)))))", "drop"},
+		{"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(cadr l)) l (reverse l))(let ((mid (quotient n 2)))(merge (msort (take l mid))(msort (drop l mid)))))))))", "msort"},
+		{"(define stream-car (lambda (l)(car l)))", "stream-car"},
+		{"(define stream-cdr (lambda (l)(force (cdr l))))", "stream-cdr"},
+		{"(define make-generator (lambda (generator inits)(cons (car inits)(delay (make-generator generator (generator inits))))))", "make-generator"},
+		{"(define inf-list (lambda (generator inits limit)(let loop ((l (make-generator generator inits))(c limit)) (if (>= 0 c) (list)(cons (stream-car l)(loop (stream-cdr l)(- c 1)))))))", "inf-list"},
+		{"(define fact/cps (lambda (n cont)(if (= n 0)(cont 1)(fact/cps (- n 1) (lambda (a) (cont (* n a)))))))", "fact/cps"},
+		{"(define fact (lambda (n) (fact/cps n identity)))", "fact"},
+		{"(define (testf x) (lambda () (* x 10)))", "testf"},
+		{"(define (create-testf  x) (testf (* 2 x)))", "create-testf"},
+		{"(let loop ((a 0)(r (list 1 2 3))) (if (null? r) a (loop (+ (car r) a)(cdr r))))", "6"},
+		{"(a)", "1"},
+		{"(a)", "2"},
+		{"(a)", "3"},
+		{"(b)", "1"},
+		{"(b)", "2"},
+		{"(x)", "10"},
+		{"(x)", "20"},
+		{"(y)", "100"},
+		{"(y)", "200"},
+		{"(gcm 36 27)", "9"},
+		{"(lcm 36 27)", "108"},
+		{"(qsort test-list (lambda (a b)(< a b)))", "(0 2 3 6 7 8 9 14 19 27 36)"},
+		{"(bsort test-list)", "(0 2 3 6 7 8 9 14 19 27 36)"},
+		{"(prime (iota 30 2))", "(2 3 5 7 11 13 17 19 23 29 31)"},
+		{"(perm (list 1 2 3) 2)", "((1 2) (1 3) (2 1) (2 3) (3 1) (3 2))"},
+		{"(comb (list 1 2 3) 2)", "((1 2) (1 3) (2 3))"},
+		{"(hanoi (quote a)(quote b)(quote c) 3)", "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))"},
+		{"(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", "(1 2 3 4 5 6 7 8 9 10)"},
+		{"(take (list 2 4 6 8 10) 3)", "(2 4 6)"},
+		{"(drop (list 2 4 6 8 10) 3)", "(8 10)"},
+		{"(msort test-list)", "(0 2 3 6 7 8 9 14 19 27 36)"},
+		{"(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", "(0 1 1 2 3 5 8 13 21 34)"},
+		{"(fact/cps 5 (lambda (a) (+ 80 a)))", "200"},
+		{"(fact 5)", "120"},
+		{"((create-testf 2))", "40"},
 	}
-	exp, _ = DoCoreLogic("(a)", rootEnv)
-	exp, _ = DoCoreLogic("(a)", rootEnv)
-	exp, _ = DoCoreLogic("(a)", rootEnv)
-	if exp.String() != "3" {
-		t.Fatal("failed test: closure")
-	}
-	exp, _ = DoCoreLogic("(b)", rootEnv)
-	exp, _ = DoCoreLogic("(b)", rootEnv)
-	if exp.String() != "2" {
-		t.Fatal("failed test: closure")
-	}
-	exp, _ = DoCoreLogic("(x)", rootEnv)
-	exp, _ = DoCoreLogic("(x)", rootEnv)
-
-	if exp.String() != "20" {
-		t.Fatal("failed test: closure")
-	}
-	exp, _ = DoCoreLogic("(y)", rootEnv)
-	exp, _ = DoCoreLogic("(y)", rootEnv)
-	if exp.String() != "200" {
-		t.Fatal("failed test: closure")
-	}
-
-	exp, _ = DoCoreLogic("(gcm 36 27)", rootEnv)
-	if exp.String() != "9" {
-		t.Fatal("failed test: gcm")
-	}
-	exp, _ = DoCoreLogic("(lcm 36 27)", rootEnv)
-	if exp.String() != "108" {
-		t.Fatal("failed test: lcm")
-	}
-
-	exp, _ = DoCoreLogic("(qsort test-list (lambda (a b)(< a b)))", rootEnv)
-	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
-		t.Fatal("failed test: qsort")
-	}
-	exp, _ = DoCoreLogic("(bsort test-list)", rootEnv)
-	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
-		t.Fatal("failed test: bsort")
-	}
-
-	exp, _ = DoCoreLogic("(prime (iota 30 2))", rootEnv)
-	if exp.String() != "(2 3 5 7 11 13 17 19 23 29 31)" {
-		t.Fatal("failed test: prime")
-	}
-
-	exp, _ = DoCoreLogic("(perm (list 1 2 3) 2)", rootEnv)
-	if exp.String() != "((1 2) (1 3) (2 1) (2 3) (3 1) (3 2))" {
-		t.Fatal("failed test: perm")
-	}
-
-	exp, _ = DoCoreLogic("(comb (list 1 2 3) 2)", rootEnv)
-	if exp.String() != "((1 2) (1 3) (2 3))" {
-		t.Fatal("failed test: comb")
-	}
-	exp, _ = DoCoreLogic("(hanoi (quote a)(quote b)(quote c) 3)", rootEnv)
-	if exp.String() != "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))" {
-		t.Fatal("failed test: hanoi")
-	}
-	exp, _ = DoCoreLogic("(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", rootEnv)
-	if exp.String() != "(1 2 3 4 5 6 7 8 9 10)" {
-		t.Fatal("failed test: merge")
-	}
-	exp, _ = DoCoreLogic("(take (list 2 4 6 8 10) 3)", rootEnv)
-	if exp.String() != "(2 4 6)" {
-		t.Fatal("failed test: take")
-	}
-	exp, _ = DoCoreLogic("(drop (list 2 4 6 8 10) 3)", rootEnv)
-	if exp.String() != "(8 10)" {
-		t.Fatal("failed test: drop")
-	}
-	exp, _ = DoCoreLogic("(msort test-list)", rootEnv)
-	if exp.String() != "(0 2 3 6 7 8 9 14 19 27 36)" {
-		t.Fatal("failed test: bsort")
-	}
-	exp, _ = DoCoreLogic("(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", rootEnv)
-	if exp.String() != "(0 1 1 2 3 5 8 13 21 34)" {
-		t.Fatal("failed test: fibonacci")
-	}
-
-	exp, _ = DoCoreLogic("(fact/cps 5 (lambda (a) (+ 80 a)))", rootEnv)
-	if exp.String() != "200" {
-		t.Fatal("failed test: fact/cps")
-	}
-	exp, _ = DoCoreLogic("(fact 5)", rootEnv)
-	if exp.String() != "120" {
-		t.Fatal("failed test: fact")
-	}
-	exp, _ = DoCoreLogic("((create-testf 2))", rootEnv)
-	if exp.String() != "40" {
-		t.Fatal("failed test: create-testf")
-	}
+	executeTest(testCode, "program", t)
 }
 func TestErrCase(t *testing.T) {
 	var (
@@ -345,27 +264,15 @@ func TestInteractive(t *testing.T) {
 
 //https://github.com/hidekuno/go-scheme/issues/46
 func TestRecursive(t *testing.T) {
-	var (
-		exp Expression
-	)
-	BuildFunc()
-	rootEnv := NewSimpleEnv(nil, nil)
-	DoCoreLogic("(define (fact n result)(if (>= 1 n) result (fact (- n 1) (* result n))))", rootEnv)
 
-	exp, _ = DoCoreLogic("(fact 5 1)", rootEnv)
-	if exp.String() != "120" {
-		t.Fatal("failed test: tail recursive")
+	testCode := [][]string{
+		{"(define (fact n result)(if (>= 1 n) result (fact (- n 1) (* result n))))", "fact"},
+		{"(fact 5 1)", "120"},
+		{"(let loop ((i 0)) (if (<= 1000000 i) i (loop (+ 1 i))))", "1000000"},
+		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 50 i) j k)(loop (+ 1 i) j k))))", "1000000"},
 	}
+	executeTest(testCode, "recursive", t)
 
-	exp, _ = DoCoreLogic("(let loop ((i 0)) (if (<= 1000000 i) i (loop (+ 1 i))))", rootEnv)
-	if exp.String() != "1000000" {
-		t.Fatal("failed test: tail recursive")
-	}
-
-	exp, _ = DoCoreLogic("(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 50 i) j k)(loop (+ 1 i) j k))))", rootEnv)
-	if exp.String() != "1000000" {
-		t.Fatal("failed test: tail recursive")
-	}
 }
 
 // go test -bench . -benchmem
