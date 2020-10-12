@@ -14,7 +14,7 @@ import (
 
 // String Type
 type String struct {
-	Atom
+	Expression
 	Value string
 }
 
@@ -26,6 +26,9 @@ func NewString(p string) *String {
 
 func (self *String) String() string {
 	return "\"" + self.Value + "\""
+}
+func (self *String) isAtom() bool {
+	return true
 }
 
 // Build Global environement.

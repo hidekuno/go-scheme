@@ -104,18 +104,12 @@ func NewRuntimeError(text string, args ...string) error {
 // eval type
 type Expression interface {
 	String() string
-}
-
-type Any interface{}
-type Atom interface {
-	Expression
-	// Because Expression is different
-	Dummy() Any
+	isAtom() bool
 }
 
 // Symbol Type
 type Symbol struct {
-	Atom
+	Expression
 	Value string
 }
 
@@ -128,10 +122,13 @@ func NewSymbol(token string) *Symbol {
 func (self *Symbol) String() string {
 	return self.Value
 }
+func (self *Symbol) isAtom() bool {
+	return true
+}
 
 // Boolean Type
 type Boolean struct {
-	Atom
+	Expression
 	Value bool
 	exp   string
 }
@@ -149,10 +146,13 @@ func NewBoolean(v bool) *Boolean {
 func (self *Boolean) String() string {
 	return self.exp
 }
+func (self *Boolean) isAtom() bool {
+	return true
+}
 
 // Nil Type
 type Nil struct {
-	Atom
+	Expression
 	value string
 }
 
@@ -165,10 +165,13 @@ func NewNil() *Nil {
 func (self *Nil) String() string {
 	return self.value
 }
+func (self *Nil) isAtom() bool {
+	return true
+}
 
 // BuildInFunc
 type BuildInFunc struct {
-	Atom
+	Expression
 	Impl EvalFunc
 	name string
 }
@@ -184,6 +187,9 @@ func (self *BuildInFunc) String() string {
 }
 func (self *BuildInFunc) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 	return self.Impl(exp, env)
+}
+func (self *BuildInFunc) isAtom() bool {
+	return true
 }
 
 // Function (lambda). Env is exists for closure.
@@ -205,6 +211,9 @@ func NewFunction(parent *SimpleEnv, param *List, body []Expression, name string)
 }
 func (self *Function) String() string {
 	return "Function: "
+}
+func (self *Function) isAtom() bool {
+	return false
 }
 func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 
@@ -261,6 +270,9 @@ func NewPromise(parent *SimpleEnv, body Expression) *Promise {
 func (self *Promise) String() string {
 	return "Promise: "
 }
+func (self *Promise) isAtom() bool {
+	return false
+}
 
 // TailRecursion
 type TailRecursion struct {
@@ -296,6 +308,9 @@ func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 
 func (self *TailRecursion) String() string {
 	return "TailRecursion"
+}
+func (self *TailRecursion) isAtom() bool {
+	return false
 }
 
 // lex support  for  string
@@ -395,9 +410,9 @@ func parse(tokens []string) (Expression, int, error) {
 }
 
 // Atom To "Integer, Float, Symbol"
-func atom(token string) (Atom, error) {
+func atom(token string) (Expression, error) {
 	var (
-		atom Atom
+		atom Expression
 	)
 	if ivalue, err := strconv.Atoi(token); err == nil {
 		atom = NewInteger(ivalue)
@@ -446,7 +461,7 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	if DEBUG {
 		fmt.Print(reflect.TypeOf(sexp))
 	}
-	if _, ok := sexp.(Atom); ok {
+	if sexp.isAtom() {
 		if sym, ok := sexp.(*Symbol); ok {
 			if v, ok := (*env).Find(sym.Value); ok {
 				return v, nil
