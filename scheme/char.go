@@ -8,7 +8,7 @@ package scheme
 
 // Character Type
 type Char struct {
-	Atom
+	Expression
 	Value rune
 	exp   string
 }
@@ -21,4 +21,7 @@ func NewChar(v string) *Char {
 }
 func (self *Char) String() string {
 	return self.exp
+}
+func (self *Char) isAtom() bool {
+	return true
 }

@@ -47,6 +47,9 @@ func (self *List) String() string {
 	makeString(self)
 	return buffer.String()
 }
+func (self *List) isAtom() bool {
+	return false
+}
 
 // Pair Type
 type Pair struct {
@@ -70,7 +73,9 @@ func (self *Pair) String() string {
 	buffer.WriteString(")")
 	return buffer.String()
 }
-
+func (self *Pair) isAtom() bool {
+	return false
+}
 func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 	size := 4
 	if len(l) > size {

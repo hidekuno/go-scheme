@@ -13,7 +13,7 @@ import (
 )
 
 type Number interface {
-	Atom
+	Expression
 	Add(Number) Number
 	Sub(Number) Number
 	Mul(Number) Number
@@ -120,6 +120,9 @@ func (self *Integer) LessEqual(n Number) bool {
 func (self *Integer) String() string {
 	return strconv.Itoa(self.Value)
 }
+func (self *Integer) isAtom() bool {
+	return true
+}
 
 // Float Type
 type Float struct {
@@ -165,6 +168,9 @@ func (self *Float) LessEqual(n Number) bool {
 }
 func (self *Float) String() string {
 	return fmt.Sprint(self.Value)
+}
+func (self *Float) isAtom() bool {
+	return true
 }
 func (self *Float) FormatString(prec int) string {
 	return strconv.FormatFloat(self.Value, 'f', prec, 64)
