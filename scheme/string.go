@@ -30,6 +30,9 @@ func (self *String) String() string {
 func (self *String) isAtom() bool {
 	return true
 }
+func (self *String) clone() Expression {
+	return NewString(self.Value)
+}
 
 // Build Global environement.
 func buildStringFunc() {

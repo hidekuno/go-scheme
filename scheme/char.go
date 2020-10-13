@@ -25,3 +25,6 @@ func (self *Char) String() string {
 func (self *Char) isAtom() bool {
 	return true
 }
+func (self *Char) clone() Expression {
+	return NewChar(self.exp)
+}

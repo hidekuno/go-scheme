@@ -50,6 +50,9 @@ func (self *List) String() string {
 func (self *List) isAtom() bool {
 	return false
 }
+func (self *List) clone() Expression {
+	return NewList(self.Value)
+}
 
 // Pair Type
 type Pair struct {
@@ -76,6 +79,10 @@ func (self *Pair) String() string {
 func (self *Pair) isAtom() bool {
 	return false
 }
+func (self *Pair) clone() Expression {
+	return NewPair(self.Car, self.Cdr)
+}
+
 func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 	size := 4
 	if len(l) > size {
@@ -423,7 +430,7 @@ func buildListFunc() {
 				}
 				l := make([]Expression, 0, size.Value)
 				for i := 0; i < size.Value; i++ {
-					l = append(l, exp[1])
+					l = append(l, exp[1].clone())
 				}
 				return NewList(l), nil
 			})

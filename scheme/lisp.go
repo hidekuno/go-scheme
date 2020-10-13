@@ -105,6 +105,7 @@ func NewRuntimeError(text string, args ...string) error {
 type Expression interface {
 	String() string
 	isAtom() bool
+	clone() Expression
 }
 
 // Symbol Type
@@ -124,6 +125,9 @@ func (self *Symbol) String() string {
 }
 func (self *Symbol) isAtom() bool {
 	return true
+}
+func (self *Symbol) clone() Expression {
+	return NewSymbol(self.Value)
 }
 
 // Boolean Type
@@ -149,6 +153,9 @@ func (self *Boolean) String() string {
 func (self *Boolean) isAtom() bool {
 	return true
 }
+func (self *Boolean) clone() Expression {
+	return NewBoolean(self.Value)
+}
 
 // Nil Type
 type Nil struct {
@@ -167,6 +174,9 @@ func (self *Nil) String() string {
 }
 func (self *Nil) isAtom() bool {
 	return true
+}
+func (self *Nil) clone() Expression {
+	return NewNil()
 }
 
 // BuildInFunc
@@ -191,6 +201,9 @@ func (self *BuildInFunc) Execute(exp []Expression, env *SimpleEnv) (Expression, 
 func (self *BuildInFunc) isAtom() bool {
 	return true
 }
+func (self *BuildInFunc) clone() Expression {
+	return NewBuildInFunc(self.Impl, self.name)
+}
 
 // Function (lambda). Env is exists for closure.
 type Function struct {
@@ -214,6 +227,9 @@ func (self *Function) String() string {
 }
 func (self *Function) isAtom() bool {
 	return false
+}
+func (self *Function) clone() Expression {
+	return NewFunction(self.Env, &self.ParamName, self.Body, self.Name)
 }
 func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 
@@ -273,6 +289,9 @@ func (self *Promise) String() string {
 func (self *Promise) isAtom() bool {
 	return false
 }
+func (self *Promise) clone() Expression {
+	return NewPromise(self.Env, self.Body)
+}
 
 // TailRecursion
 type TailRecursion struct {
@@ -311,6 +330,9 @@ func (self *TailRecursion) String() string {
 }
 func (self *TailRecursion) isAtom() bool {
 	return false
+}
+func (self *TailRecursion) clone() Expression {
+	return NewTailRecursion(self.param, self.nameList)
 }
 
 // lex support  for  string
