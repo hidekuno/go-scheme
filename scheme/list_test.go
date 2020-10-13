@@ -194,3 +194,21 @@ func TestForEach(t *testing.T) {
 	}
 	executeTest(testCode, "for-each", t)
 }
+func TestMakeList(t *testing.T) {
+	testCode := [][]string{
+		{"(make-list 10 0)", "(0 0 0 0 0 0 0 0 0 0)"},
+		{"(make-list 4 (list 1 2 3))", "((1 2 3) (1 2 3) (1 2 3) (1 2 3))"},
+		{"(make-list 8 (quote a))", "(a a a a a a a a)"},
+		{"(make-list 8 #t)", "(#t #t #t #t #t #t #t #t)"},
+		{"(make-list 10 1.0)", "(1 1 1 1 1 1 1 1 1 1)"},
+		{"(make-list 0 1)", "()"},
+
+		{"(make-list)", "E1007"},
+		{"(make-list 10)", "E1007"},
+		{"(make-list 10 0 1)", "E1007"},
+		{"(make-list #t 0)", "E1002"},
+		{"(make-list -1 0)", "E1011"},
+		{"(make-list 10 c)", "E1008"},
+	}
+	executeTest(testCode, "for-each", t)
+}

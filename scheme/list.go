@@ -428,6 +428,9 @@ func buildListFunc() {
 				if !ok {
 					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
 				}
+				if size.Value < 0 {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(size.Value))
+				}
 				l := make([]Expression, 0, size.Value)
 				for i := 0; i < size.Value; i++ {
 					l = append(l, exp[1].clone())
