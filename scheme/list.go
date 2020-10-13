@@ -31,14 +31,14 @@ func (self *List) String() string {
 	makeString = func(l *List) {
 		buffer.WriteString("(")
 
-		for _, i := range l.Value {
-			if j, ok := i.(*List); ok {
+		for i, e := range l.Value {
+			if j, ok := e.(*List); ok {
 				makeString(j)
 
-			} else if j, ok := i.(Expression); ok {
+			} else if j, ok := e.(Expression); ok {
 				buffer.WriteString(j.String())
 			}
-			if i != l.Value[len(l.Value)-1] {
+			if i != len(l.Value)-1 {
 				buffer.WriteString(" ")
 			}
 		}
