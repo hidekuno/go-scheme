@@ -263,15 +263,15 @@ func buildListFunc() {
 				if len(exp) < 2 {
 					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 				}
-				var expList []Expression
+				var l []Expression
 				for _, e := range exp {
 					if v, ok := e.(*List); ok {
-						expList = append(expList, v.Value...)
+						l = append(l, v.Value...)
 					} else {
 						return nil, NewRuntimeError("E1005", reflect.TypeOf(e).String())
 					}
 				}
-				return NewList(expList), nil
+				return NewList(l), nil
 			})
 	}
 	buildInFuncTbl["last"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
