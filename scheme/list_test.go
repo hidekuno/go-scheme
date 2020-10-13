@@ -212,3 +212,22 @@ func TestMakeList(t *testing.T) {
 	}
 	executeTest(testCode, "for-each", t)
 }
+func TestTake(t *testing.T) {
+	testCode := [][]string{
+		{"(take (iota 10) 0)", "()"},
+		{"(take (iota 10) 1)", "(0)"},
+		{"(take (iota 10) 3)", "(0 1 2)"},
+		{"(take (iota 10) 9)", "(0 1 2 3 4 5 6 7 8)"},
+		{"(take (iota 10) 10)", "(0 1 2 3 4 5 6 7 8 9)"},
+
+		{"(take)", "E1007"},
+		{"(take (list 10 20))", "E1007"},
+		{"(take (list 10 20) 1 2)", "E1007"},
+		{"(take 1 (list 1 2))", "E1005"},
+		{"(take (list 1 2) 10.5)", "E1002"},
+		{"(take (list 1 2) 3)", "E1011"},
+		{"(take (list 1 2) -1)", "E1011"},
+		{"(take a 1)", "E1008"},
+	}
+	executeTest(testCode, "take", t)
+}

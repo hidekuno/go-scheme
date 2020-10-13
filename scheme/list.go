@@ -438,4 +438,29 @@ func buildListFunc() {
 				return NewList(l), nil
 			})
 	}
+	buildInFuncTbl["take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if len(exp) != 2 {
+					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				}
+				l, ok := exp[0].(*List)
+				if !ok {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+				}
+				m, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+				if m.Value < 0 || len(l.Value) < m.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(m.Value))
+				}
+
+				result := make([]Expression, 0, len(l.Value))
+				for i := 0; i < m.Value; i++ {
+					result = append(result, l.Value[i])
+				}
+				return NewList(result), nil
+			})
+	}
 }
