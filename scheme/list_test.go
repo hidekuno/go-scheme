@@ -250,3 +250,20 @@ func TestDrop(t *testing.T) {
 	}
 	executeTest(testCode, "drop", t)
 }
+func TestDelete(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 10 10.5 \"ABC\" #\\a #t))", "a"},
+		{"(delete 10 a)", "(10.5 \"ABC\" #\\a #t)"},
+		{"(delete 10.5 a)", "(10 \"ABC\" #\\a #t)"},
+		{"(delete \"ABC\" a)", "(10 10.5 #\\a #t)"},
+		{"(delete #\\a a)", "(10 10.5 \"ABC\" #t)"},
+		{"(delete #t a)", "(10 10.5 \"ABC\" #\\a)"},
+
+		{"(delete)", "E1007"},
+		{"(delete 10)", "E1007"},
+		{"(delete 10 (list 10 20) 3)", "E1007"},
+		{"(delete 10 20)", "E1005"},
+		{"(delete 10 b)", "E1008"},
+	}
+	executeTest(testCode, "delete", t)
+}
