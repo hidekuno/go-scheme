@@ -153,6 +153,27 @@ func doListFunc(lambda func(Expression, Expression, []Expression) ([]Expression,
 	}
 	return NewList(result), nil
 }
+func subList(fn func(*List, *Integer) (int, int), exp ...Expression) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	l, ok := exp[0].(*List)
+	if !ok {
+		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+	}
+	n, ok := exp[1].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+	}
+	if n.Value < 0 || len(l.Value) < n.Value {
+		return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+	}
+
+	x, y := fn(l, n)
+	result := make([]Expression, y-x)
+	copy(result, l.Value[x:y])
+	return NewList(result), nil
+}
 
 // Build Global environement.
 func buildListFunc() {
@@ -441,26 +462,23 @@ func buildListFunc() {
 	buildInFuncTbl["take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
-				l, ok := exp[0].(*List)
-				if !ok {
-					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
-				}
-				m, ok := exp[1].(*Integer)
-				if !ok {
-					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
-				}
-				if m.Value < 0 || len(l.Value) < m.Value {
-					return nil, NewRuntimeError("E1011", strconv.Itoa(m.Value))
-				}
-
-				result := make([]Expression, 0, len(l.Value))
-				for i := 0; i < m.Value; i++ {
-					result = append(result, l.Value[i])
-				}
-				return NewList(result), nil
+				return subList(
+					func(l *List, n *Integer) (x int, y int) {
+						x = 0
+						y = n.Value
+						return x, y
+					}, exp...)
+			})
+	}
+	buildInFuncTbl["drop"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return subList(
+					func(l *List, n *Integer) (x int, y int) {
+						x = n.Value
+						y = len(l.Value)
+						return x, y
+					}, exp...)
 			})
 	}
 }

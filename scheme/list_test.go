@@ -231,3 +231,22 @@ func TestTake(t *testing.T) {
 	}
 	executeTest(testCode, "take", t)
 }
+func TestDrop(t *testing.T) {
+	testCode := [][]string{
+		{"(drop (iota 10) 0)", "(0 1 2 3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 1)", "(1 2 3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 3)", "(3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 9)", "(9)"},
+		{"(drop (iota 10) 10)", "()"},
+
+		{"(drop)", "E1007"},
+		{"(drop (list 10 20))", "E1007"},
+		{"(drop (list 10 20) 1 2)", "E1007"},
+		{"(drop 1 (list 1 2))", "E1005"},
+		{"(drop (list 1 2) 10.5)", "E1002"},
+		{"(drop (list 1 2) 3)", "E1011"},
+		{"(drop (list 1 2) -1)", "E1011"},
+		{"(drop a 1)", "E1008"},
+	}
+	executeTest(testCode, "drop", t)
+}
