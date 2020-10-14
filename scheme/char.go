@@ -28,3 +28,9 @@ func (self *Char) isAtom() bool {
 func (self *Char) clone() Expression {
 	return NewChar(self.exp)
 }
+func (self *Char) equalValue(e Expression) bool {
+	if v, ok := e.(*Char); ok {
+		return self.Value == v.Value
+	}
+	return false
+}

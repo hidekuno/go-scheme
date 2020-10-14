@@ -53,6 +53,10 @@ func (self *List) isAtom() bool {
 func (self *List) clone() Expression {
 	return NewList(self.Value)
 }
+func (self *List) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
 
 // Pair Type
 type Pair struct {
@@ -82,7 +86,10 @@ func (self *Pair) isAtom() bool {
 func (self *Pair) clone() Expression {
 	return NewPair(self.Car, self.Cdr)
 }
-
+func (self *Pair) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
 func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 	size := 4
 	if len(l) > size {
@@ -479,6 +486,27 @@ func buildListFunc() {
 						y = len(l.Value)
 						return x, y
 					}, exp...)
+			})
+	}
+	buildInFuncTbl["delete"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if len(exp) != 2 {
+					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				}
+				m, ok := exp[1].(*List)
+				if !ok {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+				}
+				l := make([]Expression, 0, len(m.Value))
+				for _, e := range m.Value {
+
+					if exp[0].equalValue(e) {
+						continue
+					}
+					l = append(l, e.clone())
+				}
+				return NewList(l), nil
 			})
 	}
 }

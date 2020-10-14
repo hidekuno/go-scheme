@@ -106,6 +106,7 @@ type Expression interface {
 	String() string
 	isAtom() bool
 	clone() Expression
+	equalValue(Expression) bool
 }
 
 // Symbol Type
@@ -128,6 +129,12 @@ func (self *Symbol) isAtom() bool {
 }
 func (self *Symbol) clone() Expression {
 	return NewSymbol(self.Value)
+}
+func (self *Symbol) equalValue(e Expression) bool {
+	if v, ok := e.(*Symbol); ok {
+		return self.Value == v.Value
+	}
+	return false
 }
 
 // Boolean Type
@@ -156,6 +163,12 @@ func (self *Boolean) isAtom() bool {
 func (self *Boolean) clone() Expression {
 	return NewBoolean(self.Value)
 }
+func (self *Boolean) equalValue(e Expression) bool {
+	if v, ok := e.(*Boolean); ok {
+		return self.Value == v.Value
+	}
+	return false
+}
 
 // Nil Type
 type Nil struct {
@@ -177,6 +190,10 @@ func (self *Nil) isAtom() bool {
 }
 func (self *Nil) clone() Expression {
 	return NewNil()
+}
+func (self *Nil) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
 }
 
 // BuildInFunc
@@ -204,6 +221,10 @@ func (self *BuildInFunc) isAtom() bool {
 func (self *BuildInFunc) clone() Expression {
 	return NewBuildInFunc(self.Impl, self.name)
 }
+func (self *BuildInFunc) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
 
 // Function (lambda). Env is exists for closure.
 type Function struct {
@@ -230,6 +251,10 @@ func (self *Function) isAtom() bool {
 }
 func (self *Function) clone() Expression {
 	return NewFunction(self.Env, &self.ParamName, self.Body, self.Name)
+}
+func (self *Function) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
 }
 func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 
@@ -292,6 +317,10 @@ func (self *Promise) isAtom() bool {
 func (self *Promise) clone() Expression {
 	return NewPromise(self.Env, self.Body)
 }
+func (self *Promise) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
 
 // TailRecursion
 type TailRecursion struct {
@@ -333,6 +362,10 @@ func (self *TailRecursion) isAtom() bool {
 }
 func (self *TailRecursion) clone() Expression {
 	return NewTailRecursion(self.param, self.nameList)
+}
+func (self *TailRecursion) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
 }
 
 // lex support  for  string
