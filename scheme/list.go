@@ -509,4 +509,26 @@ func buildListFunc() {
 				return NewList(l), nil
 			})
 	}
+
+	buildInFuncTbl["list-ref"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if len(exp) != 2 {
+					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+				}
+				l, ok := exp[0].(*List)
+				if !ok {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+				}
+				n, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+
+				if n.Value < 0 || len(l.Value) <= n.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+				}
+				return l.Value[n.Value], nil
+			})
+	}
 }
