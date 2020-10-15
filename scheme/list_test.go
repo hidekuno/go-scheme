@@ -292,7 +292,7 @@ func TestListSet(t *testing.T) {
 	testCode := [][]string{
 		{"(define a (list 1 2 3 4 5))", "a"},
 		{"(define b a)", "b"},
-		{"(list-set! a 0 100)", "(100 2 3 4 5)"},
+		{"(list-set! a 0 100)", "nil"},
 		{"a", "(100 2 3 4 5)"},
 		{"b", "(100 2 3 4 5)"},
 

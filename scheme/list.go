@@ -551,7 +551,7 @@ func buildListFunc() {
 				}
 				l.Value[n.Value] = exp[2]
 
-				return l, nil
+				return NewNil(), nil
 			})
 	}
 }
