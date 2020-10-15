@@ -30,6 +30,15 @@ func (self *String) String() string {
 func (self *String) isAtom() bool {
 	return true
 }
+func (self *String) clone() Expression {
+	return NewString(self.Value)
+}
+func (self *String) equalValue(e Expression) bool {
+	if v, ok := e.(*String); ok {
+		return self.Value == v.Value
+	}
+	return false
+}
 
 // Build Global environement.
 func buildStringFunc() {

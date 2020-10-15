@@ -194,3 +194,117 @@ func TestForEach(t *testing.T) {
 	}
 	executeTest(testCode, "for-each", t)
 }
+func TestMakeList(t *testing.T) {
+	testCode := [][]string{
+		{"(make-list 10 0)", "(0 0 0 0 0 0 0 0 0 0)"},
+		{"(make-list 4 (list 1 2 3))", "((1 2 3) (1 2 3) (1 2 3) (1 2 3))"},
+		{"(make-list 8 (quote a))", "(a a a a a a a a)"},
+		{"(make-list 8 #t)", "(#t #t #t #t #t #t #t #t)"},
+		{"(make-list 10 1.0)", "(1 1 1 1 1 1 1 1 1 1)"},
+		{"(make-list 0 1)", "()"},
+
+		{"(make-list)", "E1007"},
+		{"(make-list 10)", "E1007"},
+		{"(make-list 10 0 1)", "E1007"},
+		{"(make-list #t 0)", "E1002"},
+		{"(make-list -1 0)", "E1011"},
+		{"(make-list 10 c)", "E1008"},
+	}
+	executeTest(testCode, "for-each", t)
+}
+func TestTake(t *testing.T) {
+	testCode := [][]string{
+		{"(take (iota 10) 0)", "()"},
+		{"(take (iota 10) 1)", "(0)"},
+		{"(take (iota 10) 3)", "(0 1 2)"},
+		{"(take (iota 10) 9)", "(0 1 2 3 4 5 6 7 8)"},
+		{"(take (iota 10) 10)", "(0 1 2 3 4 5 6 7 8 9)"},
+
+		{"(take)", "E1007"},
+		{"(take (list 10 20))", "E1007"},
+		{"(take (list 10 20) 1 2)", "E1007"},
+		{"(take 1 (list 1 2))", "E1005"},
+		{"(take (list 1 2) 10.5)", "E1002"},
+		{"(take (list 1 2) 3)", "E1011"},
+		{"(take (list 1 2) -1)", "E1011"},
+		{"(take a 1)", "E1008"},
+	}
+	executeTest(testCode, "take", t)
+}
+func TestDrop(t *testing.T) {
+	testCode := [][]string{
+		{"(drop (iota 10) 0)", "(0 1 2 3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 1)", "(1 2 3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 3)", "(3 4 5 6 7 8 9)"},
+		{"(drop (iota 10) 9)", "(9)"},
+		{"(drop (iota 10) 10)", "()"},
+
+		{"(drop)", "E1007"},
+		{"(drop (list 10 20))", "E1007"},
+		{"(drop (list 10 20) 1 2)", "E1007"},
+		{"(drop 1 (list 1 2))", "E1005"},
+		{"(drop (list 1 2) 10.5)", "E1002"},
+		{"(drop (list 1 2) 3)", "E1011"},
+		{"(drop (list 1 2) -1)", "E1011"},
+		{"(drop a 1)", "E1008"},
+	}
+	executeTest(testCode, "drop", t)
+}
+func TestDelete(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 10 10.5 \"ABC\" #\\a #t))", "a"},
+		{"(delete 10 a)", "(10.5 \"ABC\" #\\a #t)"},
+		{"(delete 10.5 a)", "(10 \"ABC\" #\\a #t)"},
+		{"(delete \"ABC\" a)", "(10 10.5 #\\a #t)"},
+		{"(delete #\\a a)", "(10 10.5 \"ABC\" #t)"},
+		{"(delete #t a)", "(10 10.5 \"ABC\" #\\a)"},
+
+		{"(delete)", "E1007"},
+		{"(delete 10)", "E1007"},
+		{"(delete 10 (list 10 20) 3)", "E1007"},
+		{"(delete 10 20)", "E1005"},
+		{"(delete 10 b)", "E1008"},
+	}
+	executeTest(testCode, "delete", t)
+}
+func TestListRef(t *testing.T) {
+	testCode := [][]string{
+		{"(list-ref (iota 10) 0)", "0"},
+		{"(list-ref (iota 10) 1)", "1"},
+		{"(list-ref (iota 10) 8)", "8"},
+		{"(list-ref (iota 10) 9)", "9"},
+		{"(list-ref (list #\\a #\\b #\\c) 1)", "#\\b"},
+		{"(list-ref (list (list 0 1) 1 2 3) 0)", "(0 1)"},
+
+		{"(list-ref)", "E1007"},
+		{"(list-ref (iota 10))", "E1007"},
+		{"(list-ref (iota 10) 1 2)", "E1007"},
+		{"(list-ref 10 -1)", "E1005"},
+		{"(list-ref (iota 10) #t)", "E1002"},
+		{"(list-ref a #t)", "E1008"},
+		{"(list-ref (iota 10) a)", "E1008"},
+		{"(list-ref (iota 10) -1)", "E1011"},
+		{"(list-ref (iota 10) 10)", "E1011"},
+	}
+	executeTest(testCode, "list-ref", t)
+}
+func TestListSet(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 1 2 3 4 5))", "a"},
+		{"(define b a)", "b"},
+		{"(list-set! a 0 100)", "nil"},
+		{"a", "(100 2 3 4 5)"},
+		{"b", "(100 2 3 4 5)"},
+
+		{"(list-set!)", "E1007"},
+		{"(list-set! (iota 10))", "E1007"},
+		{"(list-set! (iota 10) 1 2 3)", "E1007"},
+		{"(list-set! 10 0 -1)", "E1005"},
+		{"(list-set! (iota 10) #t 0)", "E1002"},
+		{"(list-set! c 0 #t)", "E1008"},
+		{"(list-set! (iota 10) 0 d)", "E1008"},
+		{"(list-set! (iota 10) -1 0)", "E1011"},
+		{"(list-set! (iota 10) 10 0)", "E1011"},
+	}
+	executeTest(testCode, "list-ref", t)
+}

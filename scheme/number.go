@@ -123,6 +123,15 @@ func (self *Integer) String() string {
 func (self *Integer) isAtom() bool {
 	return true
 }
+func (self *Integer) clone() Expression {
+	return NewInteger(self.Value)
+}
+func (self *Integer) equalValue(e Expression) bool {
+	if v, ok := e.(*Integer); ok {
+		return self.Value == v.Value
+	}
+	return false
+}
 
 // Float Type
 type Float struct {
@@ -171,6 +180,15 @@ func (self *Float) String() string {
 }
 func (self *Float) isAtom() bool {
 	return true
+}
+func (self *Float) clone() Expression {
+	return NewFloat(self.Value)
+}
+func (self *Float) equalValue(e Expression) bool {
+	if v, ok := e.(*Float); ok {
+		return self.Value == v.Value
+	}
+	return false
 }
 func (self *Float) FormatString(prec int) string {
 	return strconv.FormatFloat(self.Value, 'f', prec, 64)

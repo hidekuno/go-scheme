@@ -25,3 +25,12 @@ func (self *Char) String() string {
 func (self *Char) isAtom() bool {
 	return true
 }
+func (self *Char) clone() Expression {
+	return NewChar(self.exp)
+}
+func (self *Char) equalValue(e Expression) bool {
+	if v, ok := e.(*Char); ok {
+		return self.Value == v.Value
+	}
+	return false
+}
