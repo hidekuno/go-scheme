@@ -518,7 +518,7 @@ func buildListFunc() {
 				}
 				l, ok := exp[0].(*List)
 				if !ok {
-					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 				}
 				n, ok := exp[1].(*Integer)
 				if !ok {
