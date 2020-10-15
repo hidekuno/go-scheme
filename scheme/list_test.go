@@ -267,3 +267,24 @@ func TestDelete(t *testing.T) {
 	}
 	executeTest(testCode, "delete", t)
 }
+func TestListRef(t *testing.T) {
+	testCode := [][]string{
+		{"(list-ref (iota 10) 0)", "0"},
+		{"(list-ref (iota 10) 1)", "1"},
+		{"(list-ref (iota 10) 8)", "8"},
+		{"(list-ref (iota 10) 9)", "9"},
+		{"(list-ref (list #\\a #\\b #\\c) 1)", "#\\b"},
+		{"(list-ref (list (list 0 1) 1 2 3) 0)", "(0 1)"},
+
+		{"(list-ref)", "E1007"},
+		{"(list-ref (iota 10))", "E1007"},
+		{"(list-ref (iota 10) 1 2)", "E1007"},
+		{"(list-ref 10 -1)", "E1005"},
+		{"(list-ref (iota 10) #t)", "E1002"},
+		{"(list-ref a #t)", "E1008"},
+		{"(list-ref (iota 10) a)", "E1008"},
+		{"(list-ref (iota 10) -1)", "E1011"},
+		{"(list-ref (iota 10) 10)", "E1011"},
+	}
+	executeTest(testCode, "list-ref", t)
+}
