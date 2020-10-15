@@ -288,3 +288,23 @@ func TestListRef(t *testing.T) {
 	}
 	executeTest(testCode, "list-ref", t)
 }
+func TestListSet(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 1 2 3 4 5))", "a"},
+		{"(define b a)", "b"},
+		{"(list-set! a 0 100)", "(100 2 3 4 5)"},
+		{"a", "(100 2 3 4 5)"},
+		{"b", "(100 2 3 4 5)"},
+
+		{"(list-set!)", "E1007"},
+		{"(list-set! (iota 10))", "E1007"},
+		{"(list-set! (iota 10) 1 2 3)", "E1007"},
+		{"(list-set! 10 0 -1)", "E1005"},
+		{"(list-set! (iota 10) #t 0)", "E1002"},
+		{"(list-set! c 0 #t)", "E1008"},
+		{"(list-set! (iota 10) 0 d)", "E1008"},
+		{"(list-set! (iota 10) -1 0)", "E1011"},
+		{"(list-set! (iota 10) 10 0)", "E1011"},
+	}
+	executeTest(testCode, "list-ref", t)
+}
