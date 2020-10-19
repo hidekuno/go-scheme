@@ -110,4 +110,20 @@ func buildMathFunc() {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Abs, exp...) })
 	}
+	buildInFuncTbl["truncate"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Trunc, exp...) })
+	}
+	buildInFuncTbl["floor"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Floor, exp...) })
+	}
+	buildInFuncTbl["ceiling"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Ceil, exp...) })
+	}
+	buildInFuncTbl["round"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Round, exp...) })
+	}
 }
