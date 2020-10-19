@@ -154,3 +154,58 @@ func TestAbs(t *testing.T) {
 	}
 	executeTest(testCode, "abs", t)
 }
+func TestTruncate(t *testing.T) {
+	testCode := [][]string{
+		{"(truncate 3.7)", "3"},
+		{"(truncate 3.1)", "3"},
+		{"(truncate -3.1)", "-3"},
+		{"(truncate -3.7)", "-3"},
+		{"(truncate)", "E1007"},
+		{"(truncate 10 2.5)", "E1007"},
+		{"(truncate #t)", "E1003"},
+		{"(truncate a)", "E1008"},
+	}
+	executeTest(testCode, "truncate", t)
+}
+
+func TestFloor(t *testing.T) {
+	testCode := [][]string{
+		{"(floor 3.7)", "3"},
+		{"(floor 3.1)", "3"},
+		{"(floor -3.1)", "-4"},
+		{"(floor -3.7)", "-4"},
+		{"(floor)", "E1007"},
+		{"(floor 10 2.5)", "E1007"},
+		{"(floor #t)", "E1003"},
+		{"(floor a)", "E1008"},
+	}
+	executeTest(testCode, "floor", t)
+}
+func TestCeiling(t *testing.T) {
+	testCode := [][]string{
+		{"(ceiling 3.7)", "4"},
+		{"(ceiling 3.1)", "4"},
+		{"(ceiling -3.1)", "-3"},
+		{"(ceiling -3.7)", "-3"},
+		{"(ceiling)", "E1007"},
+		{"(ceiling 10 2.5)", "E1007"},
+		{"(ceiling #t)", "E1003"},
+		{"(ceiling a)", "E1008"},
+	}
+	executeTest(testCode, "ceiling", t)
+}
+func TestRound(t *testing.T) {
+	testCode := [][]string{
+		{"(round (/(* (atan 1) 180)(*(atan 1)4)))", "45"},
+		{"(round (exp (* (log 2) 3)))", "8"},
+		{"(round 3.7)", "4"},
+		{"(round 3.1)", "3"},
+		{"(round -3.1)", "-3"},
+		{"(round -3.7)", "-4"},
+		{"(round)", "E1007"},
+		{"(round 10 2.5)", "E1007"},
+		{"(round #t)", "E1003"},
+		{"(round a)", "E1008"},
+	}
+	executeTest(testCode, "round", t)
+}
