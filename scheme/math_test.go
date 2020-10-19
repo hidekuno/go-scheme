@@ -142,3 +142,16 @@ func TestAcos(t *testing.T) {
 	}
 	executeTest(testCode, "acos", t)
 }
+func TestAbs(t *testing.T) {
+	testCode := [][]string{
+		{"(abs 10)", "10"},
+		{"(abs -10)", "10"},
+		{"(abs 10.5)", "10.5"},
+		{"(abs -10.5)", "10.5"},
+
+		{"(abs #t)", "E1003"},
+		{"(abs 11 10)", "E1007"},
+		{"(abs)", "E1007"},
+	}
+	executeTest(testCode, "abs", t)
+}

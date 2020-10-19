@@ -106,4 +106,9 @@ func buildMathFunc() {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Acos, exp...) })
 	}
+	buildInFuncTbl["abs"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Abs, exp...) })
+	}
+
 }
