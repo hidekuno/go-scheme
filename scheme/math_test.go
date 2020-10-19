@@ -57,7 +57,28 @@ func TestTan(t *testing.T) {
 	}
 	executeTest(testCode, "tan", t)
 }
+func TestAsin(t *testing.T) {
+	testCode := [][]string{
+		{"(define pi (* 4 (atan 1)))", "pi"},
+		{"(/ (asin 0.5)(/ pi 180))", "30.000000000000004"},
 
+		{"(asin #t)", "E1003"},
+		{"(asin 11 10)", "E1007"},
+		{"(asin)", "E1007"},
+	}
+	executeTest(testCode, "asin", t)
+}
+func TestAcos(t *testing.T) {
+	testCode := [][]string{
+		{"(define pi (* 4 (atan 1)))", "pi"},
+		{"(/ (acos 0.5)(/ pi 180))", "59.99999999999999"},
+
+		{"(acos #t)", "E1003"},
+		{"(acos 11 10)", "E1007"},
+		{"(acos)", "E1007"},
+	}
+	executeTest(testCode, "acos", t)
+}
 func TestAtan(t *testing.T) {
 	testCode := [][]string{
 		{"(* 4 (atan 1))", "3.141592653589793"},
@@ -119,28 +140,6 @@ func TestExpt(t *testing.T) {
 		{"(expt #t 12.5)", "E1003"},
 	}
 	executeTest(testCode, "expt", t)
-}
-func TestAsin(t *testing.T) {
-	testCode := [][]string{
-		{"(define pi (* 4 (atan 1)))", "pi"},
-		{"(/ (asin 0.5)(/ pi 180))", "30.000000000000004"},
-
-		{"(asin #t)", "E1003"},
-		{"(asin 11 10)", "E1007"},
-		{"(asin)", "E1007"},
-	}
-	executeTest(testCode, "asin", t)
-}
-func TestAcos(t *testing.T) {
-	testCode := [][]string{
-		{"(define pi (* 4 (atan 1)))", "pi"},
-		{"(/ (acos 0.5)(/ pi 180))", "59.99999999999999"},
-
-		{"(acos #t)", "E1003"},
-		{"(acos 11 10)", "E1007"},
-		{"(acos)", "E1007"},
-	}
-	executeTest(testCode, "acos", t)
 }
 func TestAbs(t *testing.T) {
 	testCode := [][]string{

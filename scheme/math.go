@@ -47,6 +47,14 @@ func buildMathFunc() {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Tan, exp...) })
 	}
+	buildInFuncTbl["asin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Asin, exp...) })
+	}
+	buildInFuncTbl["acos"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) { return mathImpl(math.Acos, exp...) })
+	}
 	buildInFuncTbl["atan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Atan, exp...) })
@@ -98,17 +106,8 @@ func buildMathFunc() {
 				return NewFloat(math.Pow(f[0], f[1])), nil
 			})
 	}
-	buildInFuncTbl["asin"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) { return mathImpl(math.Asin, exp...) })
-	}
-	buildInFuncTbl["acos"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) { return mathImpl(math.Acos, exp...) })
-	}
 	buildInFuncTbl["abs"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) { return mathImpl(math.Abs, exp...) })
 	}
-
 }
