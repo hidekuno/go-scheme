@@ -105,6 +105,30 @@ func buildOperationFunc() {
 				return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, exp...)
 			})
 	}
+	buildInFuncTbl["max"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return calcOperate(func(a Number, b Number) Number {
+					if a.Greater(b) {
+						return a
+					} else {
+						return b
+					}
+				}, exp...)
+			})
+	}
+	buildInFuncTbl["min"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return calcOperate(func(a Number, b Number) Number {
+					if a.Less(b) {
+						return a
+					} else {
+						return b
+					}
+				}, exp...)
+			})
+	}
 	buildInFuncTbl["quotient"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
