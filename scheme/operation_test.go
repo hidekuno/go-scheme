@@ -63,6 +63,32 @@ func TestDiv(t *testing.T) {
 	}
 	executeTest(testCode, "div", t)
 }
+func TestMax(t *testing.T) {
+	testCode := [][]string{
+		{"(max 10 12 11 1 2)", "12"},
+		{"(max 10 12 11 1 12)", "12"},
+		{"(max 10 12 13.5 1 1)", "13.5"},
+
+		{"(max 10)", "E1007"},
+		{"(max 9 a)", "E1008"},
+		{"(max 1 3.4 #t)", "E1003"},
+		{"(max 1)", "E1007"},
+	}
+	executeTest(testCode, "max", t)
+}
+func TestMin(t *testing.T) {
+	testCode := [][]string{
+		{"(min 10 12 11 3 9)", "3"},
+		{"(min 3 12 11 3 12)", "3"},
+		{"(min 10 12 0.5 1 1)", "0.5"},
+
+		{"(min 10)", "E1007"},
+		{"(min 9 a)", "E1008"},
+		{"(min 1 3.4 #t)", "E1003"},
+		{"(min 1)", "E1007"},
+	}
+	executeTest(testCode, "min", t)
+}
 func TestModulo(t *testing.T) {
 	testCode := [][]string{
 		{"(modulo 18 12)", "6"},
