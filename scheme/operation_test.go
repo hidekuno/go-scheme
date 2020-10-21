@@ -122,7 +122,17 @@ func TestLogxor(t *testing.T) {
 	}
 	executeTest(testCode, "logxor", t)
 }
-
+func TestLognot(t *testing.T) {
+	testCode := [][]string{
+		{"(lognot 0)", "-1"},
+		{"(lognot 10)", "-11"},
+		{"(lognot)", "E1007"},
+		{"(lognot 10 10)", "E1007"},
+		{"(lognot a)", "E1008"},
+		{"(lognot 1.5)", "E1002"},
+	}
+	executeTest(testCode, "lognot", t)
+}
 func TestMax(t *testing.T) {
 	testCode := [][]string{
 		{"(max 10 12 11 1 2)", "12"},

@@ -107,6 +107,16 @@ func calcLogic(calc func(a *Integer, b *Integer) int, exp ...Expression) (Number
 	}
 	return result, nil
 }
+func lognot(exp ...Expression) (Number, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	v, ok := exp[0].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(v).String())
+	}
+	return NewInteger(^v.Value), nil
+}
 
 // Build Global environement.
 func buildOperationFunc() {
@@ -166,6 +176,12 @@ func buildOperationFunc() {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				return calcLogic(func(a *Integer, b *Integer) int { return a.Value ^ b.Value }, exp...)
+			})
+	}
+	buildInFuncTbl["lognot"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return lognot(exp...)
 			})
 	}
 	buildInFuncTbl["max"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
