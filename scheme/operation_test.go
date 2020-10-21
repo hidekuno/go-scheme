@@ -63,6 +63,66 @@ func TestDiv(t *testing.T) {
 	}
 	executeTest(testCode, "div", t)
 }
+func TestAsh(t *testing.T) {
+	testCode := [][]string{
+		{"(ash 10 1)", "20"},
+		{"(ash 10 -1)", "5"},
+		{"(ash 10 0)", "10"},
+		{"(ash)", "E1007"},
+		{"(ash 10)", "E1007"},
+		{"(ash 10 1 1)", "E1007"},
+		{"(ash a 1)", "E1008"},
+		{"(ash 10 a)", "E1008"},
+		{"(ash 10.5 1)", "E1002"},
+		{"(ash 10 1.5)", "E1002"},
+	}
+
+	executeTest(testCode, "ash", t)
+}
+func TestLogand(t *testing.T) {
+	testCode := [][]string{
+		{"(logand 10 2)", "2"},
+		{"(logand 10 2 3)", "2"},
+		{"(logand 10)", "10"},
+
+		{"(logand)", "E1007"},
+		{"(logand a 1)", "E1008"},
+		{"(logand 10 a)", "E1008"},
+		{"(logand 10.5 1)", "E1002"},
+		{"(logand 10 1.5)", "E1002"},
+	}
+
+	executeTest(testCode, "logand", t)
+}
+func TestLogior(t *testing.T) {
+	testCode := [][]string{
+		{"(logior 10 2)", "10"},
+		{"(logior 10 2 3)", "11"},
+		{"(logior 10)", "10"},
+
+		{"(logior)", "E1007"},
+		{"(logior a 1)", "E1008"},
+		{"(logior 10 a)", "E1008"},
+		{"(logior 10.5 1)", "E1002"},
+		{"(logior 10 1.5)", "E1002"},
+	}
+	executeTest(testCode, "logior", t)
+}
+func TestLogxor(t *testing.T) {
+	testCode := [][]string{
+		{"(logxor 10 2)", "8"},
+		{"(logxor 10 2 2)", "10"},
+		{"(logxor 10)", "10"},
+
+		{"(logxor)", "E1007"},
+		{"(logxor a 1)", "E1008"},
+		{"(logxor 10 a)", "E1008"},
+		{"(logxor 10.5 1)", "E1002"},
+		{"(logxor 10 1.5)", "E1002"},
+	}
+	executeTest(testCode, "logxor", t)
+}
+
 func TestMax(t *testing.T) {
 	testCode := [][]string{
 		{"(max 10 12 11 1 2)", "12"},
