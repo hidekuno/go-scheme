@@ -40,6 +40,20 @@ func (self *String) equalValue(e Expression) bool {
 	}
 	return false
 }
+func strcmp(operate func(x string, y string) bool, exp ...Expression) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	x, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	y, ok := exp[1].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[1]).String())
+	}
+	return NewBoolean(operate(x.Value, y.Value)), nil
+}
 
 // Build Global environement.
 func buildStringFunc() {
@@ -87,6 +101,11 @@ func buildStringFunc() {
 				return nil, NewRuntimeError("E1018")
 			}
 			return NewString(s), nil
+		})
+	}
+	buildInFuncTbl["string=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return x == y }, exp...)
 		})
 	}
 }

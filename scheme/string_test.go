@@ -46,3 +46,17 @@ func TestFormat(t *testing.T) {
 	}
 	executeTest(testCode, "format", t)
 }
+func TestStringEq(t *testing.T) {
+	testCode := [][]string{
+		{"(string=? \"abc\" \"abc\")", "#t"},
+		{"(string=? \"abc\" \"ABC\")", "#f"},
+
+		{"(string=?)", "E1007"},
+		{"(string=? \"abc\")", "E1007"},
+		{"(string=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string=? \"abc\" 10)", "E1015"},
+		{"(string=? 10 \"abc\")", "E1015"},
+		{"(string=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string=?", t)
+}
