@@ -174,4 +174,33 @@ func buildStringFunc() {
 			return strlen(func(x string) int { return len(x) }, exp...)
 		})
 	}
+	buildInFuncTbl["number->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			if _, ok := exp[0].(Number); !ok {
+				return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
+			}
+			return NewString(exp[0].String()), nil
+		})
+	}
+	buildInFuncTbl["string->number"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			if i, err := strconv.Atoi(s.Value); err == nil {
+				return NewInteger(i), nil
+			} else if f, err := strconv.ParseFloat(s.Value, 64); err == nil {
+				return NewFloat(f), nil
+			}
+			return nil, NewRuntimeError("E1003", s.Value)
+		})
+	}
 }

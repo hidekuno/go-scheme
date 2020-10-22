@@ -214,3 +214,30 @@ func TestStringSize(t *testing.T) {
 	}
 	executeTest(testCode, "string-size", t)
 }
+func TestNumberString(t *testing.T) {
+	testCode := [][]string{
+		{"(number->string 10)", "\"10\""},
+		{"(number->string 10.5)", "\"10.5\""},
+
+		{"(number->string)", "E1007"},
+		{"(number->string 10 20)", "E1007"},
+		{"(number->string #f)", "E1003"},
+		{"(number->string a)", "E1008"},
+	}
+	executeTest(testCode, "number->string", t)
+}
+func TestStringNumber(t *testing.T) {
+	testCode := [][]string{
+
+		{"(string->number \"123\")", "123"},
+		{"(string->number \"10.5\")", "10.5"},
+
+		{"(string->number)", "E1007"},
+		{"(string->number \"123\" \"10.5\")", "E1007"},
+		{"(string->number 100)", "E1015"},
+		{"(string->number \"/1\")", "E1003"},
+		{"(string->number \"1/3/2\")", "E1003"},
+		{"(string->number a)", "E1008"},
+	}
+	executeTest(testCode, "string->number", t)
+}
