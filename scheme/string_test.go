@@ -117,3 +117,18 @@ func TestStringThanEq(t *testing.T) {
 	}
 	executeTest(testCode, "string>=?", t)
 }
+func TestStringCaseIgnoreEq(t *testing.T) {
+	testCode := [][]string{
+		{"(string-ci=? \"Abc\" \"aBc\")", "#t"},
+		{"(string-ci=? \"abc\" \"ABC\")", "#t"},
+		{"(string-ci=? \"abcd\" \"ABC\")", "#f"},
+
+		{"(string-ci=?)", "E1007"},
+		{"(string-ci=? \"abc\")", "E1007"},
+		{"(string-ci=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string-ci=? \"abc\" 10)", "E1015"},
+		{"(string-ci=? 10 \"abc\")", "E1015"},
+		{"(string-ci=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-ci=?", t)
+}
