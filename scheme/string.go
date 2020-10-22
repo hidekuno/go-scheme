@@ -7,6 +7,7 @@
 package scheme
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -42,23 +43,50 @@ func (self *String) equalValue(e Expression) bool {
 
 // Build Global environement.
 func buildStringFunc() {
-
 	buildInFuncTbl["string-append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) < 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		ret := make([]string, 0, len(exp))
-		for _, e := range exp {
-			v, err := eval(e, env)
-			if err != nil {
-				return v, err
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) < 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			s, ok := v.(*String)
+			ret := make([]string, 0, len(exp))
+			for _, e := range exp {
+				s, ok := e.(*String)
+				if !ok {
+					return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+				}
+				ret = append(ret, s.Value)
+			}
+			return NewString(strings.Join(ret, "")), nil
+		})
+	}
+	buildInFuncTbl["format"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			f, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 			}
-			ret = append(ret, s.Value)
-		}
-		return NewString(strings.Join(ret, "")), nil
+			n, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+			}
+
+			s := ""
+			switch f.Value {
+			case "~d", "~D":
+				s = fmt.Sprintf("%d", n.Value)
+			case "~o", "~O":
+				s = fmt.Sprintf("%o", n.Value)
+			case "~b", "~B":
+				s = fmt.Sprintf("%b", n.Value)
+			case "~x", "~X":
+				s = fmt.Sprintf("%"+string(f.Value[1]), n.Value)
+			default:
+				return nil, NewRuntimeError("E1018")
+			}
+			return NewString(s), nil
+		})
 	}
 }
