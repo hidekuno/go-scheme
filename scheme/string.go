@@ -133,4 +133,24 @@ func buildStringFunc() {
 			return strcmp(func(x string, y string) bool { return strings.ToLower(x) == strings.ToLower(y) }, exp...)
 		})
 	}
+	buildInFuncTbl["string-ci<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return strings.ToLower(x) < strings.ToLower(y) }, exp...)
+		})
+	}
+	buildInFuncTbl["string-ci>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return strings.ToLower(x) > strings.ToLower(y) }, exp...)
+		})
+	}
+	buildInFuncTbl["string-ci<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return strings.ToLower(x) <= strings.ToLower(y) }, exp...)
+		})
+	}
+	buildInFuncTbl["string-ci>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return strings.ToLower(x) >= strings.ToLower(y) }, exp...)
+		})
+	}
 }

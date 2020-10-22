@@ -132,3 +132,61 @@ func TestStringCaseIgnoreEq(t *testing.T) {
 	}
 	executeTest(testCode, "string-ci=?", t)
 }
+
+func TestStringCaseIgnoreLess(t *testing.T) {
+	testCode := [][]string{
+		{"(string-ci<? \"abc\" \"DEF\")", "#t"},
+		{"(string-ci<? \"DEF\" \"abc\")", "#f"},
+		{"(string-ci<?)", "E1007"},
+		{"(string-ci<? \"abc\")", "E1007"},
+		{"(string-ci<? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string-ci<? \"abc\" 10)", "E1015"},
+		{"(string-ci<? 10 \"abc\")", "E1015"},
+		{"(string-ci<? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-ci<?", t)
+}
+func TestStringCaseIgnoreThan(t *testing.T) {
+	testCode := [][]string{
+		{"(string-ci>? \"DEF\" \"abc\")", "#t"},
+		{"(string-ci>? \"abc\" \"DEF\")", "#f"},
+		{"(string-ci>?)", "E1007"},
+		{"(string-ci>? \"abc\")", "E1007"},
+		{"(string-ci>? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string-ci>? \"abc\" 10)", "E1015"},
+		{"(string-ci>? 10 \"abc\")", "E1015"},
+		{"(string-ci>? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-ci>?", t)
+}
+func TestStringCaseIgnoreEqLess(t *testing.T) {
+	testCode := [][]string{
+		{"(string-ci<=? \"abc\" \"DEF\")", "#t"},
+		{"(string-ci<=? \"DEF\" \"abc\")", "#f"},
+		{"(string-ci<=? \"Abc\" \"aBC\")", "#t"},
+
+		{"(string-ci<=?)", "E1007"},
+		{"(string-ci<=? \"abc\")", "E1007"},
+		{"(string-ci<=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string-ci<=? \"abc\" 10)", "E1015"},
+		{"(string-ci<=? 10 \"abc\")", "E1015"},
+		{"(string-ci<=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-ci<=?", t)
+}
+
+func TestStringCaseIgnoreEqThan(t *testing.T) {
+	testCode := [][]string{
+		{"(string-ci>=? \"abc\" \"DEF\")", "#f"},
+		{"(string-ci>=? \"DEF\" \"abc\")", "#t"},
+		{"(string-ci>=? \"Abc\" \"aBC\")", "#t"},
+
+		{"(string-ci>=?)", "E1007"},
+		{"(string-ci>=? \"abc\")", "E1007"},
+		{"(string-ci>=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string-ci>=? \"abc\" 10)", "E1015"},
+		{"(string-ci>=? 10 \"abc\")", "E1015"},
+		{"(string-ci>=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-ci>=?", t)
+}
