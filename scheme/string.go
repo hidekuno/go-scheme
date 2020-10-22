@@ -41,7 +41,7 @@ func (self *String) equalValue(e Expression) bool {
 	}
 	return false
 }
-func strcmp(operate func(string, string) bool, exp ...Expression) (Expression, error) {
+func stringCompare(operate func(string, string) bool, exp ...Expression) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -55,7 +55,7 @@ func strcmp(operate func(string, string) bool, exp ...Expression) (Expression, e
 	}
 	return NewBoolean(operate(x.Value, y.Value)), nil
 }
-func strlen(fn func(string) int, exp ...Expression) (Expression, error) {
+func stringLength(fn func(string) int, exp ...Expression) (Expression, error) {
 	if len(exp) != 1 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -116,62 +116,62 @@ func buildStringFunc() {
 	}
 	buildInFuncTbl["string=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return x == y }, exp...)
+			return stringCompare(func(x string, y string) bool { return x == y }, exp...)
 		})
 	}
 	buildInFuncTbl["string<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return x < y }, exp...)
+			return stringCompare(func(x string, y string) bool { return x < y }, exp...)
 		})
 	}
 	buildInFuncTbl["string>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return x > y }, exp...)
+			return stringCompare(func(x string, y string) bool { return x > y }, exp...)
 		})
 	}
 	buildInFuncTbl["string<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return x <= y }, exp...)
+			return stringCompare(func(x string, y string) bool { return x <= y }, exp...)
 		})
 	}
 	buildInFuncTbl["string>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return x >= y }, exp...)
+			return stringCompare(func(x string, y string) bool { return x >= y }, exp...)
 		})
 	}
 	buildInFuncTbl["string-ci=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return strings.ToLower(x) == strings.ToLower(y) }, exp...)
+			return stringCompare(func(x string, y string) bool { return strings.ToLower(x) == strings.ToLower(y) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-ci<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return strings.ToLower(x) < strings.ToLower(y) }, exp...)
+			return stringCompare(func(x string, y string) bool { return strings.ToLower(x) < strings.ToLower(y) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-ci>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return strings.ToLower(x) > strings.ToLower(y) }, exp...)
+			return stringCompare(func(x string, y string) bool { return strings.ToLower(x) > strings.ToLower(y) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-ci<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return strings.ToLower(x) <= strings.ToLower(y) }, exp...)
+			return stringCompare(func(x string, y string) bool { return strings.ToLower(x) <= strings.ToLower(y) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-ci>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strcmp(func(x string, y string) bool { return strings.ToLower(x) >= strings.ToLower(y) }, exp...)
+			return stringCompare(func(x string, y string) bool { return strings.ToLower(x) >= strings.ToLower(y) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strlen(func(x string) int { return utf8.RuneCountInString(x) }, exp...)
+			return stringLength(func(x string) int { return utf8.RuneCountInString(x) }, exp...)
 		})
 	}
 	buildInFuncTbl["string-size"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			return strlen(func(x string) int { return len(x) }, exp...)
+			return stringLength(func(x string) int { return len(x) }, exp...)
 		})
 	}
 	buildInFuncTbl["number->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
