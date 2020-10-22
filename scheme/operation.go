@@ -12,21 +12,25 @@ import (
 )
 
 // addl, subl, imul, idiv
-func calcOperate(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
-	if 1 >= len(exp) {
+func calcOperate(calc func(Number, Number) Number, x int, exp ...Expression) (Number, error) {
+	if 1 > len(exp) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
 	result, err := CreateNumber(exp[0])
 	if err != nil {
 		return nil, err
 	}
-	for _, e := range exp[1:] {
-		prm, ok := e.(Number)
-		if !ok {
-			return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
+	if 1 == len(exp) {
+		return calc(NewInteger(x), result), nil
+	} else {
+		for _, e := range exp[1:] {
+			prm, ok := e.(Number)
+			if !ok {
+				return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
+			}
+			result, prm = castNumber(result, prm)
+			result = calc(result, prm)
 		}
-		result, prm = castNumber(result, prm)
-		result = calc(result, prm)
 	}
 	return result, nil
 }
@@ -50,6 +54,26 @@ func cmpOperate(cmp func(Number, Number) bool, exp ...Expression) (*Boolean, err
 	return NewBoolean(cmp(result, prm)), nil
 }
 
+// max,min
+func selectOne(calc func(Number, Number) Number, exp ...Expression) (Number, error) {
+	if 1 > len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	result, err := CreateNumber(exp[0])
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range exp[1:] {
+		prm, ok := e.(Number)
+		if !ok {
+			return nil, NewRuntimeError("E1003", reflect.TypeOf(e).String())
+		}
+		result, prm = castNumber(result, prm)
+		result = calc(result, prm)
+	}
+	return result, nil
+}
+
 // imul, skelton
 func idivImpl(idivFunc func(int, int) int, exp ...Expression) (Expression, error) {
 	if len(exp) != 2 {
@@ -69,25 +93,78 @@ func idivImpl(idivFunc func(int, int) int, exp ...Expression) (Expression, error
 	return NewInteger(idivFunc(prm[0].Value, prm[1].Value)), nil
 }
 
+// ash
+func shift(exp ...Expression) (Number, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	x, ok := exp[0].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(x).String())
+	}
+	y, ok := exp[1].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(y).String())
+	}
+
+	if y.Value > 0 {
+		return NewInteger(x.Value << y.Value), nil
+	} else {
+		return NewInteger(x.Value >> (-1 * y.Value)), nil
+	}
+}
+
+// and,or,xor
+func calcLogic(calc func(a *Integer, b *Integer) int, exp ...Expression) (Number, error) {
+	if 0 >= len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	result, ok := exp[0].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(result).String())
+	}
+	for _, e := range exp[1:] {
+
+		prm, ok := e.(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
+		}
+		result = NewInteger(calc(result, prm))
+	}
+	return result, nil
+}
+
+// lognot
+func lognot(exp ...Expression) (Number, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	v, ok := exp[0].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(v).String())
+	}
+	return NewInteger(^v.Value), nil
+}
+
 // Build Global environement.
 func buildOperationFunc() {
 
 	buildInFuncTbl["+"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				return calcOperate(func(a Number, b Number) Number { return a.Add(b) }, exp...)
+				return calcOperate(func(a Number, b Number) Number { return a.Add(b) }, 0, exp...)
 			})
 	}
 	buildInFuncTbl["-"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				return calcOperate(func(a Number, b Number) Number { return a.Sub(b) }, exp...)
+				return calcOperate(func(a Number, b Number) Number { return a.Sub(b) }, 0, exp...)
 			})
 	}
 	buildInFuncTbl["*"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				return calcOperate(func(a Number, b Number) Number { return a.Mul(b) }, exp...)
+				return calcOperate(func(a Number, b Number) Number { return a.Mul(b) }, 1, exp...)
 			})
 	}
 	buildInFuncTbl["/"] = func(exp []Expression, env *SimpleEnv) (se Expression, e error) {
@@ -102,7 +179,61 @@ func buildOperationFunc() {
 		}()
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, exp...)
+				return calcOperate(func(a Number, b Number) Number { return a.Div(b) }, 1, exp...)
+			})
+	}
+	buildInFuncTbl["ash"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return shift(exp...)
+			})
+	}
+	buildInFuncTbl["logand"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return calcLogic(func(a *Integer, b *Integer) int { return a.Value & b.Value }, exp...)
+			})
+	}
+	buildInFuncTbl["logior"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return calcLogic(func(a *Integer, b *Integer) int { return a.Value | b.Value }, exp...)
+			})
+	}
+	buildInFuncTbl["logxor"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return calcLogic(func(a *Integer, b *Integer) int { return a.Value ^ b.Value }, exp...)
+			})
+	}
+	buildInFuncTbl["lognot"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return lognot(exp...)
+			})
+	}
+	buildInFuncTbl["max"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return selectOne(func(a Number, b Number) Number {
+					if a.Greater(b) {
+						return a
+					} else {
+						return b
+					}
+				}, exp...)
+			})
+	}
+	buildInFuncTbl["min"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				return selectOne(func(a Number, b Number) Number {
+					if a.Less(b) {
+						return a
+					} else {
+						return b
+					}
+				}, exp...)
 			})
 	}
 	buildInFuncTbl["quotient"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
