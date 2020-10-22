@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // String Type
@@ -40,7 +41,7 @@ func (self *String) equalValue(e Expression) bool {
 	}
 	return false
 }
-func strcmp(operate func(x string, y string) bool, exp ...Expression) (Expression, error) {
+func strcmp(operate func(string, string) bool, exp ...Expression) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -53,6 +54,16 @@ func strcmp(operate func(x string, y string) bool, exp ...Expression) (Expressio
 		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[1]).String())
 	}
 	return NewBoolean(operate(x.Value, y.Value)), nil
+}
+func strlen(fn func(string) int, exp ...Expression) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	x, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	return NewInteger(fn(x.Value)), nil
 }
 
 // Build Global environement.
@@ -151,6 +162,16 @@ func buildStringFunc() {
 	buildInFuncTbl["string-ci>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
 			return strcmp(func(x string, y string) bool { return strings.ToLower(x) >= strings.ToLower(y) }, exp...)
+		})
+	}
+	buildInFuncTbl["string-length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strlen(func(x string) int { return utf8.RuneCountInString(x) }, exp...)
+		})
+	}
+	buildInFuncTbl["string-size"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strlen(func(x string) int { return len(x) }, exp...)
 		})
 	}
 }

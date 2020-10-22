@@ -190,3 +190,27 @@ func TestStringCaseIgnoreEqThan(t *testing.T) {
 	}
 	executeTest(testCode, "string-ci>=?", t)
 }
+func TestStringLength(t *testing.T) {
+	testCode := [][]string{
+		{"(string-length \"\")", "0"},
+		{"(string-length \"1234567890\")", "10"},
+		{"(string-length \"山\")", "1"},
+
+		{"(string-length)", "E1007"},
+		{"(string-length \"1234\" \"12345\")", "E1007"},
+		{"(string-length 1000)", "E1015"},
+	}
+	executeTest(testCode, "string-length", t)
+}
+func TestStringSize(t *testing.T) {
+	testCode := [][]string{
+		{"(string-size \"\")", "0"},
+		{"(string-size \"1234567890\")", "10"},
+		{"(string-size \"山\")", "3"},
+
+		{"(string-size)", "E1007"},
+		{"(string-size \"1234\" \"12345\")", "E1007"},
+		{"(string-size 1000)", "E1015"},
+	}
+	executeTest(testCode, "string-size", t)
+}
