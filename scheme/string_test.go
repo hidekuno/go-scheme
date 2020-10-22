@@ -60,3 +60,60 @@ func TestStringEq(t *testing.T) {
 	}
 	executeTest(testCode, "string=?", t)
 }
+
+func TestStringLess(t *testing.T) {
+	testCode := [][]string{
+
+		{"(string<? \"1234\" \"9\")", "#t"},
+		{"(string<? \"9\" \"1234\")", "#f"},
+		{"(string<?)", "E1007"},
+		{"(string<? \"abc\")", "E1007"},
+		{"(string<? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string<? \"abc\" 10)", "E1015"},
+		{"(string<? 10 \"abc\")", "E1015"},
+		{"(string<? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string<?", t)
+}
+func TestStringThan(t *testing.T) {
+	testCode := [][]string{
+
+		{"(string>? \"9\" \"1234\")", "#t"},
+		{"(string>? \"1234\" \"9\")", "#f"},
+		{"(string>?)", "E1007"},
+		{"(string>? \"abc\")", "E1007"},
+		{"(string>? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string>? \"abc\" 10)", "E1015"},
+		{"(string>? 10 \"abc\")", "E1015"},
+		{"(string>? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string>?", t)
+}
+func TestStringLessEq(t *testing.T) {
+	testCode := [][]string{
+		{"(string<=? \"1234\" \"9\")", "#t"},
+		{"(string<=? \"1234\" \"1234\")", "#t"},
+		{"(string<=? \"9\" \"1234\")", "#f"},
+		{"(string<=?)", "E1007"},
+		{"(string<=? \"abc\")", "E1007"},
+		{"(string<=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string<=? \"abc\" 10)", "E1015"},
+		{"(string<=? 10 \"abc\")", "E1015"},
+		{"(string<=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "", t)
+}
+func TestStringThanEq(t *testing.T) {
+	testCode := [][]string{
+		{"(string>=?  \"9\" \"1234\")", "#t"},
+		{"(string>=?  \"1234\" \"1234\")", "#t"},
+		{"(string>=?  \"1234\" \"9\")", "#f"},
+		{"(string>=?)", "E1007"},
+		{"(string>=? \"abc\")", "E1007"},
+		{"(string>=? \"abc\" \"ABC\" \"DEF\")", "E1007"},
+		{"(string>=? \"abc\" 10)", "E1015"},
+		{"(string>=? 10 \"abc\")", "E1015"},
+		{"(string>=? \"abc\" a)", "E1008"},
+	}
+	executeTest(testCode, "string>=?", t)
+}

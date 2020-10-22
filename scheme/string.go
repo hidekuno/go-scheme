@@ -108,4 +108,24 @@ func buildStringFunc() {
 			return strcmp(func(x string, y string) bool { return x == y }, exp...)
 		})
 	}
+	buildInFuncTbl["string<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return x < y }, exp...)
+		})
+	}
+	buildInFuncTbl["string>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return x > y }, exp...)
+		})
+	}
+	buildInFuncTbl["string<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return x <= y }, exp...)
+		})
+	}
+	buildInFuncTbl["string>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return strcmp(func(x string, y string) bool { return x >= y }, exp...)
+		})
+	}
 }
