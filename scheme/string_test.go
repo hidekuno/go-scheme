@@ -241,3 +241,29 @@ func TestStringNumber(t *testing.T) {
 	}
 	executeTest(testCode, "string->number", t)
 }
+func TestListString(t *testing.T) {
+	testCode := [][]string{
+		{"(list->string (list))", "\"\""},
+		{"(list->string (list #\\a #\\b #\\c))", "\"abc\""},
+
+		{"(list->string)", "E1007"},
+		{"(list->string (list #\\a #\\b)(list #\\a #\\b))", "E1007"},
+		{"(list->string 10)", "E1005"},
+		{"(list->string (list #\\a 10))", "E1019"},
+		{"(list->string a)", "E1008"},
+	}
+	executeTest(testCode, "list->string", t)
+}
+func TestStringList(t *testing.T) {
+	testCode := [][]string{
+		{"(string->list \"\")", "()"},
+		{"(string->list \"abc\")", "(#\\a #\\b #\\c)"},
+		{"(string->list \"山田\")", "(#\\山 #\\田)"},
+
+		{"(string->list)", "E1007"},
+		{"(string->list \"a\" \"b\")", "E1007"},
+		{"(string->list #\\a)", "E1015"},
+		{"(string->list a)", "E1008"},
+	}
+	executeTest(testCode, "string->list", t)
+}

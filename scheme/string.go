@@ -7,6 +7,7 @@
 package scheme
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -201,6 +202,45 @@ func buildStringFunc() {
 				return NewFloat(f), nil
 			}
 			return nil, NewRuntimeError("E1003", s.Value)
+		})
+	}
+	buildInFuncTbl["list->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			var buffer bytes.Buffer
+
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+
+			}
+			for _, e := range l.Value {
+				c, ok := e.(*Char)
+				if !ok {
+					return nil, NewRuntimeError("E1019", reflect.TypeOf(e).String())
+				}
+				buffer.WriteRune(c.Value)
+			}
+			return NewString(buffer.String()), nil
+		})
+	}
+	buildInFuncTbl["string->list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			l := make([]Expression, 0, len(s.Value))
+			for _, c := range s.Value {
+				l = append(l, NewCharFromRune(rune(c)))
+			}
+			return NewList(l), nil
 		})
 	}
 }

@@ -57,6 +57,7 @@ var (
 		"E1016": "Not Program File",
 		"E1017": "Not Case Gramar",
 		"E1018": "Not Format Gramar",
+		"E1019": "Not Char",
 		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
@@ -485,16 +486,8 @@ func atom(token string) (Expression, error) {
 				atom = NewBoolean(false)
 			default:
 				if strings.Index(token, "#\\") == 0 {
-					whitespaceChar := map[string]byte{
-						"#\\tab":     0x09,
-						"#\\space":   0x20,
-						"#\\newline": 0x0A,
-						"#\\return":  0x0D,
-					}
 					if v, ok := whitespaceChar[token]; ok {
-						char := NewChar(token)
-						char.Value = rune(v)
-						atom = char
+						atom = NewCharFromRune(rune(v))
 					} else if len([]rune(token)) == 3 {
 						atom = NewChar(token)
 					} else {
