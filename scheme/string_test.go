@@ -311,3 +311,18 @@ func TestStringSymbol(t *testing.T) {
 	}
 	executeTest(testCode, "string->symbol", t)
 }
+func TestMakeString(t *testing.T) {
+	testCode := [][]string{
+		{"(make-string 4 #\\a)", "\"aaaa\""},
+		{"(make-string 4 #\\山)", "\"山山山山\""},
+
+		{"(make-string)", "E1007"},
+		{"(make-string 1)", "E1007"},
+		{"(make-string 1 1 1)", "E1007"},
+		{"(make-string #t #\\a)", "E1002"},
+		{"(make-string -1 #\\a)", "E1021"},
+		{"(make-string 4 a)", "E1008"},
+		{"(make-string 4 #t)", "E1019"},
+	}
+	executeTest(testCode, "make-string", t)
+}

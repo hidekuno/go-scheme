@@ -299,4 +299,30 @@ func buildStringFunc() {
 			return NewSymbol(s.Value), nil
 		})
 	}
+	buildInFuncTbl["make-string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			var buffer bytes.Buffer
+
+			if len(exp) != 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			n, ok := exp[0].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+
+			}
+			c, ok := exp[1].(*Char)
+			if !ok {
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+
+			}
+			if n.Value < 0 {
+				return nil, NewRuntimeError("E1021", n.String())
+			}
+			for i := 0; i < n.Value; i++ {
+				buffer.WriteRune(c.Value)
+			}
+			return NewString(buffer.String()), nil
+		})
+	}
 }
