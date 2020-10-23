@@ -291,3 +291,23 @@ func TestSubString(t *testing.T) {
 	}
 	executeTest(testCode, "substring", t)
 }
+func TestSymbolString(t *testing.T) {
+	testCode := [][]string{
+		{"(symbol->string (quote abc))", "\"abc\""},
+
+		{"(symbol->string)", "E1007"},
+		{"(symbol->string (quote a) (quote b))", "E1007"},
+		{"(symbol->string #t)", "E1004"},
+	}
+	executeTest(testCode, "symbol->string", t)
+}
+func TestStringSymbol(t *testing.T) {
+	testCode := [][]string{
+		{"(string->symbol \"abc\")", "abc"},
+
+		{"(string->symbol)", "E1007"},
+		{"(string->symbol \"abc\"  \"def\")", "E1007"},
+		{"(string->symbol #t)", "E1015"},
+	}
+	executeTest(testCode, "string->symbol", t)
+}

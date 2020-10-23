@@ -271,4 +271,32 @@ func buildStringFunc() {
 					[]rune(s.Value)[from.Value:to.Value])), nil
 		})
 	}
+	buildInFuncTbl["symbol->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*Symbol)
+			if !ok {
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
+
+			}
+			return NewString(s.Value), nil
+		})
+	}
+	buildInFuncTbl["string->symbol"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+
+			if len(exp) != 1 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			return NewSymbol(s.Value), nil
+		})
+	}
 }
