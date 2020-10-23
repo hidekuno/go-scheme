@@ -14,6 +14,31 @@ import (
 	"time"
 )
 
+func isType(exp []Expression, env *SimpleEnv, cmp func(Expression) bool) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	e, err := eval(exp[0], env)
+	if err != nil {
+		return nil, err
+	}
+	return NewBoolean(cmp(e)), nil
+}
+func isTypeOfNumber(exp []Expression, env *SimpleEnv, cmp func(int) bool) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	e, err := eval(exp[0], env)
+	if err != nil {
+		return nil, err
+	}
+	n, ok := e.(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
+	}
+	return NewBoolean(cmp(n.Value)), nil
+}
+
 // eqv
 func eqv(exp []Expression, env *SimpleEnv) (Expression, error) {
 
@@ -98,5 +123,36 @@ func buildUtilFunc() {
 			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
 		}
 		return NewString(os.Getenv(s.Value)), nil
+	}
+	buildInFuncTbl["even?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isTypeOfNumber(exp, env, func(n int) bool { return n%2 == 0 })
+	}
+	buildInFuncTbl["odd?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isTypeOfNumber(exp, env, func(n int) bool { return n%2 != 0 })
+	}
+	buildInFuncTbl["list?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&List{}) })
+	}
+	buildInFuncTbl["pair?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Pair{}) })
+	}
+	buildInFuncTbl["char?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Char{}) })
+	}
+	buildInFuncTbl["string?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&String{}) })
+	}
+	buildInFuncTbl["integer?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Integer{}) })
+	}
+	buildInFuncTbl["number?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool {
+			return (reflect.TypeOf(e) == reflect.TypeOf(&Integer{})) || (reflect.TypeOf(e) == reflect.TypeOf(&Float{}))
+		})
+	}
+	buildInFuncTbl["procedure?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool {
+			return (reflect.TypeOf(e) == reflect.TypeOf(&Function{})) || (reflect.TypeOf(e) == reflect.TypeOf(&BuildInFunc{}))
+		})
 	}
 }
