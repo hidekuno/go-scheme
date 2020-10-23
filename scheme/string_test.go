@@ -267,3 +267,27 @@ func TestStringList(t *testing.T) {
 	}
 	executeTest(testCode, "string->list", t)
 }
+func TestSubString(t *testing.T) {
+	testCode := [][]string{
+		{"(substring \"1234567890\" 1 2)", "\"2\""},
+		{"(substring \"1234567890\" 1 3)", "\"23\""},
+		{"(substring \"1234567890\" 0 10)", "\"1234567890\""},
+		{"(substring \"山\" 0 1)", "\"山\""},
+		{"(substring \"山1\" 0 2)", "\"山1\""},
+
+		{"(substring)", "E1007"},
+		{"(substring \"1234567890\" 1)", "E1007"},
+		{"(substring \"1234567890\" 1 2 3)", "E1007"},
+		{"(substring  1 2 3)", "E1015"},
+		{"(substring \"1234567890\" #t 2)", "E1002"},
+		{"(substring \"1234567890\" 0 #t)", "E1002"},
+		{"(substring \"1234567890\" a 2)", "E1008"},
+		{"(substring \"1234567890\" 0 a)", "E1008"},
+		{"(substring \"1234567890\" -1 2)", "E1021"},
+		{"(substring \"1234567890\" 0 -2)", "E1021"},
+		{"(substring \"1234567890\" 0 11)", "E1021"},
+		{"(substring \"1234567890\" 6 5)", "E1021"},
+		{"(substring \"山\" 0 2)", "E1021"},
+	}
+	executeTest(testCode, "substring", t)
+}

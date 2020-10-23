@@ -243,4 +243,32 @@ func buildStringFunc() {
 			return NewList(l), nil
 		})
 	}
+	buildInFuncTbl["substring"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 3 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			from, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+
+			}
+			to, ok := exp[2].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
+
+			}
+			if from.Value < 0 || to.Value > utf8.RuneCountInString(s.Value) || from.Value > to.Value {
+				return nil, NewRuntimeError("E1021", from.String(), to.String())
+			}
+			return NewString(
+				string(
+					[]rune(s.Value)[from.Value:to.Value])), nil
+		})
+	}
 }
