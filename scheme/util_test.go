@@ -99,7 +99,7 @@ func TestOddEq(t *testing.T) {
 	}
 	executeTest(testCode, "odd?", t)
 }
-func TestListEq(t *testing.T) {
+func TestListTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(list? (list 1 2 3))", "#t"},
 		{"(list? 90)", "#f"},
@@ -109,7 +109,7 @@ func TestListEq(t *testing.T) {
 	}
 	executeTest(testCode, "list?", t)
 }
-func TestPairEq(t *testing.T) {
+func TestPairTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(pair? (cons 1 2))", "#t"},
 		{"(pair? 110)", "#f"},
@@ -119,7 +119,7 @@ func TestPairEq(t *testing.T) {
 	}
 	executeTest(testCode, "pair?", t)
 }
-func TestCharEq(t *testing.T) {
+func TestCharTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(char? #\\a)", "#t"},
 		{"(char? 100)", "#f"},
@@ -130,7 +130,7 @@ func TestCharEq(t *testing.T) {
 	executeTest(testCode, "char?", t)
 }
 
-func TestStringEq(t *testing.T) {
+func TestStringTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(string? \"a\")", "#t"},
 		{"(string? 100)", "#f"},
@@ -140,7 +140,7 @@ func TestStringEq(t *testing.T) {
 	}
 	executeTest(testCode, "string?", t)
 }
-func TestIntegerEq(t *testing.T) {
+func TestIntegerTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(integer? 10)", "#t"},
 		{"(integer? \"a\")", "#f"},
@@ -150,7 +150,7 @@ func TestIntegerEq(t *testing.T) {
 	}
 	executeTest(testCode, "integer?", t)
 }
-func TestNumberEq(t *testing.T) {
+func TestNumberTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(number? 10)", "#t"},
 		{"(number? 10.5)", "#t"},
@@ -161,7 +161,7 @@ func TestNumberEq(t *testing.T) {
 	}
 	executeTest(testCode, "number?", t)
 }
-func TestProcedureEq(t *testing.T) {
+func TestProcedureTypeEq(t *testing.T) {
 	testCode := [][]string{
 		{"(procedure? (lambda (n)n))", "#t"},
 		{"(procedure? +)", "#t"},

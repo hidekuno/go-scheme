@@ -704,6 +704,7 @@ func BuildFunc() {
 	buildIoFunc()
 	buildUtilFunc()
 	buildStringFunc()
+	buildCharFunc()
 }
 
 // add func

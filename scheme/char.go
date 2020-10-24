@@ -6,6 +6,12 @@
 */
 package scheme
 
+import (
+	"reflect"
+	"strconv"
+	"unicode"
+)
+
 var (
 	whitespaceChar = map[string]byte{
 		"#\\tab":     0x09,
@@ -38,7 +44,11 @@ func NewCharFromRune(c rune) *Char {
 			return b
 		}
 	}
-	b.exp = "#\\" + string(c)
+	if unicode.IsLetter(b.Value) {
+		b.exp = "#\\" + string(c)
+	} else {
+		b.exp = "#\\non-printable-char"
+	}
 	return b
 }
 func (self *Char) String() string {
@@ -55,4 +65,79 @@ func (self *Char) equalValue(e Expression) bool {
 		return self.Value == v.Value
 	}
 	return false
+}
+func charCompare(exp []Expression, env *SimpleEnv, cmp func(rune, rune) bool) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		x, ok := exp[0].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+		}
+		y, ok := exp[1].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
+		}
+		return NewBoolean(cmp(x.Value, y.Value)), nil
+	})
+}
+func buildCharFunc() {
+	buildInFuncTbl["char=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return x == y })
+	}
+	buildInFuncTbl["char<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return x < y })
+	}
+	buildInFuncTbl["char>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return x > y })
+	}
+	buildInFuncTbl["char<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return x <= y })
+	}
+	buildInFuncTbl["char>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return x >= y })
+	}
+	buildInFuncTbl["char-ci=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) == unicode.ToLower(y) })
+	}
+	buildInFuncTbl["char-ci<?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) < unicode.ToLower(y) })
+	}
+	buildInFuncTbl["char-ci>?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) > unicode.ToLower(y) })
+	}
+	buildInFuncTbl["char-ci<=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) <= unicode.ToLower(y) })
+	}
+	buildInFuncTbl["char-ci>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) >= unicode.ToLower(y) })
+	}
+
+	buildInFuncTbl["integer->char"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			x, ok := exp[0].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+			}
+			return NewCharFromRune(rune(x.Value)), nil
+		})
+
+	}
+	buildInFuncTbl["char->integer"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			c, ok := exp[0].(*Char)
+			if !ok {
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+			}
+			return NewInteger(int(c.Value)), nil
+		})
+
+	}
 }
