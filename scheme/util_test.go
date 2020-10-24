@@ -172,3 +172,48 @@ func TestProcedureEq(t *testing.T) {
 	}
 	executeTest(testCode, "procedure?", t)
 }
+func TestZeroEq(t *testing.T) {
+	testCode := [][]string{
+		{"(zero? 0)", "#t"},
+		{"(zero? 0.0)", "#t"},
+		{"(zero? 2)", "#f"},
+		{"(zero? -3)", "#f"},
+		{"(zero? 2.5)", "#f"},
+		{"(zero?)", "E1007"},
+		{"(zero? 1 2)", "E1007"},
+		{"(zero? #f)", "E1003"},
+		{"(zero? a)", "E1008"},
+	}
+	executeTest(testCode, "zero?", t)
+}
+func TestPositiveEq(t *testing.T) {
+	testCode := [][]string{
+		{"(positive? 0)", "#f"},
+		{"(positive? 0.0)", "#f"},
+		{"(positive? 2)", "#t"},
+		{"(positive? -3)", "#f"},
+		{"(positive? 2.5)", "#t"},
+		{"(positive? -1.5)", "#f"},
+		{"(positive?)", "E1007"},
+		{"(positive? 1 2)", "E1007"},
+		{"(positive? #f)", "E1003"},
+		{"(positive? a)", "E1008"},
+	}
+	executeTest(testCode, "positive?", t)
+}
+func TestNegativeEq(t *testing.T) {
+	testCode := [][]string{
+		{"(negative? 0)", "#f"},
+		{"(negative? 0.0)", "#f"},
+		{"(negative? 2)", "#f"},
+		{"(negative? -3)", "#t"},
+		{"(negative? 2.5)", "#f"},
+		{"(negative? -1.5)", "#t"},
+
+		{"(negative?)", "E1007"},
+		{"(negative? 1 2)", "E1007"},
+		{"(negative? #f)", "E1003"},
+		{"(negative? a)", "E1008"},
+	}
+	executeTest(testCode, "negative?", t)
+}

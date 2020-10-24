@@ -24,7 +24,7 @@ func isType(exp []Expression, env *SimpleEnv, cmp func(Expression) bool) (Expres
 	}
 	return NewBoolean(cmp(e)), nil
 }
-func isTypeOfNumber(exp []Expression, env *SimpleEnv, cmp func(int) bool) (Expression, error) {
+func isTypeOfInteger(exp []Expression, env *SimpleEnv, cmp func(int) bool) (Expression, error) {
 	if len(exp) != 1 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
@@ -37,6 +37,20 @@ func isTypeOfNumber(exp []Expression, env *SimpleEnv, cmp func(int) bool) (Expre
 		return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
 	}
 	return NewBoolean(cmp(n.Value)), nil
+}
+func isTypeOfNumber(exp []Expression, env *SimpleEnv, cmp func(Number) bool) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	e, err := eval(exp[0], env)
+	if err != nil {
+		return nil, err
+	}
+	n, err := CreateNumber(e)
+	if err != nil {
+		return nil, err
+	}
+	return NewBoolean(cmp(n)), nil
 }
 
 // eqv
@@ -125,10 +139,19 @@ func buildUtilFunc() {
 		return NewString(os.Getenv(s.Value)), nil
 	}
 	buildInFuncTbl["even?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return isTypeOfNumber(exp, env, func(n int) bool { return n%2 == 0 })
+		return isTypeOfInteger(exp, env, func(n int) bool { return n%2 == 0 })
 	}
 	buildInFuncTbl["odd?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return isTypeOfNumber(exp, env, func(n int) bool { return n%2 != 0 })
+		return isTypeOfInteger(exp, env, func(n int) bool { return n%2 != 0 })
+	}
+	buildInFuncTbl["zero?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isTypeOfNumber(exp, env, func(n Number) bool { return (toInt(n)).Value == 0 })
+	}
+	buildInFuncTbl["positive?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isTypeOfNumber(exp, env, func(n Number) bool { return (toInt(n)).Value > 0 })
+	}
+	buildInFuncTbl["negative?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isTypeOfNumber(exp, env, func(n Number) bool { return (toInt(n)).Value < 0 })
 	}
 	buildInFuncTbl["list?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&List{}) })
