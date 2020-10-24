@@ -135,51 +135,58 @@ func MakeQuotedValue(fn Expression, l []Expression, result Expression) *List {
 }
 
 // map,filter
-func doListFunc(lambda func(Expression, Expression, []Expression) ([]Expression, error),
-	env *SimpleEnv, exp ...Expression) (Expression, error) {
-
+func doListFunc(exp []Expression, env *SimpleEnv,
+	lambda func(Expression, Expression, []Expression) ([]Expression, error)) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
-	l, ok := exp[1].(*List)
-	if !ok {
-		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
-	}
-	var result []Expression
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			l, ok := exp[1].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+			}
+			var result []Expression
 
-	for _, e := range l.Value {
-		sexp := MakeQuotedValue(exp[0], []Expression{e}, nil)
-		v, err := eval(sexp, env)
-		if err != nil {
-			return nil, err
-		}
-		result, err = lambda(e, v, result)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return NewList(result), nil
+			for _, e := range l.Value {
+				sexp := MakeQuotedValue(exp[0], []Expression{e}, nil)
+				v, err := eval(sexp, env)
+				if err != nil {
+					return nil, err
+				}
+				result, err = lambda(e, v, result)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return NewList(result), nil
+		})
+
 }
-func subList(fn func(*List, *Integer) (int, int), exp ...Expression) (Expression, error) {
+func subList(exp []Expression, env *SimpleEnv, fn func(*List, *Integer) (int, int)) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 	}
-	l, ok := exp[0].(*List)
-	if !ok {
-		return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
-	}
-	n, ok := exp[1].(*Integer)
-	if !ok {
-		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
-	}
-	if n.Value < 0 || len(l.Value) < n.Value {
-		return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
-	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
 
-	x, y := fn(l, n)
-	result := make([]Expression, y-x)
-	copy(result, l.Value[x:y])
-	return NewList(result), nil
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			n, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+			}
+			if n.Value < 0 || len(l.Value) < n.Value {
+				return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+			}
+
+			x, y := fn(l, n)
+			result := make([]Expression, y-x)
+			copy(result, l.Value[x:y])
+			return NewList(result), nil
+		})
 }
 
 // Build Global environement.
@@ -194,11 +201,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["null?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					return NewBoolean(0 == len(l.Value)), nil
 				} else {
@@ -207,11 +214,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					return NewInteger(len(l.Value)), nil
 				} else {
@@ -220,11 +227,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["car"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) <= 0 {
 						return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
@@ -238,11 +245,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["cdr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) <= 0 {
 						return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
@@ -256,11 +263,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["cadr"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) < 2 {
 						return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
@@ -272,11 +279,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["cons"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if _, ok := exp[1].(*List); ok {
 					var args []Expression
 					args = append(args, exp[0])
@@ -286,11 +293,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) < 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				var l []Expression
 				for _, e := range exp {
 					if v, ok := e.(*List); ok {
@@ -303,11 +310,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["last"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) <= 0 {
 						return nil, NewRuntimeError("E1011", strconv.Itoa(len(l.Value)))
@@ -321,11 +328,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["reverse"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if l, ok := exp[0].(*List); ok {
 					if len(l.Value) <= 1 {
 						return l, nil
@@ -343,11 +350,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["iota"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 3 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) < 1 || 3 < len(exp) {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				var l []Expression
 				param := [3]int{0, 0, 1}
 				for i := 0; i < len(exp); i++ {
@@ -367,66 +374,45 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["map"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
-
-				return doListFunc(
-					func(org Expression,
-						value Expression,
-						result []Expression) ([]Expression, error) {
-						return append(result, value), nil
-					}, env, exp...)
+		return doListFunc(exp, env,
+			func(org Expression,
+				value Expression,
+				result []Expression) ([]Expression, error) {
+				return append(result, value), nil
 			})
 	}
 	buildInFuncTbl["for-each"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
-
-				if _, err := doListFunc(
-					func(org Expression,
-						value Expression,
-						result []Expression) ([]Expression, error) {
-						return nil, nil
-					}, env, exp...); err != nil {
-					return nil, err
-				}
-				return NewNil(), nil
-			})
+		if _, err := doListFunc(exp, env,
+			func(org Expression,
+				value Expression,
+				result []Expression) ([]Expression, error) {
+				return nil, nil
+			}); err != nil {
+			return nil, err
+		}
+		return NewNil(), nil
 	}
 	buildInFuncTbl["filter"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		return doListFunc(exp, env,
+			func(org Expression,
+				value Expression,
+				result []Expression) ([]Expression, error) {
+				b, ok := value.(*Boolean)
+				if !ok {
+					return nil, NewRuntimeError("E1001", reflect.TypeOf(value).String())
 				}
-				return doListFunc(
-					func(org Expression,
-						value Expression,
-						result []Expression) ([]Expression, error) {
-						b, ok := value.(*Boolean)
-						if !ok {
-							return nil, NewRuntimeError("E1001", reflect.TypeOf(value).String())
-						}
-						if b.Value {
-							return append(result, org), nil
-						}
-						return result, nil
-					}, env, exp...)
-
+				if b.Value {
+					return append(result, org), nil
+				}
+				return result, nil
 			})
 	}
 	buildInFuncTbl["reduce"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 3 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 3 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				l, ok := exp[2].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
@@ -447,11 +433,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["make-list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				size, ok := exp[0].(*Integer)
 				if !ok {
 					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
@@ -467,33 +453,28 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				return subList(
-					func(l *List, n *Integer) (x int, y int) {
-						x = 0
-						y = n.Value
-						return x, y
-					}, exp...)
+		return subList(exp, env,
+			func(l *List, n *Integer) (x int, y int) {
+				x = 0
+				y = n.Value
+				return x, y
 			})
+
 	}
 	buildInFuncTbl["drop"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				return subList(
-					func(l *List, n *Integer) (x int, y int) {
-						x = n.Value
-						y = len(l.Value)
-						return x, y
-					}, exp...)
+		return subList(exp, env,
+			func(l *List, n *Integer) (x int, y int) {
+				x = n.Value
+				y = len(l.Value)
+				return x, y
 			})
 	}
 	buildInFuncTbl["delete"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				m, ok := exp[1].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
@@ -511,11 +492,11 @@ func buildListFunc() {
 	}
 
 	buildInFuncTbl["list-ref"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				l, ok := exp[0].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
@@ -532,11 +513,11 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["list-set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 3 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 3 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				l, ok := exp[0].(*List)
 				if !ok {
 					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
