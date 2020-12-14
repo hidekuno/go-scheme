@@ -142,6 +142,8 @@ func TestMap(t *testing.T) {
 		{"(map (lambda (n) (* n 10))(list 1 2 3))", "(10 20 30)"},
 		{"(map (lambda (n) (* n 10))(list))", "()"},
 		{"(map list (list 1 2 3))", "((1) (2) (3))"},
+		{"(map list (list (list 1 2)(list 3 4)))", "(((1 2)) ((3 4)))"},
+		{"(map list (list (cons 1 2)(cons 3 4)))", "(((1 . 2)) ((3 . 4)))"},
 
 		{"(map (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(map (list 1 12) (list 10))", "E1006"},
