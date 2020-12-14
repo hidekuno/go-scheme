@@ -81,7 +81,7 @@ func (self *Pair) String() string {
 	return buffer.String()
 }
 func (self *Pair) isAtom() bool {
-	return false
+	return true
 }
 func (self *Pair) clone() Expression {
 	return NewPair(self.Car, self.Cdr)
