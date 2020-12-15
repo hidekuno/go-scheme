@@ -158,6 +158,8 @@ func TestFilter(t *testing.T) {
 		{"(filter (lambda (n) (= n 1))(list 1 2 3))", "(1)"},
 		{"(filter (lambda (n) (= n 1))(list))", "()"},
 		{"(filter null? (list () 10 20))", "(())"},
+		{"(filter list? (list (list 1 2)(list 3 4)))", "((1 2) (3 4))"},
+		{"(filter list? (list (cons 1 2)(cons 3 4)))", "()"},
 
 		{"(filter (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(filter (list 1 12) (list 10))", "E1006"},
@@ -188,6 +190,8 @@ func TestForEach(t *testing.T) {
 		{"(for-each (lambda (n) (set! cnt (+ cnt n)))(list 1 2 3 4))", "nil"},
 		{"cnt", "10"},
 		{"(for-each display (iota 10))", "nil"},
+		{"(for-each list? (list (list 1 2)(list 3 4)))", "nil"},
+		{"(for-each list? (list (cons 1 2)(cons 3 4)))", "nil"},
 
 		{"(for-each (lambda (n) (* n 10)) 20)", "E1005"},
 		{"(for-each (list 1 12) (list 10))", "E1006"},
