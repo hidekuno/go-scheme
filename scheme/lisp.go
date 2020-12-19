@@ -381,12 +381,12 @@ func tokenize(s string) ([]string, error) {
 	left := 0
 	right := 0
 
-	s = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s)
-	for i, c := range s {
+	rb := []rune(strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s))
+	for i, c := range rb {
 		if stringMode {
 			if c == '"' {
-				if s[i-1] != '\\' {
-					tokens = append(tokens, s[from:i+1])
+				if rb[i-1] != '\\' {
+					tokens = append(tokens, string(rb[from:i+1]))
 					stringMode = false
 				}
 			}
@@ -417,14 +417,14 @@ func tokenize(s string) ([]string, error) {
 				//Nop
 			} else {
 				tokenName = append(tokenName, c)
-				if len(s)-len(string(c)) == i {
+				if len(rb)-1 == i {
 					tokens = append(tokens, string(tokenName))
 					if quoteMode == true {
 						tokens = append(tokens, ")")
 						quoteMode = false
 					}
 				} else {
-					switch s[i+len(string(c))] {
+					switch rb[i+1] {
 					case '(', ')', ' ':
 						tokens = append(tokens, string(tokenName))
 						tokenName = make([]rune, 0, 1024)
