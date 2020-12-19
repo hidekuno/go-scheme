@@ -373,17 +373,20 @@ func (self *TailRecursion) equalValue(e Expression) bool {
 
 // lex support  for  string
 func tokenize(s string) ([]string, error) {
-	var token []string
+	var tokens []string
 	stringMode := false
-	symbolName := make([]rune, 0, 1024)
+	quoteMode := false
+	tokenName := make([]rune, 0, 1024)
 	from := 0
+	left := 0
+	right := 0
 
-	s = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s)
-	for i, c := range s {
+	rb := []rune(strings.NewReplacer("\t", " ", "\n", " ", "\r", " ").Replace(s))
+	for i, c := range rb {
 		if stringMode {
 			if c == '"' {
-				if s[i-1] != '\\' {
-					token = append(token, s[from:i+1])
+				if rb[i-1] != '\\' {
+					tokens = append(tokens, string(rb[from:i+1]))
 					stringMode = false
 				}
 			}
@@ -392,35 +395,55 @@ func tokenize(s string) ([]string, error) {
 				from = i
 				stringMode = true
 			} else if c == '(' {
-				token = append(token, "(")
+				tokens = append(tokens, "(")
+				if quoteMode == true {
+					left++
+				}
 			} else if c == ')' {
-				token = append(token, ")")
+				tokens = append(tokens, ")")
+				if quoteMode == true {
+					right++
+				}
+				if quoteMode == true && left == right {
+					tokens = append(tokens, ")")
+					quoteMode = false
+				}
+			} else if c == '\'' {
+				tokens = append(tokens, "(")
+				tokens = append(tokens, "quote")
+
+				quoteMode = true
 			} else if c == ' ' {
-				// Nop
+				//Nop
 			} else {
-				n := len(string(c)) // for multibyte
-				symbolName = append(symbolName, c)
-				if len(s)-n == i {
-					token = append(token, string(symbolName))
+				tokenName = append(tokenName, c)
+				if len(rb)-1 == i {
+					tokens = append(tokens, string(tokenName))
+					if quoteMode == true {
+						tokens = append(tokens, ")")
+						quoteMode = false
+					}
 				} else {
-					switch s[i+n] {
+					switch rb[i+1] {
 					case '(', ')', ' ':
-						token = append(token, string(symbolName))
-						symbolName = make([]rune, 0, 1024)
+						tokens = append(tokens, string(tokenName))
+						tokenName = make([]rune, 0, 1024)
+						if quoteMode == true && left == right {
+							tokens = append(tokens, ")")
+							quoteMode = false
+						}
 					}
 				}
 			}
 		}
 	}
 	if stringMode {
-		return token, NewSyntaxError("E0004")
+		return tokens, NewSyntaxError("E0004")
 	}
 	if DEBUG {
-		for _, c := range token {
-			fmt.Println(c)
-		}
+		fmt.Println(tokens)
 	}
-	return token, nil
+	return tokens, nil
 }
 
 // Create abstract syntax tree.
@@ -509,7 +532,7 @@ func atom(token string) (Expression, error) {
 // Evaluate an expression in an environment.
 func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 	if DEBUG {
-		fmt.Print(reflect.TypeOf(sexp))
+		fmt.Println(reflect.TypeOf(sexp))
 	}
 	if sexp.isAtom() {
 		if sym, ok := sexp.(*Symbol); ok {

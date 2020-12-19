@@ -145,7 +145,7 @@ func TestLispSampleProgram(t *testing.T) {
 		{"(prime (iota 30 2))", "(2 3 5 7 11 13 17 19 23 29 31)"},
 		{"(perm (list 1 2 3) 2)", "((1 2) (1 3) (2 1) (2 3) (3 1) (3 2))"},
 		{"(comb (list 1 2 3) 2)", "((1 2) (1 3) (2 3))"},
-		{"(hanoi (quote a)(quote b)(quote c) 3)", "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))"},
+		{"(hanoi 'a 'b 'c 3)", "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))"},
 		{"(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", "(1 2 3 4 5 6 7 8 9 10)"},
 		{"(msort test-list)", "(0 2 3 6 7 8 9 14 19 27 36)"},
 		{"(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", "(0 1 1 2 3 5 8 13 21 34)"},

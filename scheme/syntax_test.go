@@ -170,7 +170,13 @@ func TestApply(t *testing.T) {
 func TestQuote(t *testing.T) {
 	testCode := [][]string{
 		{"(quote a)", "a"},
+		{"'a", "a"},
+		{"'a 'b", "b"},
 		{"(quote (a b c))", "(a b c)"},
+		{"'(a b c)", "(a b c)"},
+		{"(append '(a b c)'(d e f))", "(a b c d e f)"},
+		{"'10", "10"},
+		{"'(1 2 (3 4 (5 6)))", "(1 2 (3 4 (5 6)))"},
 
 		{"(quote)", "E1007"},
 		{"(quote 1 2)", "E1007"},
