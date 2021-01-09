@@ -8,6 +8,7 @@ package scheme
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 )
@@ -32,6 +33,9 @@ func CreateNumber(exp Expression) (Number, error) {
 	if v, ok := exp.(*Float); ok {
 		return NewFloat(v.Value), nil
 	}
+	if v, ok := exp.(*Rat); ok {
+		return v, nil
+	}
 	return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
 }
 func toInt(n Number) *Integer {
@@ -48,8 +52,9 @@ func toFloat(n Number) *Float {
 		return NewFloat(float64(v.Value))
 	} else if v, ok := n.(*Float); ok {
 		return v
+	} else if v, ok := n.(*Rat); ok {
+		return NewFloat(float64(v.Value[0]) / float64(v.Value[1]))
 	}
-
 	tracer.Fatal("toFloat(): Impossible error\n")
 	return NewFloat(1.0)
 }
@@ -58,12 +63,26 @@ func castNumber(x Number, y Number) (a Number, b Number) {
 	b = y
 	if _, ok := x.(*Float); ok {
 		if v, ok := y.(*Integer); ok {
-			b = NewFloat(float64(v.Value))
+			b = toFloat(v)
+		}
+		if v, ok := y.(*Rat); ok {
+			b = toFloat(v)
 		}
 	}
 	if v, ok := x.(*Integer); ok {
 		if _, ok := y.(*Float); ok {
-			a = NewFloat(float64(v.Value))
+			a = toFloat(v)
+		}
+		if _, ok := y.(*Rat); ok {
+			a = NewRat(v.Value, 1)
+		}
+	}
+	if v, ok := x.(*Rat); ok {
+		if _, ok := y.(*Float); ok {
+			a = toFloat(v)
+		}
+		if w, ok := y.(*Integer); ok {
+			b = NewRat(w.Value, 1)
 		}
 	}
 	return a, b
@@ -97,8 +116,12 @@ func (self *Integer) Div(n Number) Number {
 	if v.Value == 0 {
 		panic(NewRuntimeError("E1013"))
 	}
-	self.Value /= v.Value
-	return self
+	if 0 == self.Value%v.Value {
+		self.Value /= v.Value
+		return self
+	} else {
+		return NewRat(self.Value, v.Value)
+	}
 }
 
 func (self *Integer) Equal(n Number) bool {
@@ -195,4 +218,111 @@ func (self *Float) FormatString(prec int) string {
 }
 func (self *Float) LogFormatString(prec int) string {
 	return strconv.FormatFloat(self.Value, 'e', prec, 64)
+}
+
+// Rat Type
+type Rat struct {
+	Number
+	Value []int
+}
+
+func NewRat(m int, n int) *Rat {
+	v := new(Rat)
+	v.Value = []int{m, n}
+	v.calc()
+	return v
+}
+func operateRat(m int, n int) Number {
+	v := NewRat(m, n)
+	if v.Value[1] == 1 {
+		return NewInteger(v.Value[0])
+	}
+	return v
+}
+func (self *Rat) Add(n Number) Number {
+	if v, ok := n.(*Rat); ok {
+		return operateRat(self.Value[0]*v.Value[1]+v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) Sub(n Number) Number {
+	if v, ok := n.(*Rat); ok {
+		return operateRat(self.Value[0]*v.Value[1]-v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) Mul(n Number) Number {
+	if v, ok := n.(*Rat); ok {
+		return operateRat(self.Value[0]*v.Value[0], self.Value[1]*v.Value[1])
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) Div(n Number) Number {
+	if v, ok := n.(*Rat); ok {
+		return operateRat(self.Value[0]*v.Value[1], self.Value[1]*v.Value[0])
+	}
+	panic(NewRuntimeError("E1022"))
+}
+
+func (self *Rat) Equal(n Number) bool {
+	if v, ok := n.(*Rat); ok {
+		return self.Value[0]*v.Value[1] == v.Value[0]*self.Value[1]
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) Greater(n Number) bool {
+	if v, ok := n.(*Rat); ok {
+		return self.Value[0]*v.Value[1] > v.Value[0]*self.Value[1]
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) Less(n Number) bool {
+	if v, ok := n.(*Rat); ok {
+		return self.Value[0]*v.Value[1] < v.Value[0]*self.Value[1]
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) GreaterEqual(n Number) bool {
+	if v, ok := n.(*Rat); ok {
+		return self.Value[0]*v.Value[1] >= v.Value[0]*self.Value[1]
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) LessEqual(n Number) bool {
+	if v, ok := n.(*Rat); ok {
+		return self.Value[0]*v.Value[1] <= v.Value[0]*self.Value[1]
+	}
+	panic(NewRuntimeError("E1022"))
+}
+func (self *Rat) String() string {
+	return strconv.Itoa(self.Value[0]) + "/" + strconv.Itoa(self.Value[1])
+}
+func (self *Rat) isAtom() bool {
+	return true
+}
+func (self *Rat) calc() {
+
+	var gcm func(m, n int) int
+
+	gcm = func(m, n int) int {
+		mod := m % n
+		if mod == 0 {
+			return n
+		}
+		return gcm(n, mod)
+	}
+	g := gcm(self.Value[0], self.Value[1])
+	if 0 > g {
+		g = -g
+	}
+	sign := 1
+	if self.Value[0]*self.Value[1] < 0 {
+		sign = -1
+	}
+	self.Value[0] = self.Value[0] / g
+	self.Value[1] = self.Value[1] / g
+
+	self.Value[0] = int(math.Abs(float64(self.Value[0])))
+	self.Value[1] = int(math.Abs(float64(self.Value[1])))
+	self.Value[0] *= sign
 }
