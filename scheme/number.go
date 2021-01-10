@@ -227,12 +227,15 @@ type Rat struct {
 }
 
 func NewRat(m int, n int) *Rat {
+	if n == 0 {
+		panic(NewRuntimeError("E1013"))
+	}
 	v := new(Rat)
 	v.Value = []int{m, n}
 	v.calc()
 	return v
 }
-func operateRat(m int, n int) Number {
+func CreateRat(m int, n int) Number {
 	v := NewRat(m, n)
 	if v.Value[1] == 1 {
 		return NewInteger(v.Value[0])
@@ -241,25 +244,25 @@ func operateRat(m int, n int) Number {
 }
 func (self *Rat) Add(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return operateRat(self.Value[0]*v.Value[1]+v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+		return CreateRat(self.Value[0]*v.Value[1]+v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Sub(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return operateRat(self.Value[0]*v.Value[1]-v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+		return CreateRat(self.Value[0]*v.Value[1]-v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Mul(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return operateRat(self.Value[0]*v.Value[0], self.Value[1]*v.Value[1])
+		return CreateRat(self.Value[0]*v.Value[0], self.Value[1]*v.Value[1])
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Div(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return operateRat(self.Value[0]*v.Value[1], self.Value[1]*v.Value[0])
+		return CreateRat(self.Value[0]*v.Value[1], self.Value[1]*v.Value[0])
 	}
 	panic(NewRuntimeError("E1022"))
 }

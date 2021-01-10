@@ -12,6 +12,14 @@ import (
 	"testing"
 )
 
+func TestRatAtom(t *testing.T) {
+	testCode := [][]string{
+		{"5/6", "5/6"},
+		{"5/1", "5"},
+		{"5/0", "E1008"},
+	}
+	executeTest(testCode, "rat_plus", t)
+}
 func TestRatPlus(t *testing.T) {
 	testCode := [][]string{
 		{"(+ (/ 1 2)(/ 1 3))", "5/6"},
