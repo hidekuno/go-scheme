@@ -16,6 +16,7 @@ func TestRatAtom(t *testing.T) {
 	testCode := [][]string{
 		{"5/6", "5/6"},
 		{"5/1", "5"},
+		{"0/5", "0"},
 		{"5/0", "E1008"},
 	}
 	executeTest(testCode, "rat_plus", t)
