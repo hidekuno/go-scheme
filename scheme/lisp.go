@@ -59,6 +59,7 @@ var (
 		"E1018": "Not Format Gramar",
 		"E1019": "Not Char",
 		"E1021": "Out Of Range",
+		"E1022": "Not Rational",
 		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)
@@ -492,9 +493,25 @@ func parse(tokens []string) (Expression, int, error) {
 
 // Atom To "Integer, Float, Symbol"
 func atom(token string) (Expression, error) {
+
 	var (
-		atom Expression
+		atom    Expression
+		makerat func(token string) Number
 	)
+	makerat = func(token string) Number {
+		rat := strings.Split(token, "/")
+		if len(rat) == 2 {
+			if m, err := strconv.Atoi(rat[0]); err == nil {
+				if n, err := strconv.Atoi(rat[1]); err == nil {
+					if 0 != n {
+						return CreateRat(m, n)
+					}
+				}
+			}
+		}
+		return nil
+	}
+
 	if ivalue, err := strconv.Atoi(token); err == nil {
 		atom = NewInteger(ivalue)
 	} else {
@@ -520,7 +537,12 @@ func atom(token string) (Expression, error) {
 				} else if (len(token) > 1) && (token[0] == '"') && (token[len(token)-1] == '"') {
 					atom = NewString(token[1 : len(token)-1])
 				} else {
-					atom = NewSymbol(token)
+
+					if rat := makerat(token); rat != nil {
+						atom = rat
+					} else {
+						atom = NewSymbol(token)
+					}
 				}
 			}
 		}
