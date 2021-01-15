@@ -217,3 +217,23 @@ func TestNegativeEq(t *testing.T) {
 	}
 	executeTest(testCode, "negative?", t)
 }
+func TestSymbolTypeEq(t *testing.T) {
+	testCode := [][]string{
+		{"(symbol? 'a)", "#t"},
+		{"(symbol? \"a\")", "#f"},
+		{"(symbol?)", "E1007"},
+		{"(symbol? 10 20)", "E1007"},
+		{"(symbol? a)", "E1008"},
+	}
+	executeTest(testCode, "symbol?", t)
+}
+func TestBooleanTypeEq(t *testing.T) {
+	testCode := [][]string{
+		{"(boolean? #t)", "#t"},
+		{"(boolean? \"a\")", "#f"},
+		{"(boolean?)", "E1007"},
+		{"(boolean? 10 20)", "E1007"},
+		{"(boolean? a)", "E1008"},
+	}
+	executeTest(testCode, "boolean?", t)
+}
