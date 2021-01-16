@@ -78,7 +78,7 @@ func TestAsh(t *testing.T) {
 
 	executeTest(testCode, "ash", t)
 }
-func TestLogand(t *testing.T) {
+func TestLogAnd(t *testing.T) {
 	testCode := [][]string{
 		{"(logand 10 2)", "2"},
 		{"(logand 10 2 3)", "2"},
@@ -93,7 +93,7 @@ func TestLogand(t *testing.T) {
 
 	executeTest(testCode, "logand", t)
 }
-func TestLogior(t *testing.T) {
+func TestLogiOr(t *testing.T) {
 	testCode := [][]string{
 		{"(logior 10 2)", "10"},
 		{"(logior 10 2 3)", "11"},
@@ -107,7 +107,7 @@ func TestLogior(t *testing.T) {
 	}
 	executeTest(testCode, "logior", t)
 }
-func TestLogxor(t *testing.T) {
+func TestLogXor(t *testing.T) {
 	testCode := [][]string{
 		{"(logxor 10 2)", "8"},
 		{"(logxor 10 2 2)", "10"},
@@ -121,7 +121,7 @@ func TestLogxor(t *testing.T) {
 	}
 	executeTest(testCode, "logxor", t)
 }
-func TestLognot(t *testing.T) {
+func TestLogNot(t *testing.T) {
 	testCode := [][]string{
 		{"(lognot 0)", "-1"},
 		{"(lognot 10)", "-11"},
@@ -131,6 +131,40 @@ func TestLognot(t *testing.T) {
 		{"(lognot 1.5)", "E1002"},
 	}
 	executeTest(testCode, "lognot", t)
+}
+func TestLogCount(t *testing.T) {
+	testCode := [][]string{
+		{"(logcount 0)", "0"},
+		{"(logcount 11)", "3"},
+		{"(logcount 18)", "2"},
+		{"(logcount -1)", "0"},
+		{"(logcount -2)", "1"},
+		{"(logcount -256)", "8"},
+		{"(logcount -257)", "1"},
+
+		{"(logcount)", "E1007"},
+		{"(logcount 10 10)", "E1007"},
+		{"(logcount a)", "E1008"},
+		{"(logcount 1.5)", "E1002"},
+	}
+	executeTest(testCode, "logcount", t)
+}
+func TestIntegerLength(t *testing.T) {
+	testCode := [][]string{
+		{"(integer-length 0)", "0"},
+		{"(integer-length 11)", "4"},
+		{"(integer-length 18)", "5"},
+		{"(integer-length -1)", "0"},
+		{"(integer-length -2)", "1"},
+		{"(integer-length -256)", "8"},
+		{"(integer-length -257)", "9"},
+
+		{"(integer-length)", "E1007"},
+		{"(integer-length 10 10)", "E1007"},
+		{"(integer-length a)", "E1008"},
+		{"(integer-length 1.5)", "E1002"},
+	}
+	executeTest(testCode, "integer-length", t)
 }
 func TestMax(t *testing.T) {
 	testCode := [][]string{
