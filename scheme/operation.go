@@ -129,7 +129,7 @@ func shift(exp []Expression, env *SimpleEnv) (Expression, error) {
 }
 
 // and,or,xor
-func calcLogic(exp []Expression, env *SimpleEnv, calc func(a *Integer, b *Integer) int) (Expression, error) {
+func calcLogic(exp []Expression, env *SimpleEnv, calc func(*Integer, *Integer) int) (Expression, error) {
 
 	if 0 >= len(exp) {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -161,6 +161,36 @@ func lognot(exp []Expression, env *SimpleEnv) (Expression, error) {
 			return nil, NewRuntimeError("E1002", reflect.TypeOf(v).String())
 		}
 		return NewInteger(^v.Value), nil
+	})
+}
+
+// logcount,integer-length
+func bitCount(exp []Expression, env *SimpleEnv, cmp func(int, int) bool) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		v, ok := exp[0].(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(v).String())
+		}
+
+		// If you shift to the right by 63 bits, in the case of 32 bits, all are shifted out and only 0 remains
+		m := 32 << (^uint(0) >> 63)
+		x := v.Value
+		n := 0
+
+		// https://practical-scheme.net/gauche/man/gauche-refe/Numbers.html
+		// (If n is negative, returns the number of 0’s in the bits of 2’s complement)
+		if x < 0 {
+			x = ^x
+		}
+		for i := 0; i < m; i++ {
+			if cmp(x, i) {
+				n++
+			}
+		}
+		return NewInteger(n), nil
 	})
 }
 
@@ -202,6 +232,12 @@ func buildOperationFunc() {
 	}
 	buildInFuncTbl["lognot"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return lognot(exp, env)
+	}
+	buildInFuncTbl["logcount"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return bitCount(exp, env, func(x int, i int) bool { return (1 & (x >> i)) > 0 })
+	}
+	buildInFuncTbl["integer-length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return bitCount(exp, env, func(x int, i int) bool { return (x >> i) > 0 })
 	}
 	buildInFuncTbl["max"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return selectOne(exp, env, func(a Number, b Number) bool { return b.Greater(a) })
