@@ -178,4 +178,10 @@ func buildUtilFunc() {
 			return (reflect.TypeOf(e) == reflect.TypeOf(&Function{})) || (reflect.TypeOf(e) == reflect.TypeOf(&BuildInFunc{}))
 		})
 	}
+	buildInFuncTbl["symbol?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Symbol{}) })
+	}
+	buildInFuncTbl["boolean?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Boolean{}) })
+	}
 }
