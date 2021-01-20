@@ -27,6 +27,7 @@ GOPATH=${HOME}/go
 ### macOS
 ```
 docker pull hidekuno/go-scheme
+xhost +
 docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/glisp
 ```
 
