@@ -94,6 +94,18 @@ func isCharKind(exp []Expression, env *SimpleEnv, fn func(rune) bool) (Expressio
 		return NewBoolean(fn(x.Value)), nil
 	})
 }
+func convertChar(exp []Expression, env *SimpleEnv, fn func(rune) rune) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		x, ok := exp[0].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+		}
+		return NewCharFromRune(fn(x.Value)), nil
+	})
+}
 func buildCharFunc() {
 	buildInFuncTbl["char=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return charCompare(exp, env, func(x rune, y rune) bool { return x == y })
@@ -165,5 +177,11 @@ func buildCharFunc() {
 			return NewInteger(int(c.Value)), nil
 		})
 
+	}
+	buildInFuncTbl["char-upcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return convertChar(exp, env, func(x rune) rune { return unicode.ToUpper(x) })
+	}
+	buildInFuncTbl["char-downcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return convertChar(exp, env, func(x rune) rune { return unicode.ToLower(x) })
 	}
 }
