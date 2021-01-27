@@ -44,7 +44,7 @@ func NewCharFromRune(c rune) *Char {
 			return b
 		}
 	}
-	if unicode.IsLetter(b.Value) {
+	if unicode.IsPrint(b.Value) {
 		b.exp = "#\\" + string(c)
 	} else {
 		b.exp = "#\\non-printable-char"

@@ -204,7 +204,7 @@ func TestCharWhitespace(t *testing.T) {
 	}
 	executeTest(testCode, "char-whitespace?", t)
 }
-func TestCharUpperCase(t *testing.T) {
+func TestCharUppercase(t *testing.T) {
 	testCode := [][]string{
 		{"(char-upper-case? #\\A)", "#t"},
 		{"(char-upper-case? #\\a)", "#f"},
@@ -218,7 +218,7 @@ func TestCharUpperCase(t *testing.T) {
 	}
 	executeTest(testCode, "char-upper-case?", t)
 }
-func TestCharLowerCase(t *testing.T) {
+func TestCharLowercase(t *testing.T) {
 	testCode := [][]string{
 		{"(char-lower-case? #\\a)", "#t"},
 		{"(char-lower-case? #\\A)", "#f"},
@@ -255,4 +255,32 @@ func TestCharInteger(t *testing.T) {
 		{"(char->integer a)", "E1008"},
 	}
 	executeTest(testCode, "char->integer", t)
+}
+func TestCharUpcase(t *testing.T) {
+	testCode := [][]string{
+		{"(char-upcase #\\a)", "#\\A"},
+		{"(char-upcase #\\A)", "#\\A"},
+		{"(char-upcase #\\0)", "#\\0"},
+		{"(char-upcase #\\9)", "#\\9"},
+
+		{"(char-upcase)", "E1007"},
+		{"(char-upcase #\\0 #\\9)", "E1007"},
+		{"(char-upcase a)", "E1008"},
+		{"(char-upcase 10)", "E1019"},
+	}
+	executeTest(testCode, "", t)
+}
+func TestCharDowncase(t *testing.T) {
+	testCode := [][]string{
+		{"(char-downcase #\\a)", "#\\a"},
+		{"(char-downcase #\\A)", "#\\a"},
+		{"(char-downcase #\\0)", "#\\0"},
+		{"(char-downcase #\\9)", "#\\9"},
+
+		{"(char-downcase)", "E1007"},
+		{"(char-downcase #\\0 #\\9)", "E1007"},
+		{"(char-downcase a)", "E1008"},
+		{"(char-downcase 10)", "E1019"},
+	}
+	executeTest(testCode, "", t)
 }
