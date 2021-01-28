@@ -44,7 +44,7 @@ func NewCharFromRune(c rune) *Char {
 			return b
 		}
 	}
-	if unicode.IsLetter(b.Value) {
+	if unicode.IsPrint(b.Value) {
 		b.exp = "#\\" + string(c)
 	} else {
 		b.exp = "#\\non-printable-char"
@@ -82,6 +82,30 @@ func charCompare(exp []Expression, env *SimpleEnv, cmp func(rune, rune) bool) (E
 		return NewBoolean(cmp(x.Value, y.Value)), nil
 	})
 }
+func isCharKind(exp []Expression, env *SimpleEnv, fn func(rune) bool) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		x, ok := exp[0].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+		}
+		return NewBoolean(fn(x.Value)), nil
+	})
+}
+func convertChar(exp []Expression, env *SimpleEnv, fn func(rune) rune) (Expression, error) {
+	if len(exp) != 1 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		x, ok := exp[0].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+		}
+		return NewCharFromRune(fn(x.Value)), nil
+	})
+}
 func buildCharFunc() {
 	buildInFuncTbl["char=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return charCompare(exp, env, func(x rune, y rune) bool { return x == y })
@@ -113,7 +137,21 @@ func buildCharFunc() {
 	buildInFuncTbl["char-ci>=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return charCompare(exp, env, func(x rune, y rune) bool { return unicode.ToLower(x) >= unicode.ToLower(y) })
 	}
-
+	buildInFuncTbl["char-alphabetic?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isCharKind(exp, env, func(x rune) bool { return unicode.IsLetter(x) })
+	}
+	buildInFuncTbl["char-numeric?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isCharKind(exp, env, func(x rune) bool { return unicode.IsNumber(x) })
+	}
+	buildInFuncTbl["char-whitespace?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isCharKind(exp, env, func(x rune) bool { return unicode.IsSpace(x) })
+	}
+	buildInFuncTbl["char-upper-case?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isCharKind(exp, env, func(x rune) bool { return unicode.IsUpper(x) })
+	}
+	buildInFuncTbl["char-lower-case?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isCharKind(exp, env, func(x rune) bool { return unicode.IsLower(x) })
+	}
 	buildInFuncTbl["integer->char"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -139,5 +177,11 @@ func buildCharFunc() {
 			return NewInteger(int(c.Value)), nil
 		})
 
+	}
+	buildInFuncTbl["char-upcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return convertChar(exp, env, func(x rune) rune { return unicode.ToUpper(x) })
+	}
+	buildInFuncTbl["char-downcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return convertChar(exp, env, func(x rune) rune { return unicode.ToLower(x) })
 	}
 }
