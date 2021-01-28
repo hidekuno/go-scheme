@@ -307,4 +307,52 @@ func buildStringFunc() {
 			return NewString(buffer.String()), nil
 		})
 	}
+	buildInFuncTbl["string-split"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			c, ok := exp[1].(*Char)
+			if !ok {
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
+
+			}
+			v := strings.Split(s.Value, string(c.Value))
+			l := make([]Expression, 0, len(v))
+
+			for _, e := range v {
+				l = append(l, NewString(e))
+			}
+			return NewList(l), nil
+		})
+	}
+	buildInFuncTbl["string-join"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			if len(exp) != 2 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+			}
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			s, ok := exp[1].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+			}
+			v := make([]string, 0, len(l.Value))
+			for _, e := range l.Value {
+				s, ok := e.(*String)
+				if !ok {
+					return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+				}
+				v = append(v, s.Value)
+			}
+			return NewString(strings.Join(v, s.Value)), nil
+		})
+	}
 }
