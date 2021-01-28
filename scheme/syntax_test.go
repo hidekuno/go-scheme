@@ -138,7 +138,7 @@ func TestDefine(t *testing.T) {
 
 		{"(define 10 10)", "E1004"},
 		{"(define a)", "E1007"},
-		{"(define a 10 11)", "E1007"},
+		{"(define)", "E1007"},
 		{"(define (a))", "E1007"},
 		{"(define 10 11)", "E1004"},
 		{"(define (fuga 1 b) (+ a b))", "E1004"},
