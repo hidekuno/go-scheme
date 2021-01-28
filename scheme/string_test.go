@@ -326,3 +326,37 @@ func TestMakeString(t *testing.T) {
 	}
 	executeTest(testCode, "make-string", t)
 }
+func TestStringSplit(t *testing.T) {
+	testCode := [][]string{
+		{"(string-split  \"abc:def:g\"  #\\:)", "(\"abc\" \"def\" \"g\")", "(\"abc\" \"def\" \"g\")"},
+		{"(string-split  \"abcdef\"  #\\,)", "(\"abcdef\")"},
+		{"(string-split  \",abcdef\"  #\\,)", "(\"\" \"abcdef\")"},
+		{"(string-split  \"abcdef,\"  #\\,)", "(\"abcdef\" \"\")"},
+		{"(string-split  \"\"  #\\,)", "(\"\")"},
+
+		{"(string-split)", "E1007"},
+		{"(string-split 1 2 3)", "E1007"},
+		{"(string-split #\\a #\\a)", "E1015"},
+		{"(string-split \"\" \"\")", "E1019"},
+		{"(string-split a #\\a)", "E1008"},
+		{"(string-split \"\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-split", t)
+}
+func TestStringJoin(t *testing.T) {
+	testCode := [][]string{
+		{"(string-join '(\"a\" \"b\" \"c\" \"d\" \"e\") \":\")", "\"a:b:c:d:e\""},
+		{"(string-join '(\"a\" \"b\" \"c\" \"d\" \"e\") \"::\")", "\"a::b::c::d::e\""},
+		{"(string-join '(\"a\") \"::\")", "\"a\""},
+		{"(string-join '(\"\") \"::\")", "\"\""},
+
+		{"(string-join)", "E1007"},
+		{"(string-join 1 2 3)", "E1007"},
+		{"(string-join  #\\a (list \"\" \"\"))", "E1005"},
+		{"(string-join (list 1 \"a\" \"b\")  \",\")", "E1015"},
+		{"(string-join (list \"a\" \"b\" 1) \",\")", "E1015"},
+		{"(string-join a #\\a)", "E1008"},
+		{"(string-join (list \"a\" \"b\"  \"c\") a)", "E1008"},
+	}
+	executeTest(testCode, "string-join", t)
+}
