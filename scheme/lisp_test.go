@@ -270,6 +270,18 @@ func TestRecursive(t *testing.T) {
 
 }
 
+func TestBsearch(t *testing.T) {
+	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/bsearch.scm"
+	testCode := [][]string{
+		{"(load-url \"" + url + "\")", "nil"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 1)", "0"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 3)", "1"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 97)", "48"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 100)", "#f"},
+	}
+	executeTest(testCode, "bsearch", t)
+}
+
 func TestBase64(t *testing.T) {
 	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/base64.scm"
 	testCode := [][]string{
