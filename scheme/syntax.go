@@ -79,7 +79,7 @@ func buildSyntaxFunc() {
 		return NewNil(), nil
 	}
 	buildInFuncTbl["define"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 2 {
+		if len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
 		var (

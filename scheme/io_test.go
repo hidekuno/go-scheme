@@ -35,3 +35,13 @@ func TestLoadFile(t *testing.T) {
 	}
 	executeTest(testCode, "load-file", t)
 }
+func TestLoadUrl(t *testing.T) {
+	testCode := [][]string{
+		{"(load-url)", "E1007"},
+		{"(load-url 10 10)", "E1007"},
+		{"(load-url 10)", "E1015"},
+		{"(load-url a)", "E1008"},
+		{"(load-file \"https://raw.githubusercontent.com/hidekuno/go-scheme/master/base64.scm\")", "E1014"},
+	}
+	executeTest(testCode, "load-url", t)
+}

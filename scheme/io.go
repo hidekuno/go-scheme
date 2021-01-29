@@ -8,6 +8,7 @@ package scheme
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -65,5 +66,29 @@ func buildIoFunc() {
 		repl(fd, env)
 		return NewNil(), nil
 	}
+	buildInFuncTbl["load-url"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		v, err := eval(exp[0], env)
+		if err != nil {
+			return v, err
+		}
+		url, ok := v.(*String)
+		if !ok {
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+		}
+		resp, err := http.Get(url.Value)
+		if err != nil {
+			return nil, NewRuntimeError("E1014")
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewRuntimeError("E1014")
+		}
 
+		defer resp.Body.Close()
+		repl(resp.Body, env)
+
+		return NewNil(), nil
+	}
 }

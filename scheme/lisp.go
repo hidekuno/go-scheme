@@ -686,7 +686,7 @@ func DoInteractive() {
 }
 
 // Read-eval-print loop
-func repl(stream *os.File, rootEnv *SimpleEnv) {
+func repl(stream io.Reader, rootEnv *SimpleEnv) {
 	program := make([]string, 0, 64)
 	prompt := PROMPT
 	reader := bufio.NewReaderSize(stream, MaxLineSize)

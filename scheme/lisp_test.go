@@ -9,6 +9,7 @@
 package scheme
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -268,6 +269,41 @@ func TestRecursive(t *testing.T) {
 	}
 	executeTest(testCode, "recursive", t)
 
+}
+
+func TestBsearch(t *testing.T) {
+	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/bsearch.scm"
+	testCode := [][]string{
+		{"(load-url \"" + url + "\")", "nil"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 1)", "0"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 3)", "1"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 97)", "48"},
+		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 100)", "#f"},
+	}
+	executeTest(testCode, "bsearch", t)
+}
+
+func TestBase64(t *testing.T) {
+	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/base64.scm"
+	testCode := [][]string{
+		{"(load-url \"" + url + "\")", "nil"},
+		{"(base64-encode \"Hello,World\")", "\"SGVsbG8sV29ybGQ=\""},
+		{"(base64-decode \"SGVsbG8sV29ybGQ=\")", "\"Hello,World\""},
+	}
+	executeTest(testCode, "base64", t)
+}
+
+func TestZeller(t *testing.T) {
+	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/zeller.scm"
+	testCode := [][]string{
+		{"(load-url \"" + url + "\")", "nil"},
+	}
+	for i := 1; i <= 7; i++ {
+		testCode = append(testCode, []string{
+			fmt.Sprintf("(get-day-of-week 2021 8 %d)", i),
+			fmt.Sprintf("%d", (i - 1))})
+	}
+	executeTest(testCode, "zeller", t)
 }
 
 // go test -bench . -benchmem
