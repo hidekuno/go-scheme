@@ -111,6 +111,7 @@ type Expression interface {
 	isAtom() bool
 	clone() Expression
 	equalValue(Expression) bool
+	Print()
 }
 
 // Symbol Type
@@ -127,6 +128,9 @@ func NewSymbol(token string) *Symbol {
 
 func (self *Symbol) String() string {
 	return self.Value
+}
+func (self *Symbol) Print() {
+	fmt.Print(self.Value)
 }
 func (self *Symbol) isAtom() bool {
 	return true
@@ -161,6 +165,9 @@ func NewBoolean(v bool) *Boolean {
 func (self *Boolean) String() string {
 	return self.exp
 }
+func (self *Boolean) Print() {
+	fmt.Print(self.String())
+}
 func (self *Boolean) isAtom() bool {
 	return true
 }
@@ -182,12 +189,15 @@ type Nil struct {
 
 func NewNil() *Nil {
 	n := new(Nil)
-	n.value = "nil"
+	n.value = "#<nil>"
 	return n
 }
 
 func (self *Nil) String() string {
 	return self.value
+}
+func (self *Nil) Print() {
+	fmt.Print(self.value)
 }
 func (self *Nil) isAtom() bool {
 	return true
@@ -215,6 +225,9 @@ func NewBuildInFunc(fn EvalFunc, key string) *BuildInFunc {
 }
 func (self *BuildInFunc) String() string {
 	return "Build In Function: " + self.name
+}
+func (self *BuildInFunc) Print() {
+	fmt.Print(self.String())
 }
 func (self *BuildInFunc) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
 	return self.Impl(exp, env)
@@ -249,6 +262,9 @@ func NewFunction(parent *SimpleEnv, param *List, body []Expression, name string)
 }
 func (self *Function) String() string {
 	return "Function: "
+}
+func (self *Function) Print() {
+	fmt.Print(self.String())
 }
 func (self *Function) isAtom() bool {
 	return false
@@ -315,6 +331,9 @@ func NewPromise(parent *SimpleEnv, body Expression) *Promise {
 func (self *Promise) String() string {
 	return "Promise: "
 }
+func (self *Promise) Print() {
+	fmt.Print(self.String())
+}
 func (self *Promise) isAtom() bool {
 	return false
 }
@@ -360,6 +379,9 @@ func (self *TailRecursion) SetParam(env *SimpleEnv) (Expression, error) {
 
 func (self *TailRecursion) String() string {
 	return "TailRecursion"
+}
+func (self *TailRecursion) Print() {
+	fmt.Print(self.String())
 }
 func (self *TailRecursion) isAtom() bool {
 	return false

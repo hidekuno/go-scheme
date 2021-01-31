@@ -79,7 +79,7 @@ func buildIoFunc() {
 			if err != nil {
 				return v, err
 			}
-			fmt.Print(v.String())
+			v.Print()
 		}
 		return NewNil(), nil
 	}

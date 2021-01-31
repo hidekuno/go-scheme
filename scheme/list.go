@@ -8,6 +8,7 @@ package scheme
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strconv"
 )
@@ -47,6 +48,9 @@ func (self *List) String() string {
 	makeString(self)
 	return buffer.String()
 }
+func (self *List) Print() {
+	fmt.Print(self.String())
+}
 func (self *List) isAtom() bool {
 	return false
 }
@@ -79,6 +83,9 @@ func (self *Pair) String() string {
 	buffer.WriteString(self.Cdr.String())
 	buffer.WriteString(")")
 	return buffer.String()
+}
+func (self *Pair) Print() {
+	fmt.Print(self.String())
 }
 func (self *Pair) isAtom() bool {
 	return true
