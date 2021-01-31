@@ -45,3 +45,15 @@ func TestLoadUrl(t *testing.T) {
 	}
 	executeTest(testCode, "load-url", t)
 }
+func TestRead(t *testing.T) {
+	testCode := [][]string{
+		{"(read 1)", "E1007"},
+	}
+	executeTest(testCode, "read", t)
+}
+func TestReadChar(t *testing.T) {
+	testCode := [][]string{
+		{"(read-char 1)", "E1007"},
+	}
+	executeTest(testCode, "read-char", t)
+}
