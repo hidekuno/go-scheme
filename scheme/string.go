@@ -30,6 +30,9 @@ func NewString(p string) *String {
 func (self *String) String() string {
 	return "\"" + self.Value + "\""
 }
+func (self *String) Print() {
+	fmt.Print(self.Value)
+}
 func (self *String) isAtom() bool {
 	return true
 }

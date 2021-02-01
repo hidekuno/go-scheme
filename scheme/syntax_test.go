@@ -54,10 +54,10 @@ func TestOr(t *testing.T) {
 func TestIf(t *testing.T) {
 	testCode := [][]string{
 		{"(if (= 10 10) #\\a)", "#\\a"},
-		{"(if (= 10 11) #\\a)", "nil"},
+		{"(if (= 10 11) #\\a)", "#<nil>"},
 		{"(if (<= 1 6) #\\a #\\b)", "#\\a"},
 		{"(if (<= 9 6) #\\a #\\b)", "#\\b"},
-		{"(let ((a 10)(b 20))(if (= a b) #t))", "nil"},
+		{"(let ((a 10)(b 20))(if (= a b) #t))", "#<nil>"},
 
 		{"(if 10 1 2)", "E1001"},
 		{"(if (= 10 10))", "E1007"},
@@ -69,7 +69,7 @@ func TestCond(t *testing.T) {
 		{"(let ((a 10)(b 10))(cond ((= a b) \"ok\")(else \"ng\")))", "\"ok\""},
 		{"(let ((a 10)(b 20))(cond ((= a b) \"ok\")(else \"ng\")))", "\"ng\""},
 		{"(let ((a 10)(b 20))(cond ((= a b) \"ok\")((= b 20) \"sankaku\")(else \"ng\")))", "\"sankaku\""},
-		{"(let ((a 10)(b 20))(cond ((= a b) #t)))", "nil"},
+		{"(let ((a 10)(b 20))(cond ((= a b) #t)))", "#<nil>"},
 		{"(define a 10)", "a"},
 		{"(cond ((= a 10) 10 11)(else 20 30))", "11"},
 		{"(define a 100)", "a"},
@@ -86,8 +86,8 @@ func TestCond(t *testing.T) {
 }
 func TestCase(t *testing.T) {
 	testCode := [][]string{
-		{"(case 10)", "nil"},
-		{"(case 10 ((1 2) \"A\"))", "nil"},
+		{"(case 10)", "#<nil>"},
+		{"(case 10 ((1 2) \"A\"))", "#<nil>"},
 		{"(case 1 ((1 2)))", "(1 2)"},
 		{"(case 10 (else 20))", "20"},
 		{"(case 10 (else))", "0"},

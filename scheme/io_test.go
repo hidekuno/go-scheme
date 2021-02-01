@@ -9,9 +9,29 @@
 package scheme
 
 import (
+	"bufio"
+	"strings"
 	"testing"
 )
 
+func readTest(testName string,
+	testData string,
+	resultData string,
+	f func(*SimpleEnv, *bufio.Reader) (Expression, error),
+	t *testing.T) {
+
+	BuildFunc()
+	rootEnv := NewSimpleEnv(nil, nil)
+	exp, err := f(rootEnv, bufio.NewReader(strings.NewReader(testData)))
+	if err != nil {
+		t.Log(exp)
+		t.Fatal("failed "+testName+" test", exp)
+	}
+	if exp.String() != resultData {
+		t.Log(exp)
+		t.Fatal("failed "+testName+" test", exp)
+	}
+}
 func TestDisplay(t *testing.T) {
 	testCode := [][]string{
 		{"(display)", "E1007"},
@@ -44,4 +64,19 @@ func TestLoadUrl(t *testing.T) {
 		{"(load-file \"https://raw.githubusercontent.com/hidekuno/go-scheme/master/base64.scm\")", "E1014"},
 	}
 	executeTest(testCode, "load-url", t)
+}
+func TestRead(t *testing.T) {
+	readTest("read", "abcdef", "abcdef", read, t)
+
+	testCode := [][]string{
+		{"(read 1)", "E1007"},
+	}
+	executeTest(testCode, "read", t)
+}
+func TestReadChar(t *testing.T) {
+	readTest("read-char", "a", "#\\a", readChar, t)
+	testCode := [][]string{
+		{"(read-char 1)", "E1007"},
+	}
+	executeTest(testCode, "read-char", t)
 }

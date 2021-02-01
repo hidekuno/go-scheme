@@ -143,6 +143,9 @@ func (self *Integer) LessEqual(n Number) bool {
 func (self *Integer) String() string {
 	return strconv.Itoa(self.Value)
 }
+func (self *Integer) Print() {
+	fmt.Print(self.Value)
+}
 func (self *Integer) isAtom() bool {
 	return true
 }
@@ -200,6 +203,9 @@ func (self *Float) LessEqual(n Number) bool {
 }
 func (self *Float) String() string {
 	return fmt.Sprint(self.Value)
+}
+func (self *Float) Print() {
+	fmt.Print(self.Value)
 }
 func (self *Float) isAtom() bool {
 	return true
@@ -299,6 +305,9 @@ func (self *Rat) LessEqual(n Number) bool {
 }
 func (self *Rat) String() string {
 	return strconv.Itoa(self.Value[0]) + "/" + strconv.Itoa(self.Value[1])
+}
+func (self *Rat) Print() {
+	fmt.Print(self.String())
 }
 func (self *Rat) isAtom() bool {
 	return true

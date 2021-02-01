@@ -7,6 +7,7 @@
 package scheme
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"unicode"
@@ -53,6 +54,9 @@ func NewCharFromRune(c rune) *Char {
 }
 func (self *Char) String() string {
 	return self.exp
+}
+func (self *Char) Print() {
+	fmt.Print(self.Value)
 }
 func (self *Char) isAtom() bool {
 	return true

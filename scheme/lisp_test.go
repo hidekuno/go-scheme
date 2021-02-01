@@ -274,7 +274,7 @@ func TestRecursive(t *testing.T) {
 func TestBsearch(t *testing.T) {
 	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/bsearch.scm"
 	testCode := [][]string{
-		{"(load-url \"" + url + "\")", "nil"},
+		{"(load-url \"" + url + "\")", "#<nil>"},
 		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 1)", "0"},
 		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 3)", "1"},
 		{"(bsearch (filter (lambda (n) (odd? n)) (iota 100)) 97)", "48"},
@@ -286,7 +286,7 @@ func TestBsearch(t *testing.T) {
 func TestBase64(t *testing.T) {
 	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/base64.scm"
 	testCode := [][]string{
-		{"(load-url \"" + url + "\")", "nil"},
+		{"(load-url \"" + url + "\")", "#<nil>"},
 		{"(base64-encode \"Hello,World\")", "\"SGVsbG8sV29ybGQ=\""},
 		{"(base64-decode \"SGVsbG8sV29ybGQ=\")", "\"Hello,World\""},
 	}
@@ -296,7 +296,7 @@ func TestBase64(t *testing.T) {
 func TestZeller(t *testing.T) {
 	url := "https://raw.githubusercontent.com/hidekuno/rust-elisp/master/elisp/samples/zeller.scm"
 	testCode := [][]string{
-		{"(load-url \"" + url + "\")", "nil"},
+		{"(load-url \"" + url + "\")", "#<nil>"},
 	}
 	for i := 1; i <= 7; i++ {
 		testCode = append(testCode, []string{
