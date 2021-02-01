@@ -49,15 +49,15 @@ func read(env *SimpleEnv, reader *bufio.Reader) (Expression, error) {
 }
 func readChar(env *SimpleEnv, reader *bufio.Reader) (Expression, error) {
 
-	b, _, err := reader.ReadLine()
+	b, _, err := reader.ReadRune()
 	c := "#\\"
-	if len(b) == 0 {
+	if b == '\n' {
 		c = c + "newline"
 	} else {
-		if b[0] == ' ' {
+		if b == ' ' {
 			c = c + "space"
 		} else {
-			c = c + string(b[0])
+			c = c + string(b)
 		}
 	}
 	ast, _, err := parse([]string{c})
