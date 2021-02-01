@@ -47,7 +47,7 @@ func read(env *SimpleEnv, reader *bufio.Reader) (Expression, error) {
 	// EOF
 	return NewNil(), nil
 }
-func read_char(env *SimpleEnv, reader *bufio.Reader) (Expression, error) {
+func readChar(env *SimpleEnv, reader *bufio.Reader) (Expression, error) {
 
 	b, _, err := reader.ReadLine()
 	c := "#\\"
@@ -155,6 +155,6 @@ func buildIoFunc() {
 		if len(exp) != 0 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 		}
-		return read_char(env, bufio.NewReaderSize(os.Stdin, MaxLineSize))
+		return readChar(env, bufio.NewReaderSize(os.Stdin, MaxLineSize))
 	}
 }
