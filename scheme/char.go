@@ -56,7 +56,7 @@ func (self *Char) String() string {
 	return self.exp
 }
 func (self *Char) Print() {
-	fmt.Print(self.Value)
+	fmt.Printf("%c", self.Value)
 }
 func (self *Char) isAtom() bool {
 	return true
