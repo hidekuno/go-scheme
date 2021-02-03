@@ -155,6 +155,9 @@ func buildSyntaxFunc() {
 		var pname []Expression
 		body := 1
 
+		if len(exp) == 0 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		l, ok := exp[0].(*List)
 		if ok && len(exp) < 2 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))

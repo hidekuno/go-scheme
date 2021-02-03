@@ -189,6 +189,7 @@ func TestLet(t *testing.T) {
 		{"(let loop ((i 0)(j 0)) (if (<= 10 i) (+ i j) (loop (+ i 1)(+ j 2))))", "30"},
 
 		{"(let loop ((i 0)(j 10)(k 10)) (if (<= 1000000 i) i (if (= j k) (loop (+ 100 i)(+ 1 i)))))", "E1007"},
+		{"(let)", "E1007"},
 		{"(let ((a 10)))", "E1007"},
 		{"(let 10 ((a 10)))", "E1004"},
 		{"(let loop ((a 10)))", "E1007"},
