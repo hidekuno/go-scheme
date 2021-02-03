@@ -376,6 +376,9 @@ func buildSyntaxFunc() {
 		if !ok {
 			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
 		}
+		if len(l.Value) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		localEnv := Environment{}
 		param := make([]string, 0, len(l.Value))
 		update := make([]Expression, 0, len(l.Value))
