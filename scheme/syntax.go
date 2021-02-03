@@ -364,4 +364,89 @@ func buildSyntaxFunc() {
 		}
 		return Begin(exp, env)
 	}
+	buildInFuncTbl["do"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		l, ok := exp[0].(*List)
+		if !ok {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+		}
+		localEnv := Environment{}
+		param := make([]string, 0, len(l.Value))
+		update := make([]Expression, 0, len(l.Value))
+		for _, e := range l.Value {
+			f, ok := e.(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			if len(f.Value) != 3 {
+				return nil, NewRuntimeError("E1007", strconv.Itoa(len(f.Value)))
+			}
+			if s, ok := f.Value[0].(*Symbol); ok {
+				v, err := eval(f.Value[1], env)
+				if err != nil {
+					return nil, err
+				}
+				localEnv[s.Value] = v
+				param = append(param, s.Value)
+			} else {
+				return nil, NewRuntimeError("E1004", reflect.TypeOf(f.Value[0]).String())
+			}
+			update = append(update, f.Value[2])
+		}
+
+		l, ok = exp[1].(*List)
+		if !ok {
+			return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+		}
+		if len(l.Value) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(l.Value)))
+		}
+		cond := make([]Expression, 0, 2)
+		for _, c := range l.Value {
+			cond = append(cond, c)
+		}
+		nse := NewSimpleEnv(env, &localEnv)
+		for {
+			// eval condition
+			e, err := eval(cond[0], nse)
+			if err != nil {
+				return nil, err
+			}
+			if b, ok := e.(*Boolean); ok {
+				if b.Value {
+					if e, err := eval(cond[1], nse); err == nil {
+						return e, nil
+					} else {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, NewRuntimeError("E1001", reflect.TypeOf(e).String())
+			}
+
+			// eval body
+			for i := 2; i <= len(exp)-1; i++ {
+				_, err := eval(exp[i], nse)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// eval step
+			result := make([]Expression, 0, len(update))
+			for _, u := range update {
+				v, err := eval(u, nse)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, v)
+			}
+			for i, v := range result {
+				nse.Regist(param[i], v)
+			}
+		}
+	}
 }
