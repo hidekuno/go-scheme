@@ -236,5 +236,28 @@ func TestBegin(t *testing.T) {
 
 		{"(begin)", "E1007"},
 	}
-	executeTest(testCode, "load-file", t)
+	executeTest(testCode, "begin", t)
+}
+func TestDo(t *testing.T) {
+	testCode := [][]string{
+		{"(do ((i 0 (+ i 1)))((= i 10) i))", "10"},
+		{"(do ((i 0 (+ i 1))(j 0 (+ i j)))((= i 10) j)(display j)(newline))", "45"},
+		{"(do ((a '(0 1 2 3 4) (cdr a))(b 0 (+ b (car a))))((null? a) b)(display (car a))(newline))", "10"},
+		{"(define x 100)", "x"},
+		{"(do ((i 0 (+ i 1)))((= i 10) x)(set! x (+ i x)))", "145"},
+
+		{"(do)", "E1007"},
+		{"(do 1 2)", "E1005"},
+		{"(do () 1)", "E1007"},
+		{"(do (a) 1)", "E1005"},
+		{"(do (()) 1)", "E1007"},
+		{"(do ((10 1 1)) 1)", "E1004"},
+
+		{"(do ((i 0 (+ 1))) 10)", "E1005"},
+		{"(do ((i 0 (+ 1))) (10))", "E1007"},
+		{"(do ((i 0 (+ 1))) (10 10))", "E1001"},
+		{"(do ((i 0 (+ 1))) (#f 10) a)", "E1008"},
+		{"(do ((i 0 (+ 1))) (#t a) 10)", "E1008"},
+	}
+	executeTest(testCode, "do", t)
 }
