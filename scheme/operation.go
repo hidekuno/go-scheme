@@ -266,4 +266,29 @@ func buildOperationFunc() {
 	buildInFuncTbl["="] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return cmpOperate(exp, env, func(a Number, b Number) bool { return a.Equal(b) })
 	}
+	buildInFuncTbl["twos-exponent"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			v, ok := exp[0].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(v).String())
+			}
+			if 0 >= v.Value {
+				return NewBoolean(false), nil
+			}
+			m := 1
+
+			for i := 0; i < 64; i++ {
+				if v.Value == (m << i) {
+					return NewInteger(i), nil
+				}
+				if v.Value < (m << i) {
+					break
+				}
+			}
+			return NewBoolean(false), nil
+		})
+	}
 }
