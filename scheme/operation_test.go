@@ -317,3 +317,20 @@ func TestLessEq(t *testing.T) {
 	}
 	executeTest(testCode, "less_eq", t)
 }
+func TestTwosExponent(t *testing.T) {
+	testCode := [][]string{
+		{"(twos-exponent -1)", "#f"},
+		{"(twos-exponent 0)", "#f"},
+		{"(twos-exponent 1)", "0"},
+		{"(twos-exponent 2)", "1"},
+		{"(twos-exponent 9)", "#f"},
+		{"(twos-exponent 10)", "#f"},
+		{"(twos-exponent 16)", "4"},
+		{"(twos-exponent 9223372036854775807)", "#f"},
+
+		{"(twos-exponent)", "E1007"},
+		{"(twos-exponent #f)", "E1002"},
+		{"(twos-exponent a)", "E1008"},
+	}
+	executeTest(testCode, "twos-exponent", t)
+}

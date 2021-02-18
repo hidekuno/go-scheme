@@ -7,6 +7,7 @@
 package scheme
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"reflect"
@@ -183,5 +184,20 @@ func buildUtilFunc() {
 	}
 	buildInFuncTbl["boolean?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Boolean{}) })
+	}
+	buildInFuncTbl["native-endian"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 0 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		var x uint64 = 1
+		buf := make([]byte, binary.MaxVarintLen64)
+		binary.PutUvarint(buf, x)
+
+		if buf[0] == 1 {
+			return NewSymbol("little-endian"), nil
+		} else {
+			return NewSymbol("big-endian"), nil
+		}
+		return nil, NewRuntimeError("E9999")
 	}
 }

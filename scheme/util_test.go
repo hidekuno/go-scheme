@@ -237,3 +237,10 @@ func TestBooleanTypeEq(t *testing.T) {
 	}
 	executeTest(testCode, "boolean?", t)
 }
+func TestNativeEndian(t *testing.T) {
+	testCode := [][]string{
+		{"(native-endian)", "little-endian"},
+		{"(native-endian 1)", "E1007"},
+	}
+	executeTest(testCode, "boolean?", t)
+}
