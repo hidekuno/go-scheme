@@ -46,6 +46,20 @@ func TestFormat(t *testing.T) {
 	}
 	executeTest(testCode, "format", t)
 }
+func TestString(t *testing.T) {
+	testCode := [][]string{
+		{"(string #\\a)", "\"a\""},
+		{"(string #\\A)", "\"A\""},
+		{"(string #\\0)", "\"0\""},
+		{"(string #\\9)", "\"9\""},
+
+		{"(string)", "E1007"},
+		{"(string 1 2)", "E1007"},
+		{"(string 10)", "E1019"},
+		{"(string a)", "E1008"},
+	}
+	executeTest(testCode, "string", t)
+}
 func TestStringEq(t *testing.T) {
 	testCode := [][]string{
 		{"(string=? \"abc\" \"abc\")", "#t"},
@@ -359,4 +373,40 @@ func TestStringJoin(t *testing.T) {
 		{"(string-join (list \"a\" \"b\"  \"c\") a)", "E1008"},
 	}
 	executeTest(testCode, "string-join", t)
+}
+func TestStringScan(t *testing.T) {
+	testCode := [][]string{
+		{"(string-scan \"abracadabra\" \"ada\")", "5"},
+		{"(string-scan \"abracadabra\" #\\c)", "4"},
+		{"(string-scan \"abracadabra\" \"aba\")", "#f"},
+		{"(string-scan \"abracadabra\" #\\z)", "#f"},
+		{"(string-scan \"1122\" #\\2)", "2"},
+
+		{"(string-scan)", "E1007"},
+		{"(string-scan \"abracadabra\")", "E1007"},
+		{"(string-scan \"abracadabra\" \"aba\" \"aba\")", "E1007"},
+		{"(string-scan 10  #\\z)", "E1015"},
+		{"(string-scan \"abracadabra\" 10)", "E1009"},
+		{"(string-scan a #\\2)", "E1008"},
+		{"(string-scan \"1122\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-scan", t)
+}
+func TestStringScanRight(t *testing.T) {
+	testCode := [][]string{
+		{"(string-scan-right \"abracadabra\" \"ada\")", "5"},
+		{"(string-scan-right \"abracadabra\" #\\c)", "4"},
+		{"(string-scan-right \"abracadabra\" \"aba\")", "#f"},
+		{"(string-scan-right \"abracadabra\" #\\z)", "#f"},
+		{"(string-scan-right \"1122\" #\\2)", "3"},
+
+		{"(string-scan-right)", "E1007"},
+		{"(string-scan-right \"abracadabra\")", "E1007"},
+		{"(string-scan-right \"abracadabra\" \"aba\" \"aba\")", "E1007"},
+		{"(string-scan-right 10  #\\z)", "E1015"},
+		{"(string-scan-right \"abracadabra\" 10)", "E1009"},
+		{"(string-scan-right a #\\2)", "E1008"},
+		{"(string-scan-right \"1122\" a)", "E1008"},
+	}
+	executeTest(testCode, "string-scan-right", t)
 }
