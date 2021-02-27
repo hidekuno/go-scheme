@@ -110,6 +110,51 @@ func convertChar(exp []Expression, env *SimpleEnv, fn func(rune) rune) (Expressi
 		return NewCharFromRune(fn(x.Value)), nil
 	})
 }
+func digit(exp []Expression,
+	env *SimpleEnv,
+	fn func(Expression, *SimpleEnv, int) (Expression, error)) (Expression, error) {
+
+	if 1 > len(exp) || 2 < len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		r := 10
+		if len(exp) == 2 {
+			x, ok := exp[1].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+			}
+			r = x.Value
+		}
+		if 2 > r || 36 < r {
+			return nil, NewRuntimeError("E1021")
+		}
+		return fn(exp[0], env, r)
+	})
+}
+func digitInteger(exp Expression, env *SimpleEnv, r int) (Expression, error) {
+	c, ok := exp.(*Char)
+	if !ok {
+		return nil, NewRuntimeError("E1019", reflect.TypeOf(exp).String())
+	}
+	i, err := strconv.ParseInt(string(c.Value), r, 0)
+	if err != nil {
+		return NewBoolean(false), nil
+	}
+	return NewInteger(int(i)), nil
+}
+func integerDigit(exp Expression, env *SimpleEnv, r int) (Expression, error) {
+
+	i, ok := exp.(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp).String())
+	}
+	s := strconv.FormatInt(int64(i.Value), r)
+	if len(s) >= 2 {
+		return NewBoolean(false), nil
+	}
+	return NewCharFromRune(rune(s[0])), nil
+}
 func buildCharFunc() {
 	buildInFuncTbl["char=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return charCompare(exp, env, func(x rune, y rune) bool { return x == y })
@@ -187,5 +232,11 @@ func buildCharFunc() {
 	}
 	buildInFuncTbl["char-downcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return convertChar(exp, env, func(x rune) rune { return unicode.ToLower(x) })
+	}
+	buildInFuncTbl["digit->integer"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return digit(exp, env, digitInteger)
+	}
+	buildInFuncTbl["integer->digit"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return digit(exp, env, integerDigit)
 	}
 }
