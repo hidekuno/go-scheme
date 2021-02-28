@@ -45,6 +45,33 @@ func (self *String) equalValue(e Expression) bool {
 	}
 	return false
 }
+func stringScan(exp []Expression, env *SimpleEnv, index func(s, chars string) int) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+		x, ok := exp[0].(*String)
+		if !ok {
+			return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+		}
+		sep := ""
+		if s, ok := exp[1].(*String); ok {
+			sep = s.Value
+		} else if c, ok := exp[1].(*Char); ok {
+			// strings.IndexRune is exists, but there is not strings.LastIndexRune
+			sep = string(c.Value)
+		} else {
+			return nil, NewRuntimeError("E1009")
+		}
+
+		i := index(x.Value, sep)
+		if i >= 0 {
+			return NewInteger(i), nil
+		} else {
+			return NewBoolean(false), nil
+		}
+	})
+}
 func stringCompare(exp []Expression, env *SimpleEnv, operate func(string, string) bool) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -122,6 +149,18 @@ func buildStringFunc() {
 				return nil, NewRuntimeError("E1018")
 			}
 			return NewString(s), nil
+		})
+	}
+	buildInFuncTbl["string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			c, ok := exp[0].(*Char)
+			if !ok {
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+			}
+			return NewString(string(c.Value)), nil
 		})
 	}
 	buildInFuncTbl["string=?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -298,7 +337,7 @@ func buildStringFunc() {
 			}
 			c, ok := exp[1].(*Char)
 			if !ok {
-				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[0]).String())
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
 
 			}
 			if n.Value < 0 {
@@ -357,5 +396,11 @@ func buildStringFunc() {
 			}
 			return NewString(strings.Join(v, s.Value)), nil
 		})
+	}
+	buildInFuncTbl["string-scan"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return stringScan(exp, env, strings.Index)
+	}
+	buildInFuncTbl["string-scan-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return stringScan(exp, env, strings.LastIndex)
 	}
 }
