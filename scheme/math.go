@@ -100,11 +100,11 @@ func buildMathFunc() {
 			})
 	}
 	buildInFuncTbl["expt"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 2 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				f := []float64{0.0, 0.0}
 				for i, e := range exp {
 					if n, ok := e.(*Float); ok {

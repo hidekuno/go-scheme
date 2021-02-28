@@ -200,10 +200,10 @@ func buildStringFunc() {
 		return stringLength(exp, env, func(x string) int { return len(x) })
 	}
 	buildInFuncTbl["number->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			if _, ok := exp[0].(Number); !ok {
 				return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
 			}
@@ -211,10 +211,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["string->number"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
@@ -229,12 +229,12 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["list->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
 			var buffer bytes.Buffer
 
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			l, ok := exp[0].(*List)
 			if !ok {
 				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
@@ -251,10 +251,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["string->list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
@@ -268,10 +268,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["substring"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 3 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 3 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
@@ -296,11 +296,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["symbol->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*Symbol)
 			if !ok {
 				return nil, NewRuntimeError("E1004", reflect.TypeOf(exp[0]).String())
@@ -310,11 +309,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["string->symbol"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-
-			if len(exp) != 1 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
@@ -324,12 +322,11 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["make-string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
 			var buffer bytes.Buffer
-
-			if len(exp) != 2 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			n, ok := exp[0].(*Integer)
 			if !ok {
 				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
@@ -350,10 +347,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["string-split"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 2 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
@@ -374,10 +371,10 @@ func buildStringFunc() {
 		})
 	}
 	buildInFuncTbl["string-join"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if len(exp) != 2 {
-				return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-			}
 			l, ok := exp[0].(*List)
 			if !ok {
 				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())

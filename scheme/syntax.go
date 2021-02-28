@@ -220,11 +220,11 @@ func buildSyntaxFunc() {
 		return doLogicalOperate(exp, env, true, false)
 	}
 	buildInFuncTbl["not"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
-				if len(exp) != 1 {
-					return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-				}
 				if _, ok := exp[0].(*Boolean); !ok {
 					return nil, NewRuntimeError("E1001", reflect.TypeOf(exp[0]).String())
 				}
