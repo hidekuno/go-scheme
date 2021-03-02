@@ -96,7 +96,25 @@ func TestAppend(t *testing.T) {
 	}
 	executeTest(testCode, "append", t)
 }
+func TestAppendEffect(t *testing.T) {
+	testCode := [][]string{
+		{"(append! (list 1)(list 2))", "(1 2)"},
+		{"(append! (list 1)(list 2)(list 3))", "(1 2 3)"},
+		{"(append! (list (list 10))(list 2)(list 3))", "((10) 2 3)"},
+		{"(append! (iota 5) (list 100))", "(0 1 2 3 4 100)"},
+		{"(define a (iota 5))", "a"},
+		{"(define b a)", "b"},
+		{"(append! a (iota 5 5))", "(0 1 2 3 4 5 6 7 8 9)"},
+		{"a", "(0 1 2 3 4 5 6 7 8 9)"},
+		{"b", "(0 1 2 3 4 5 6 7 8 9)"},
 
+		{"(append!)", "E1007"},
+		{"(append! 10)", "E1005"},
+		{"(append! (list 1) 105)", "E1005"},
+		{"(append! (list 1) c)", "E1008"},
+	}
+	executeTest(testCode, "append!", t)
+}
 func TestLast(t *testing.T) {
 	testCode := [][]string{
 		{"(last (list 1 2 3))", "3"},
@@ -273,6 +291,31 @@ func TestDelete(t *testing.T) {
 	}
 	executeTest(testCode, "delete", t)
 }
+func TestDeleteEffect(t *testing.T) {
+	testCode := [][]string{
+
+		{"(define a (list 10 10.5 3/5 \"ABC\" #\\a #t))", "a"},
+		{"(delete! 10 a)", "(10.5 3/5 \"ABC\" #\\a #t)"},
+		{"a", "(10.5 3/5 \"ABC\" #\\a #t)"},
+		{"(delete! 10.5 a)", "(3/5 \"ABC\" #\\a #t)"},
+		{"(delete! 3/5 a)", "(\"ABC\" #\\a #t)"},
+		{"(delete! \"ABC\" a)", "(#\\a #t)"},
+		{"a", "(#\\a #t)"},
+		{"(delete! #\\a a)", "(#t)"},
+		{"a", "(#t)"},
+		{"(delete! #f a)", "(#t)"},
+		{"a", "(#t)"},
+		{"(delete! #t a)", "()"},
+		{"a", "()"},
+
+		{"(delete!)", "E1007"},
+		{"(delete! 10)", "E1007"},
+		{"(delete! 10 (list 10 20) 3)", "E1007"},
+		{"(delete! 10 20)", "E1005"},
+		{"(delete! 10 c)", "E1008"},
+	}
+	executeTest(testCode, "delete!", t)
+}
 func TestListRef(t *testing.T) {
 	testCode := [][]string{
 		{"(list-ref (iota 10) 0)", "0"},
@@ -313,4 +356,36 @@ func TestListSet(t *testing.T) {
 		{"(list-set! (iota 10) 10 0)", "E1011"},
 	}
 	executeTest(testCode, "list-ref", t)
+}
+func TestSetCar(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 1 2 3 4 5))", "a"},
+		{"(set-car! a 100)", "#<nil>"},
+		{"a", "(100 2 3 4 5)"},
+		{"(set-car! a (list 10 20))", "#<nil>"},
+		{"a", "((10 20) 2 3 4 5)"},
+
+		{"(set-car!)", "E1007"},
+		{"(set-car! (list 1))", "E1007"},
+		{"(set-car! c a)", "E1008"},
+		{"(set-car! 10 20)", "E1005"},
+		{"(set-car! () 20)", "E1011"},
+	}
+	executeTest(testCode, "set-car!", t)
+}
+func TestSetCdr(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 1 2 3 4 5))", "a"},
+		{"(set-cdr! a 100)", "#<nil>"},
+		{"a", "(1 100)"},
+		{"(set-cdr! a (list 10 20))", "#<nil>"},
+		{"a", "(1 10 20)"},
+
+		{"(set-cdr!)", "E1007"},
+		{"(set-cdr! (list 1))", "E1007"},
+		{"(set-cdr! c a)", "E1008"},
+		{"(set-cdr! 100 200)", "E1005"},
+		{"(set-cdr! () 20)", "E1011"},
+	}
+	executeTest(testCode, "set-cdr!", t)
 }

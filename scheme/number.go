@@ -312,6 +312,12 @@ func (self *Rat) Print() {
 func (self *Rat) isAtom() bool {
 	return true
 }
+func (self *Rat) equalValue(e Expression) bool {
+	if v, ok := e.(*Rat); ok {
+		return self.Value[0]*v.Value[1] == v.Value[0]*self.Value[1]
+	}
+	return false
+}
 func (self *Rat) calc() {
 
 	var gcm func(m, n int) int
