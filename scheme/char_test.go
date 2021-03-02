@@ -284,3 +284,46 @@ func TestCharDowncase(t *testing.T) {
 	}
 	executeTest(testCode, "", t)
 }
+func TestDigitInteger(t *testing.T) {
+	testCode := [][]string{
+		{"(digit->integer #\\0)", "0"},
+		{"(digit->integer #\\8)", "8"},
+		{"(digit->integer #\\9 10)", "9"},
+		{"(digit->integer #\\7 8)", "7"},
+		{"(digit->integer #\\a 16)", "10"},
+		{"(digit->integer #\\f 16)", "15"},
+		{"(digit->integer #\\a 10)", "#f"},
+		{"(digit->integer #\\8 8)", "#f"},
+		{"(digit->integer #\\g 16)", "#f"},
+
+		{"(digit->integer)", "E1007"},
+		{"(digit->integer 1 2 3)", "E1007"},
+		{"(digit->integer #\\8 #t)", "E1002"},
+		{"(digit->integer #\\8 1)", "E1021"},
+		{"(digit->integer #\\8 37)", "E1021"},
+		{"(digit->integer 10 10)", "E1019"},
+	}
+	executeTest(testCode, "digit->integer", t)
+}
+func TestIntegerDigit(t *testing.T) {
+	testCode := [][]string{
+		{"(integer->digit 0)", "#\\0"},
+		{"(integer->digit 8)", "#\\8"},
+		{"(integer->digit 9 10)", "#\\9"},
+		{"(integer->digit 7 8)", "#\\7"},
+		{"(integer->digit 13 16)", "#\\d"},
+		{"(integer->digit 15 16)", "#\\f"},
+
+		{"(integer->digit 10 10)", "#f"},
+		{"(integer->digit 8 8)", "#f"},
+		{"(integer->digit 16 16)", "#f"},
+
+		{"(integer->digit)", "E1007"},
+		{"(integer->digit 1 2 3)", "E1007"},
+		{"(integer->digit 8 #t)", "E1002"},
+		{"(integer->digit 8 1)", "E1021"},
+		{"(integer->digit 8 37)", "E1021"},
+		{"(integer->digit #\\8 10)", "E1002"},
+	}
+	executeTest(testCode, "integer->digit", t)
+}
