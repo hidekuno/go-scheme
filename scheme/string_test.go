@@ -232,26 +232,49 @@ func TestNumberString(t *testing.T) {
 	testCode := [][]string{
 		{"(number->string 10)", "\"10\""},
 		{"(number->string 10.5)", "\"10.5\""},
+		{"(number->string 1/3)", "\"1/3\""},
+		{"(number->string 3735927486 2)", "\"11011110101011011011101010111110\""},
+		{"(number->string 3735927486 8)", "\"33653335276\""},
+		{"(number->string 3735927486 10)", "\"3735927486\""},
+		{"(number->string 3735927486 16)", "\"deadbabe\""},
+		{"(number->string 3735927486 36)", "\"1ps9w3i\""},
 
 		{"(number->string)", "E1007"},
-		{"(number->string 10 20)", "E1007"},
+		{"(number->string 10 20 30)", "E1007"},
 		{"(number->string #f)", "E1003"},
+		{"(number->string #f 10)", "E1003"},
+		{"(number->string 100 1)", "E1021"},
+		{"(number->string 100 37)", "E1021"},
 		{"(number->string a)", "E1008"},
+		{"(number->string 10 a)", "E1008"},
 	}
 	executeTest(testCode, "number->string", t)
 }
 func TestStringNumber(t *testing.T) {
 	testCode := [][]string{
-
 		{"(string->number \"123\")", "123"},
 		{"(string->number \"10.5\")", "10.5"},
+		{"(string->number \"1/3\")", "1/3"},
+		{"(string->number \"10000\" 2)", "16"},
+		{"(string->number \"012\" 8)", "10"},
+		{"(string->number \"123\" 10)", "123"},
+		{"(string->number \"ab\" 16)", "171"},
 
 		{"(string->number)", "E1007"},
-		{"(string->number \"123\" \"10.5\")", "E1007"},
+		{"(string->number \"123\" \"10.5\" 10)", "E1007"},
 		{"(string->number 100)", "E1015"},
-		{"(string->number \"/1\")", "E1003"},
-		{"(string->number \"1/3/2\")", "E1003"},
+		{"(string->number 100 10)", "E1015"},
+		{"(string->number 100 #f)", "E1002"},
+		{"(string->number 100 1)", "E1021"},
+		{"(string->number 100 37)", "E1021"},
 		{"(string->number a)", "E1008"},
+		{"(string->number 10 a)", "E1008"},
+		{"(string->number \"ab\" 2)", "#f"},
+		{"(string->number \"ab\" 8)", "#f"},
+		{"(string->number \"ab\" 10)", "#f"},
+		{"(string->number \"/1\")", "#f"},
+		{"(string->number \"1/3/2\")", "#f"},
+		{"(string->number \"1/0\")", "#f"},
 	}
 	executeTest(testCode, "string->number", t)
 }

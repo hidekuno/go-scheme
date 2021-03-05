@@ -101,6 +101,36 @@ func stringLength(exp []Expression, env *SimpleEnv, fn func(string) int) (Expres
 		return NewInteger(fn(x.Value)), nil
 	})
 }
+func numberString(exp Expression, env *SimpleEnv, r int) (Expression, error) {
+	if _, ok := exp.(Number); !ok {
+		return nil, NewRuntimeError("E1003", reflect.TypeOf(exp).String())
+	}
+	if r == 10 {
+		return NewString(exp.String()), nil
+	}
+	if i, ok := exp.(*Integer); ok {
+		return NewString(strconv.FormatInt(int64(i.Value), r)), nil
+	} else {
+		return NewString(exp.String()), nil
+	}
+}
+func stringNumber(exp Expression, env *SimpleEnv, r int) (Expression, error) {
+	s, ok := exp.(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp).String())
+	}
+	if i, err := strconv.ParseInt(s.Value, r, 0); err == nil {
+		return NewInteger(int(i)), nil
+	} else if f, err := strconv.ParseFloat(s.Value, 64); err == nil {
+		return NewFloat(f), nil
+	} else {
+		rat := MakeRatRadix(s.Value, r)
+		if rat != nil {
+			return rat, nil
+		}
+	}
+	return NewBoolean(false), nil
+}
 
 // Build Global environement.
 func buildStringFunc() {
@@ -200,33 +230,10 @@ func buildStringFunc() {
 		return stringLength(exp, env, func(x string) int { return len(x) })
 	}
 	buildInFuncTbl["number->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			if _, ok := exp[0].(Number); !ok {
-				return nil, NewRuntimeError("E1003", reflect.TypeOf(exp[0]).String())
-			}
-			return NewString(exp[0].String()), nil
-		})
+		return doRadix(exp, env, numberString)
 	}
 	buildInFuncTbl["string->number"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 1 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
-			s, ok := exp[0].(*String)
-			if !ok {
-				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
-
-			}
-			if i, err := strconv.Atoi(s.Value); err == nil {
-				return NewInteger(i), nil
-			} else if f, err := strconv.ParseFloat(s.Value, 64); err == nil {
-				return NewFloat(f), nil
-			}
-			return nil, NewRuntimeError("E1003", s.Value)
-		})
+		return doRadix(exp, env, stringNumber)
 	}
 	buildInFuncTbl["list->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 1 {
