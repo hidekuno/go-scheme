@@ -526,22 +526,8 @@ func parse(tokens []string) (Expression, int, error) {
 func atom(token string) (Expression, error) {
 
 	var (
-		atom    Expression
-		makerat func(token string) Number
+		atom Expression
 	)
-	makerat = func(token string) Number {
-		rat := strings.Split(token, "/")
-		if len(rat) == 2 {
-			if m, err := strconv.Atoi(rat[0]); err == nil {
-				if n, err := strconv.Atoi(rat[1]); err == nil {
-					if 0 != n {
-						return CreateRat(m, n)
-					}
-				}
-			}
-		}
-		return nil
-	}
 
 	if ivalue, err := strconv.Atoi(token); err == nil {
 		atom = NewInteger(ivalue)
@@ -569,7 +555,7 @@ func atom(token string) (Expression, error) {
 					atom = NewString(token[1 : len(token)-1])
 				} else {
 
-					if rat := makerat(token); rat != nil {
+					if rat := MakeRat(token); rat != nil {
 						atom = rat
 					} else {
 						atom = NewSymbol(token)

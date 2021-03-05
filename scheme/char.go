@@ -110,7 +110,7 @@ func convertChar(exp []Expression, env *SimpleEnv, fn func(rune) rune) (Expressi
 		return NewCharFromRune(fn(x.Value)), nil
 	})
 }
-func digit(exp []Expression,
+func doRadix(exp []Expression,
 	env *SimpleEnv,
 	fn func(Expression, *SimpleEnv, int) (Expression, error)) (Expression, error) {
 
@@ -234,9 +234,9 @@ func buildCharFunc() {
 		return convertChar(exp, env, func(x rune) rune { return unicode.ToLower(x) })
 	}
 	buildInFuncTbl["digit->integer"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return digit(exp, env, digitInteger)
+		return doRadix(exp, env, digitInteger)
 	}
 	buildInFuncTbl["integer->digit"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		return digit(exp, env, integerDigit)
+		return doRadix(exp, env, integerDigit)
 	}
 }

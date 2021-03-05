@@ -11,6 +11,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type Number interface {
@@ -343,4 +344,20 @@ func (self *Rat) calc() {
 	self.Value[0] = int(math.Abs(float64(self.Value[0])))
 	self.Value[1] = int(math.Abs(float64(self.Value[1])))
 	self.Value[0] *= sign
+}
+func MakeRat(s string) Number {
+	return MakeRatRadix(s, 10)
+}
+func MakeRatRadix(s string, r int) Number {
+	rat := strings.Split(s, "/")
+	if len(rat) == 2 {
+		if m, err := strconv.ParseInt(rat[0], r, 0); err == nil {
+			if n, err := strconv.ParseInt(rat[1], r, 0); err == nil {
+				if 0 != n {
+					return CreateRat(int(m), int(n))
+				}
+			}
+		}
+	}
+	return nil
 }
