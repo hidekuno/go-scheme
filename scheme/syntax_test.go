@@ -261,3 +261,19 @@ func TestDo(t *testing.T) {
 	}
 	executeTest(testCode, "do", t)
 }
+func TestCallcc(t *testing.T) {
+	testCode := [][]string{
+		{"(+ 1 (* 2 (call/cc (lambda (cont) (cont 3)))))", "7"},
+		{"(call/cc (lambda (throw)(+ 5 (* 10 (call/cc (lambda (escape) (* 100 (throw 3))))))))", "3"},
+		{"(call/cc (lambda (throw)(+ 5 (* 10 (call/cc (lambda (escape) (* 100 (escape 3))))))))", "35"},
+		{"(call/cc (lambda (hoge) (+ 3 (call/cc (lambda (throw)(+ 5 (* 10 (call/cc (lambda (escape)" +
+			"(* 100 (throw 3)))))))))))", "6"},
+		{"(call/cc (lambda (hoge) (+ 3 (call/cc (lambda (throw)(+ 5 (* 10 (call/cc (lambda (escape)" +
+			"(* 100 (escape 3)))))))))))", "38"},
+		{"(define (map-check fn chk ls)(call/cc (lambda (return)" +
+			"(map (lambda (x) (if (chk x) (return '()) (fn x))) ls))))", "map-check"},
+		{"(map-check (lambda (x) (* x x)) (lambda (x) (< x 0)) (list 1 2 3 4 5))", "(1 4 9 16 25)"},
+		{"(map-check (lambda (x) (* x x)) (lambda (x) (< x 0)) (list 1 2 3 -1 5))", "()"},
+	}
+	executeTest(testCode, "call/cc", t)
+}

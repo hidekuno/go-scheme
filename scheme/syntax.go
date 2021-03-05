@@ -11,6 +11,51 @@ import (
 	"strconv"
 )
 
+// Continuation
+type Continuation struct {
+	Expression
+	cont  Expression
+	Value Expression
+	Name  string
+}
+
+func NewContinuation(cont Expression) *Continuation {
+	c := new(Continuation)
+	c.cont = cont
+	c.Value = nil
+	return c
+}
+func (self *Continuation) String() string {
+	return "Continuation: "
+}
+func (self *Continuation) isAtom() bool {
+	return true
+}
+func (self *Continuation) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
+func (self *Continuation) clone() Expression {
+	return NewContinuation(self.cont)
+}
+func (err *Continuation) Error() string {
+	return "Continuation"
+}
+func (self *Continuation) Execute(exp []Expression, env *SimpleEnv) (Expression, error) {
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	v, err := eval(exp[1], env)
+	if err != nil {
+		return nil, err
+	}
+	self.Value = v
+	if s, ok := exp[0].(*Symbol); ok {
+		self.Name = s.Value
+	}
+	return nil, self
+}
+
 func Quote(exp []Expression, env *SimpleEnv) (Expression, error) {
 	if len(exp) != 1 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -454,5 +499,20 @@ func buildSyntaxFunc() {
 				nse.Regist(param[i], v)
 			}
 		}
+	}
+	buildInFuncTbl["call/cc"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		sexp := make([]Expression, 0)
+		sexp = append(sexp, NewContinuation(nil))
+		e, err := eval(exp[0], env)
+		if err != nil {
+			return nil, NewRuntimeError("E1006")
+		}
+		if fn, ok := e.(*Function); ok {
+			return fn.Execute(sexp, env)
+		}
+		return nil, NewRuntimeError("E1006")
 	}
 }

@@ -304,6 +304,15 @@ func (self *Function) Execute(exp []Expression, env *SimpleEnv) (Expression, err
 		}
 		for {
 			if result, err = eval(e, nse); err != nil {
+				if c, ok := err.(*Continuation); ok {
+					if len(exp) == 1 {
+						if s, ok := self.ParamName.Value[0].(*Symbol); ok {
+							if c.Name == s.Value {
+								return c.Value, nil
+							}
+						}
+					}
+				}
 				return nil, err
 			}
 			if _, ok := result.(*TailRecursion); !ok {
@@ -613,6 +622,9 @@ func eval(sexp Expression, env *SimpleEnv) (Expression, error) {
 		} else if fn, ok := proc.(*Function); ok {
 			// (proc 10 20)
 			return fn.Execute(v[1:], env)
+		} else if c, ok := proc.(*Continuation); ok {
+			// (proc 10 20)
+			return c.Execute(v[0:], env)
 		} else {
 			return sexp, NewRuntimeError("E1006", reflect.TypeOf(proc).String())
 		}
