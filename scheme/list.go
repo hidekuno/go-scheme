@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 )
 
@@ -193,6 +194,234 @@ func subList(exp []Expression, env *SimpleEnv, fn func(*List, *Integer) (int, in
 			result := make([]Expression, y-x)
 			copy(result, l.Value[x:y])
 			return NewList(result), nil
+		})
+}
+func defaultSortCallback(l, m Expression) bool {
+	if x, ok := l.(Number); ok {
+		if y, ok := m.(Number); ok {
+			a, b := castNumber(x, y)
+			return a.LessEqual(b)
+		}
+	}
+	if x, ok := l.(*Char); ok {
+		if y, ok := m.(*Char); ok {
+			return x.Value < y.Value
+		}
+	}
+	if x, ok := l.(*String); ok {
+		if y, ok := m.(*String); ok {
+			return x.Value < y.Value
+		}
+	}
+	return false
+}
+func sortCallback(l, m, exp Expression, env *SimpleEnv) bool {
+	sexp := make([]Expression, 0)
+	sexp = append(sexp, exp)
+	sexp = append(sexp, l)
+	sexp = append(sexp, m)
+	v, err := eval(NewList(sexp), env)
+	if err != nil {
+		return false
+	}
+	if b, ok := v.(*Boolean); ok {
+		return b.Value
+	}
+	return false
+}
+
+func copySort(exp []Expression,
+	env *SimpleEnv,
+	sortImpl func(interface{}, func(int, int) bool)) (Expression, error) {
+
+	if 1 > len(exp) || 2 < len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			m := make([]Expression, len(l.Value))
+			copy(m, l.Value)
+			return doSort(env, NewList(m), sortImpl, exp)
+		})
+
+}
+func effectSort(exp []Expression,
+	env *SimpleEnv,
+	sortImpl func(interface{}, func(int, int) bool)) (Expression, error) {
+
+	if 1 > len(exp) || 2 < len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			return doSort(env, l, sortImpl, exp)
+		})
+}
+func doSort(env *SimpleEnv,
+	l *List,
+	sortImpl func(interface{}, func(int, int) bool),
+	exp []Expression) (Expression, error) {
+
+	if len(exp) == 1 {
+		sortImpl(l.Value, func(i, j int) bool {
+			return defaultSortCallback(l.Value[i], l.Value[j])
+		})
+
+	} else if len(exp) == 2 {
+		if _, ok := exp[1].(*BuildInFunc); !ok {
+			if _, ok := exp[1].(*Function); !ok {
+				return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[1]).String())
+			}
+		}
+		sortImpl(l.Value, func(i, j int) bool {
+			return sortCallback(l.Value[i], l.Value[j], exp[1], env)
+		})
+	}
+	return l, nil
+}
+func merge(exp []Expression, env *SimpleEnv) (Expression, error) {
+	merge_iter := func(l *List, m *List) (Expression, error) {
+		v := make([]Expression, 0)
+		i, j := 0, 0
+
+		for {
+			if len(l.Value) <= i || len(m.Value) <= j {
+				break
+			}
+			if x, ok := l.Value[i].(Number); ok {
+				if y, ok := m.Value[j].(Number); ok {
+					a, b := castNumber(x, y)
+					if a.LessEqual(b) {
+						v = append(v, l.Value[i])
+						i++
+					} else {
+						v = append(v, m.Value[j])
+						j++
+					}
+					continue
+				}
+			} else if x, ok := l.Value[i].(*Char); ok {
+				if y, ok := l.Value[j].(*Char); ok {
+					if x.Value < y.Value {
+						v = append(v, l.Value[i])
+						i++
+					} else {
+						v = append(v, m.Value[j])
+						j++
+					}
+					continue
+				}
+			} else if x, ok := l.Value[i].(*String); ok {
+				if y, ok := l.Value[j].(*String); ok {
+					if x.Value < y.Value {
+						v = append(v, l.Value[i])
+						i++
+					} else {
+						v = append(v, m.Value[j])
+						j++
+					}
+					continue
+				}
+			}
+			v = append(v, l.Value[i])
+			i++
+		}
+		v = append(v, l.Value[i:]...)
+		v = append(v, m.Value[j:]...)
+		return NewList(v), nil
+	}
+	merge_iter_by := func(l *List, m *List, exp Expression) (Expression, error) {
+		v := make([]Expression, 0)
+		i, j := 0, 0
+
+		if _, ok := exp.(*BuildInFunc); !ok {
+			if _, ok := exp.(*Function); !ok {
+				return nil, NewRuntimeError("E1006", reflect.TypeOf(exp).String())
+			}
+		}
+		for {
+			if len(l.Value) <= i || len(m.Value) <= j {
+				break
+			}
+			sexp := make([]Expression, 0)
+			sexp = append(sexp, exp)
+			sexp = append(sexp, l.Value[i])
+			sexp = append(sexp, m.Value[j])
+			e, err := eval(NewList(sexp), env)
+			if err != nil {
+				v = append(v, l.Value[i])
+				i++
+			} else if b, ok := e.(*Boolean); ok {
+				if b.Value {
+					v = append(v, l.Value[i])
+					i++
+				} else {
+					v = append(v, m.Value[j])
+					j++
+				}
+			} else {
+				return nil, NewRuntimeError("E1001", reflect.TypeOf(exp).String())
+			}
+		}
+		v = append(v, l.Value[i:]...)
+		v = append(v, m.Value[j:]...)
+		return NewList(v), nil
+	}
+	if 2 > len(exp) || 3 < len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			m, ok := exp[1].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[1]).String())
+			}
+			if len(exp) == 3 {
+				return merge_iter_by(l, m, exp[2])
+			} else {
+				return merge_iter(l, m)
+			}
+		})
+}
+func isSorted(exp []Expression, env *SimpleEnv) (Expression, error) {
+	if 1 > len(exp) || 2 < len(exp) {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			l, ok := exp[0].(*List)
+			if !ok {
+				return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+			}
+			var b bool
+			if len(exp) == 1 {
+				b = sort.SliceIsSorted(l.Value, func(i, j int) bool {
+					return defaultSortCallback(l.Value[i], l.Value[j])
+				})
+			} else if len(exp) == 2 {
+				if _, ok := exp[1].(*BuildInFunc); !ok {
+					if _, ok := exp[1].(*Function); !ok {
+						return nil, NewRuntimeError("E1006", reflect.TypeOf(exp[1]).String())
+					}
+				}
+				b = sort.SliceIsSorted(l.Value, func(i, j int) bool {
+					return sortCallback(l.Value[i], l.Value[j], exp[1], env)
+				})
+			}
+			return NewBoolean(b), nil
 		})
 }
 
@@ -626,5 +855,23 @@ func buildListFunc() {
 				}
 				return NewNil(), nil
 			})
+	}
+	buildInFuncTbl["sort"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return copySort(exp, env, sort.Slice)
+	}
+	buildInFuncTbl["sort!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return effectSort(exp, env, sort.Slice)
+	}
+	buildInFuncTbl["stable-sort"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return copySort(exp, env, sort.SliceStable)
+	}
+	buildInFuncTbl["stable-sort!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return effectSort(exp, env, sort.SliceStable)
+	}
+	buildInFuncTbl["merge"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return merge(exp, env)
+	}
+	buildInFuncTbl["sorted?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isSorted(exp, env)
 	}
 }

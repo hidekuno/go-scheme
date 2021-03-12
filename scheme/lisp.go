@@ -267,7 +267,7 @@ func (self *Function) Print() {
 	fmt.Print(self.String())
 }
 func (self *Function) isAtom() bool {
-	return false
+	return true
 }
 func (self *Function) clone() Expression {
 	return NewFunction(self.Env, &self.ParamName, self.Body, self.Name)

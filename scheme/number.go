@@ -140,7 +140,6 @@ func (self *Integer) GreaterEqual(n Number) bool {
 func (self *Integer) LessEqual(n Number) bool {
 	return self.Value <= toInt(n).Value
 }
-
 func (self *Integer) String() string {
 	return strconv.Itoa(self.Value)
 }
