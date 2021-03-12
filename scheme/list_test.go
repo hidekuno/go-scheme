@@ -389,3 +389,233 @@ func TestSetCdr(t *testing.T) {
 	}
 	executeTest(testCode, "set-cdr!", t)
 }
+func TestSort(t *testing.T) {
+	testCode := [][]string{
+		{"(sort (list 10 1 9 5 3 4 7 6 5))", "(1 3 4 5 5 6 7 9 10)"},
+		{"(sort (list 10 1.5 9 5 2/3 4 7 6 5))", "(2/3 1.5 4 5 5 6 7 9 10)"},
+		{"(sort (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\"))",
+			"(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+		{"(sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0))",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(sort (list 10 1 9 5 3 4 7 6 5) <)", "(1 3 4 5 5 6 7 9 10)"},
+		{"(sort (list 10 1 9 5 3 4 7 6 5) >)", "(10 9 7 6 5 5 4 3 1)"},
+		{"(sort (list 10 1 9 5 3 4 7 6 5) <=)", "(1 3 4 5 5 6 7 9 10)"},
+		{"(sort (list 10 1 9 5 3 4 7 6 5) >=)", "(10 9 7 6 5 5 4 3 1)"},
+		{"(sort (list 10 1.5 9 5 2/3 4 7 6 5) >)", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"(sort (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\") string>?)",
+			"(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+		{"(sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string>?)", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"(sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string>=?)", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"(sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string<?)", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string<=?)", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char>?)",
+			"(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"(sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char>=?)",
+			"(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"(sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char<?)",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char<=?)",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(sort (list 10 1.5 9 5 2/3 4 7 6 5) (lambda (a b) (> a b)))", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(sort)", "E1007"},
+		{"(sort (list 1) + +)", "E1007"},
+		{"(sort +)", "E1005"},
+		{"(sort (list 1) 10)", "E1006"},
+	}
+	executeTest(testCode, "sort", t)
+}
+func TestSortEffect(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 10 1 9 5 3 4 7 6 5))", "a"},
+		{"(sort! a)", "(1 3 4 5 5 6 7 9 10)"},
+		{"a", "(1 3 4 5 5 6 7 9 10)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(sort! a)", "(2/3 1.5 4 5 5 6 7 9 10)"},
+		{"a", "(2/3 1.5 4 5 5 6 7 9 10)"},
+
+		{"(define a (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\"))", "a"},
+		{"(sort! a)", "(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+		{"a", "(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+
+		{"(define a (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "a"},
+		{"(sort! a)", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"a", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(define a (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0))", "a"},
+		{"(sort! a)", "(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"a", "(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+
+		{"(define a (list 10 1 9 5 3 4 7 6 5))", "a"},
+		{"(sort! a >)", "(10 9 7 6 5 5 4 3 1)"},
+		{"a", "(10 9 7 6 5 5 4 3 1)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(sort! a >)", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"a", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(define a (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\") )", "a"},
+		{"(sort! a string>?)", "(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+		{"a", "(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+
+		{"(define a (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "a"},
+		{"(sort! a string>?)", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"a", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+
+		{"(define a (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) )", "a"},
+		{"(sort! a char>?)", "(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"a", "(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(sort! a (lambda (a b)(> a b)))", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"a", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(sort!)", "E1007"},
+		{"(sort! (list 1) + +)", "E1007"},
+		{"(sort! +)", "E1005"},
+		{"(sort! (list 1) 10)", "E1006"},
+	}
+	executeTest(testCode, "sort!", t)
+}
+func TestStableSort(t *testing.T) {
+	testCode := [][]string{
+		{"(stable-sort (list 10 1 9 5 3 4 7 6 5))", "(1 3 4 5 5 6 7 9 10)"},
+		{"(stable-sort (list 10 1.5 9 5 2/3 4 7 6 5))", "(2/3 1.5 4 5 5 6 7 9 10)"},
+		{"(stable-sort (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\"))",
+			"(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+		{"(stable-sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(stable-sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0))",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(stable-sort (list 10 1 9 5 3 4 7 6 5) <)", "(1 3 4 5 5 6 7 9 10)"},
+		{"(stable-sort (list 10 1 9 5 3 4 7 6 5) >)", "(10 9 7 6 5 5 4 3 1)"},
+		{"(stable-sort (list 10 1 9 5 3 4 7 6 5) <=)", "(1 3 4 5 5 6 7 9 10)"},
+		{"(stable-sort (list 10 1 9 5 3 4 7 6 5) >=)", "(10 9 7 6 5 5 4 3 1)"},
+		{"(stable-sort (list 10 1.5 9 5 2/3 4 7 6 5) >)", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"(stable-sort (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\") string>?)",
+			"(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+		{"(stable-sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string>?)",
+			"(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"(stable-sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string>=?)",
+			"(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"(stable-sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string<?)",
+			"(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(stable-sort (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\") string<=?)",
+			"(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(stable-sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char>?)",
+			"(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"(stable-sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char>=?)",
+			"(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"(stable-sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char<?)",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(stable-sort (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) char<=?)",
+			"(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"(stable-sort (list 10 1.5 9 5 2/3 4 7 6 5) (lambda (a b) (> a b)))", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(stable-sort)", "E1007"},
+		{"(stable-sort (list 1) + +)", "E1007"},
+		{"(stable-sort +)", "E1005"},
+		{"(stable-sort (list 1) 10)", "E1006"},
+	}
+	executeTest(testCode, "stable-sort", t)
+}
+func TestStableSortEffect(t *testing.T) {
+	testCode := [][]string{
+		{"(define a (list 10 1 9 5 3 4 7 6 5))", "a"},
+		{"(stable-sort! a)", "(1 3 4 5 5 6 7 9 10)"},
+		{"a", "(1 3 4 5 5 6 7 9 10)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(stable-sort! a)", "(2/3 1.5 4 5 5 6 7 9 10)"},
+		{"a", "(2/3 1.5 4 5 5 6 7 9 10)"},
+
+		{"(define a (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\"))", "a"},
+		{"(stable-sort! a)", "(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+		{"a", "(\"0\" \"A\" \"a\" \"b\" \"c\" \"d\" \"l\" \"m\" \"z\")"},
+
+		{"(define a (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "a"},
+		{"(stable-sort! a)", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"a", "(\"AA\" \"AB\" \"AZ\" \"BB\" \"CA\")"},
+		{"(define a (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0))", "a"},
+		{"(stable-sort! a)", "(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+		{"a", "(#\\0 #\\A #\\a #\\b #\\c #\\d #\\l #\\m #\\z)"},
+
+		{"(define a (list 10 1 9 5 3 4 7 6 5))", "a"},
+		{"(stable-sort! a >)", "(10 9 7 6 5 5 4 3 1)"},
+		{"a", "(10 9 7 6 5 5 4 3 1)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(stable-sort! a >)", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"a", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(define a (list \"z\" \"a\" \"b\" \"m\" \"l\" \"d\" \"A\" \"c\" \"0\") )", "a"},
+		{"(stable-sort! a string>?)", "(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+		{"a", "(\"z\" \"m\" \"l\" \"d\" \"c\" \"b\" \"a\" \"A\" \"0\")"},
+
+		{"(define a (list \"AZ\" \"AA\" \"AB\" \"CA\" \"BB\"))", "a"},
+		{"(stable-sort! a string>?)", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+		{"a", "(\"CA\" \"BB\" \"AZ\" \"AB\" \"AA\")"},
+
+		{"(define a (list #\\z #\\a #\\b #\\m #\\l #\\d #\\A #\\c #\\0) )", "a"},
+		{"(stable-sort! a char>?)", "(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+		{"a", "(#\\z #\\m #\\l #\\d #\\c #\\b #\\a #\\A #\\0)"},
+
+		{"(define a (list 10 1.5 9 5 2/3 4 7 6 5))", "a"},
+		{"(stable-sort! a (lambda (a b)(> a b)))", "(10 9 7 6 5 5 4 1.5 2/3)"},
+		{"a", "(10 9 7 6 5 5 4 1.5 2/3)"},
+
+		{"(stable-sort!)", "E1007"},
+		{"(stable-sort! (list 1) + +)", "E1007"},
+		{"(stable-sort! +)", "E1005"},
+		{"(stable-sort! (list 1) 10)", "E1006"},
+	}
+	executeTest(testCode, "stable-sort!", t)
+}
+func TestMerge(t *testing.T) {
+	testCode := [][]string{
+
+		{"(merge (iota 10 1 2) (iota 10 2 2))", "(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)"},
+		{"(merge (list 1/3 1 2) (list 1/2 3/2 1.75))", "(1/3 1/2 1 3/2 1.75 2)"},
+		{"(merge (list \"a\" \"c\" \"e\" \"g\")(list \"b\" \"d\" \"f\" \"h\")  string<=?)",
+			"(\"a\" \"b\" \"c\" \"d\" \"e\" \"f\" \"g\" \"h\")"},
+		{"(merge (list #\\a #\\c #\\e #\\g)(list #\\b #\\d #\\f #\\h) char<=?)",
+			"(#\\a #\\b #\\c #\\d #\\e #\\f #\\g #\\h)"},
+		{"(merge (reverse (iota 10 1 2)) (reverse (iota 10 2 2)) >)",
+			"(20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1)"},
+		{"(merge (list \"g\" \"e\" \"c\" \"a\")(list \"h\" \"f\" \"d\" \"b\") string>?)",
+			"(\"h\" \"g\" \"f\" \"e\" \"d\" \"c\" \"b\" \"a\")"},
+		{"(merge (list #\\g #\\e #\\c #\\a)(list #\\h #\\f #\\d #\\b) char>?)",
+			"(#\\h #\\g #\\f #\\e #\\d #\\c #\\b #\\a)"},
+		{"(merge)", "E1007"},
+		{"(merge (list 1))", "E1007"},
+		{"(merge (list 1)(list 2) + +)", "E1007"},
+		{"(merge + (list 2) +)", "E1005"},
+		{"(merge (list 1) + +)", "E1005"},
+		{"(merge (list 1)(list 2)(list 3))", "E1006"},
+		{"(merge (list 1)(list 2) +)", "E1001"},
+	}
+	executeTest(testCode, "merge", t)
+}
+func TestIsSorted(t *testing.T) {
+	testCode := [][]string{
+		{"(sorted? (list 1 2 3))", "#t"},
+		{"(sorted? (list 1 2 3) <)", "#t"},
+		{"(sorted? (list 3 2 1) >)", "#t"},
+		{"(sorted? (list 1 2 3) >)", "#f"},
+		{"(sorted? (list 3 2 1) <)", "#f"},
+		{"(sorted? (list 1 2 3) (lambda (a b)(< a b)))", "#t"},
+		{"(sorted? (list 1 2 3) (lambda (a b)(> a b)))", "#f"},
+		{"(sorted? (list \"a\" \"b\" \"c\") string<?)", "#t"},
+		{"(sorted? (list \"c\" \"b\" \"a\") string>?)", "#t"},
+		{"(sorted? (list #\\a #\\b #\\c) char<?)", "#t"},
+		{"(sorted? (list #\\c #\\b #\\a) char>?)", "#t"},
+		{"(sorted? (list #\\a #\\b #\\c) char-ci<?)", "#t"},
+		{"(sorted? (list #\\c #\\b #\\a) char-ci>?)", "#t"},
+
+		{"(sorted?)", "E1007"},
+		{"(sorted? (list 1) + +)", "E1007"},
+		{"(sorted? +)", "E1005"},
+		{"(sorted? (list 1) 10)", "E1006"},
+	}
+	executeTest(testCode, "sorted?", t)
+}

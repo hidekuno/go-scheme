@@ -119,8 +119,8 @@ func TestLispSampleProgram(t *testing.T) {
 		{"(define perm (lambda (l n)(if (>= 0 n) (list (list))(reduce (lambda (a b)(append a b)) (list) (map (lambda (x) (map (lambda (p) (cons x p)) (perm (delete x l)(- n 1)))) l)))))", "perm"},
 		{"(define bubble-iter (lambda (x l)(if (or (null? l)(< x (car l)))(cons x l)(cons (car l)(bubble-iter x (cdr l))))))", "bubble-iter"},
 		{"(define bsort (lambda (l)(if (null? l) l (bubble-iter (car l)(bsort (cdr l))))))", "bsort"},
-		{"(define merge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(merge (cdr a) b))(cons (car b) (merge a (cdr b)))))))", "merge"},
-		{"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(cadr l)) l (reverse l))(let ((mid (quotient n 2)))(merge (msort (take l mid))(msort (drop l mid)))))))))", "msort"},
+		{"(define lmerge (lambda (a b)(if (or (null? a)(null? b)) (append a b) (if (< (car a)(car b))(cons (car a)(lmerge (cdr a) b))(cons (car b) (lmerge a (cdr b)))))))", "lmerge"},
+		{"(define msort (lambda (l)(let ((n (length l)))(if (>= 1 n ) l (if (= n 2) (if (< (car l)(cadr l)) l (reverse l))(let ((mid (quotient n 2)))(lmerge (msort (take l mid))(msort (drop l mid)))))))))", "msort"},
 		{"(define stream-car (lambda (l)(car l)))", "stream-car"},
 		{"(define stream-cdr (lambda (l)(force (cdr l))))", "stream-cdr"},
 		{"(define make-generator (lambda (generator inits)(cons (car inits)(delay (make-generator generator (generator inits))))))", "make-generator"},
@@ -147,7 +147,7 @@ func TestLispSampleProgram(t *testing.T) {
 		{"(perm (list 1 2 3) 2)", "((1 2) (1 3) (2 1) (2 3) (3 1) (3 2))"},
 		{"(comb (list 1 2 3) 2)", "((1 2) (1 3) (2 3))"},
 		{"(hanoi 'a 'b 'c 3)", "(((a . b) 1) ((a . c) 2) ((b . c) 1) ((a . b) 3) ((c . a) 1) ((c . b) 2) ((a . b) 1))"},
-		{"(merge (list 1 3 5 7 9)(list 2 4 6 8 10))", "(1 2 3 4 5 6 7 8 9 10)"},
+		{"(lmerge (list 1 3 5 7 9)(list 2 4 6 8 10))", "(1 2 3 4 5 6 7 8 9 10)"},
 		{"(msort test-list)", "(0 2 3 6 7 8 9 14 19 27 36)"},
 		{"(inf-list (lambda (n) (list (cadr n)(+ (car n)(cadr n)))) (list 0 1) 10)", "(0 1 1 2 3 5 8 13 21 34)"},
 		{"(fact/cps 5 (lambda (a) (+ 80 a)))", "200"},
@@ -164,7 +164,7 @@ func TestErrCase(t *testing.T) {
 	rootEnv := NewSimpleEnv(nil, nil)
 
 	// Impossible absolute, But Program bug is except
-	_, err = eval(NewFunction(rootEnv, NewList(nil), nil, "lambda"), rootEnv)
+	_, err = eval(NewPromise(rootEnv, NewList(nil)), rootEnv)
 	if err != nil {
 		if false == strings.Contains(err.Error(), "Not Enough Data Type") {
 			t.Fatal("failed test: E1009")
