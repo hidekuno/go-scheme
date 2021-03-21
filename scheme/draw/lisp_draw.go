@@ -92,19 +92,42 @@ func BuildGtkFunc() {
 			return scheme.NewNil(), nil
 		})
 		scheme.AddBuildInFunc("draw-line", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
+			var setParam = func(e scheme.Expression) (int, error) {
+				if p, ok := e.(*scheme.Integer); ok {
+					return p.Value, nil
+				} else if p, ok := e.(*scheme.Float); ok {
+					return int(p.Value), nil
+				} else {
+					return -1, scheme.NewRuntimeError("E1003", reflect.TypeOf(e).String())
+				}
+			}
+			var err error
 			return scheme.EvalCalcParam(exp, env,
 				func(exp ...scheme.Expression) (scheme.Expression, error) {
 					var point [4]int
-					if len(exp) != 4 {
+					if len(exp) != 2 && len(exp) != 4 {
 						return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 					}
-					for i, e := range exp {
-						if p, ok := e.(*scheme.Integer); ok {
-							point[i] = p.Value
-						} else if p, ok := e.(*scheme.Float); ok {
-							point[i] = int(p.Value)
-						} else {
-							return nil, scheme.NewRuntimeError("E1003", reflect.TypeOf(e).String())
+					if len(exp) == 2 {
+						i := 0
+						for _, e := range exp {
+							if p, ok := e.(*scheme.Pair); ok {
+								if point[i], err = setParam(p.Car); err != nil {
+									return nil, err
+								}
+								if point[i+1], err = setParam(p.Cdr); err != nil {
+									return nil, err
+								}
+							} else {
+								return nil, scheme.NewRuntimeError("E1005", reflect.TypeOf(e).String())
+							}
+							i = i + 2
+						}
+					} else {
+						for i, e := range exp {
+							if point[i], err = setParam(e); err != nil {
+								return nil, err
+							}
 						}
 					}
 					lispDrawLine(point[0], point[1], point[2], point[3])
