@@ -4,6 +4,8 @@
 
    ex.) go test -v lisp_draw.go lisp_draw_test.go
 
+   It's testing on Ubuntu, But it's NOT work on WSL(Widows Subsystem Linux).
+
    hidekuno@gmail.com
 */
 package draw
@@ -58,7 +60,7 @@ func TestBuildFunc(t *testing.T) {
 }
 func TestDrawInit(t *testing.T) {
 	testCode := [][]string{
-		{"(draw-init)", "nil"},
+		{"(draw-init)", "#<nil>"},
 
 		{"(draw-init 10)", "E1007"},
 		{"(draw-init)", "E2001"},
@@ -68,7 +70,7 @@ func TestDrawInit(t *testing.T) {
 }
 func TestDrawClear(t *testing.T) {
 	testCode := [][]string{
-		{"(draw-clear)", "nil"},
+		{"(draw-clear)", "#<nil>"},
 
 		{"(draw-clear 10)", "E1007"},
 	}
@@ -76,13 +78,18 @@ func TestDrawClear(t *testing.T) {
 }
 func TestDrawLine(t *testing.T) {
 	testCode := [][]string{
-		{"(draw-line 100 100 200 200)", "nil"},
+		{"(draw-line 100 100 200 200)", "#<nil>"},
+		{"(draw-line (cons 100 100)(cons 200 200))", "#<nil>"},
 
 		{"(draw-line)", "E1007"},
 		{"(draw-line 100 100 200)", "E1007"},
 		{"(draw-line 100 100 200 200 100)", "E1007"},
 		{"(draw-line #t 100 200 200)", "E1003"},
 		{"(draw-line 100 100 200 #t)", "E1003"},
+		{"(draw-line (cons #t 100)(cons 200 200))", "E1003"},
+		{"(draw-line (cons 100 #t)(cons 200 200))", "E1003"},
+		{"(draw-line (cons 100 100)(cons #t 200))", "E1003"},
+		{"(draw-line (cons 100 100)(cons 200 #t))", "E1003"},
 	}
 	executeTest(testCode, "draw-line", t)
 }
@@ -99,7 +106,7 @@ func TestCreateImageFromFile(t *testing.T) {
 func TestDrawImage(t *testing.T) {
 	testCode := [][]string{
 		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
-		{"(draw-image img 10 10)", "nil"},
+		{"(draw-image img 10 10)", "#<nil>"},
 
 		{"(draw-image 10 10)", "E1007"},
 		{"(draw-image 10 10 10 10)", "E1007"},
