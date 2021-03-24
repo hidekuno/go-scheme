@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/hidekuno/go-scheme/draw"
 	"github.com/hidekuno/go-scheme/scheme"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
@@ -59,7 +58,7 @@ func BuildGtkFunc() {
 		if execFinished == true {
 			return nil, scheme.NewRuntimeError("E2001")
 		}
-		pixmap, gdkwin, fg, bg := draw.BuildGtkApp("scheme.go")
+		pixmap, gdkwin, fg, bg := BuildGtkApp("scheme.go")
 		go gtk.Main()
 
 		//--------------------------------------------------------
@@ -251,13 +250,13 @@ func BuildGtkFunc() {
 			if len(exp) != 0 {
 				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			return scheme.NewInteger(draw.ScreenWidth - 2), nil
+			return scheme.NewInteger(ScreenWidth - 2), nil
 		})
 		scheme.AddBuildInFunc("screen-height", func(exp []scheme.Expression, env *scheme.SimpleEnv) (scheme.Expression, error) {
 			if len(exp) != 0 {
 				return nil, scheme.NewRuntimeError("E1007", strconv.Itoa(len(exp)))
 			}
-			return scheme.NewInteger(draw.ScreenHeight - 2), nil
+			return scheme.NewInteger(ScreenHeight - 2), nil
 		})
 
 		execFinished = true

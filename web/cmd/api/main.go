@@ -14,7 +14,7 @@ package main
 import (
 	"runtime"
 
-	"github.com/hidekuno/go-scheme/web"
+	"local.packages/web"
 )
 
 // Main

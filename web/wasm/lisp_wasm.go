@@ -4,7 +4,10 @@ package main
    Go lang 3rd study program.
    hidekuno@gmail.com
 
-   wget https://raw.githubusercontent.com/golang/go/release-branch.go1.13/misc/wasm/wasm_exec.js
+   wget https://raw.githubusercontent.com/golang/go/release-branch.go1.XX/misc/wasm/wasm_exec.js
+   or
+   cp /usr/local/go/misc/wasm/wasm_exec.js .
+
    GOARCH=wasm GOOS=js go build -o lisp.wasm lisp_wasm.go
 */
 import (
