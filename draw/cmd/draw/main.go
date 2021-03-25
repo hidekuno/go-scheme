@@ -9,7 +9,7 @@ package main
 import (
 	"runtime"
 
-	"github.com/hidekuno/go-scheme/draw"
+	"local.packages/draw"
 	"github.com/mattn/go-gtk/gtk"
 )
 

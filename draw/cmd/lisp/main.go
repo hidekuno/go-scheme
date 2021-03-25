@@ -8,8 +8,8 @@ package main
 
 import (
 	"runtime"
+	"local.packages/draw"
 	"github.com/hidekuno/go-scheme/scheme"
-	"github.com/hidekuno/go-scheme/scheme/draw"
 )
 
 // Main

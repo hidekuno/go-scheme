@@ -20,7 +20,7 @@ import (
 	"runtime"
 
 	"github.com/hidekuno/go-scheme/scheme"
-	"github.com/hidekuno/go-scheme/scheme/experiment"
+	"local.packages/experiment"
 )
 
 // Main

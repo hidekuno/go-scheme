@@ -2,9 +2,7 @@
    Go lang 4th study program.
    This is test program for mini scheme subset.
 
-   ex.) go test -v lisp_draw.go lisp_draw_test.go
-
-   It's testing on Ubuntu, But it's NOT work on WSL(Widows Subsystem Linux).
+   ex.) go test -v
 
    hidekuno@gmail.com
 */
@@ -95,7 +93,7 @@ func TestDrawLine(t *testing.T) {
 }
 func TestCreateImageFromFile(t *testing.T) {
 	testCode := [][]string{
-		{"(create-image-from-file \"../../draw/images/duke.png\")", "Pixbuf: "},
+		{"(create-image-from-file \"images/duke.png\")", "Pixbuf: "},
 
 		{"(create-image-from-file)", "E1007"},
 		{"(create-image-from-file \"hoge.gif\")", "E2002"},
@@ -105,7 +103,7 @@ func TestCreateImageFromFile(t *testing.T) {
 }
 func TestDrawImage(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"images/duke.png\"))", "img"},
 		{"(draw-image img 10 10)", "#<nil>"},
 
 		{"(draw-image 10 10)", "E1007"},
@@ -118,7 +116,7 @@ func TestDrawImage(t *testing.T) {
 }
 func TestScaleImage(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"images/duke.png\"))", "img"},
 		{"(scale-image img 90 90)", "Pixbuf: "},
 
 		{"(scale-image 10 10)", "E1007"},
@@ -131,7 +129,7 @@ func TestScaleImage(t *testing.T) {
 }
 func TestRotate90Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"images/duke.png\"))", "img"},
 		{"(rotate90-image img)", "Pixbuf: "},
 
 		{"(rotate90-image)", "E1007"},
@@ -142,7 +140,7 @@ func TestRotate90Image(t *testing.T) {
 }
 func TestRotate180Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"images/duke.png\"))", "img"},
 		{"(rotate180-image img)", "Pixbuf: "},
 
 		{"(rotate180-image)", "E1007"},
@@ -153,7 +151,7 @@ func TestRotate180Image(t *testing.T) {
 }
 func TestRotate270Image(t *testing.T) {
 	testCode := [][]string{
-		{"(define img (create-image-from-file \"../../draw/images/duke.png\"))", "img"},
+		{"(define img (create-image-from-file \"images/duke.png\"))", "img"},
 		{"(rotate270-image img)", "Pixbuf: "},
 
 		{"(rotate270-image)", "E1007"},
