@@ -6,7 +6,7 @@
 */
 package main
 
-import "local.packages/scheme"
+import "github.com/hidekuno/go-scheme/scheme"
 
 // Main
 func main() {
