@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/hidekuno/go-scheme/web"
+	"local.packages/web"
 )
 
 const (
