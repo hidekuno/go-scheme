@@ -12,13 +12,6 @@ Go言語によるScheme(subset版)の実装
 - SICPの図形言語プログラムが動作するところまで確認した。
     - https://github.com/hidekuno/picture-language
 
-## 変数
-```
-GOARCH=amd64
-GOOS=linux
-GOPATH=${HOME}/go
-```
-
 ## 動かし方
 ### 動作条件
 - dockerが動いていること
