@@ -8,7 +8,7 @@ Go言語によるScheme(subset版)の実装
 
 ## 完成度合い
 - 簡単なプログラムが動くレベル
-    - https://github.com/hidekuno/go-scheme/blob/master/src/scheme/lisp_test.go
+    - https://github.com/hidekuno/go-scheme/blob/master/scheme/lisp_test.go
 - SICPの図形言語プログラムが動作するところまで確認した。
     - https://github.com/hidekuno/picture-language
 
@@ -24,7 +24,7 @@ xhost +
 docker run -it --name go-scheme -e DISPLAY=docker.for.mac.localhost:0 hidekuno/go-scheme /root/glisp
 ```
 
-<img src="https://user-images.githubusercontent.com/22115777/68912921-e9619300-079c-11ea-976c-340252936eb1.png" width=80%>
+<img src="https://user-images.githubusercontent.com/22115777/68912921-e9619300-079c-11ea-976c-340252936eb1.png" width=50% height="50%">
 
 ### Linux
 ```
@@ -38,4 +38,4 @@ docker pull hidekuno/go-scheme
 docker run -it --name go-scheme hidekuno/go-scheme /root/lisp
 ```
 
-<img src="https://user-images.githubusercontent.com/22115777/67071430-783eb800-f1bd-11e9-9a94-18c3b371ab39.png" width=80%>
+<img src="https://user-images.githubusercontent.com/22115777/67071430-783eb800-f1bd-11e9-9a94-18c3b371ab39.png" width=80% height="80%">
