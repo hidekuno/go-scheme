@@ -23,6 +23,19 @@ go test -v
 go run cmd/lisp/main.go
 ```
 
+### TEST coverage(C0)
+```
+cd ${HOME}/go-scheme/scheme
+go test -cover -coverprofile /tmp/cover.out
+go tool cover -func=/tmp/cover.out
+```
+
+### TEST Benchmark
+```
+cd ${HOME}/go-scheme/scheme
+go test -bench .
+```
+
 ## TEST & Run (Scheme on GUI for Draw)
 ### Requirement
 - X server is running.
@@ -54,6 +67,15 @@ go run cmd/wasm/main.go
 ### Requirement
 - docker is running.
 - X Server is running.(XQuartz 2.7.11 for mac)
+
+### Build(my operation log)
+```
+cd ${WHERE}/go-scheme/docker
+docker build --target=go-scheme -t hidekuno/go-scheme --file=./Dockerfile .
+docker login
+docker push hidekuno/go-scheme
+docker logout
+```
 
 ### macOS
 ```
