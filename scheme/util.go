@@ -198,6 +198,5 @@ func buildUtilFunc() {
 		} else {
 			return NewSymbol("big-endian"), nil
 		}
-		return nil, NewRuntimeError("E9999")
 	}
 }
