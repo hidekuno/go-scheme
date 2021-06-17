@@ -8,7 +8,7 @@ package scheme
 
 import (
 	"fmt"
-	"math"
+	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -54,7 +54,7 @@ func toFloat(n Number) *Float {
 	} else if v, ok := n.(*Float); ok {
 		return v
 	} else if v, ok := n.(*Rat); ok {
-		return NewFloat(float64(v.Value[0]) / float64(v.Value[1]))
+		return NewFloat(float64(v.Value.Num().Uint64()) / float64(v.Value.Denom().Uint64()))
 	}
 	tracer.Fatal("toFloat(): Impossible error\n")
 	return NewFloat(1.0)
@@ -229,7 +229,7 @@ func (self *Float) LogFormatString(prec int) string {
 // Rat Type
 type Rat struct {
 	Number
-	Value []int
+	Value *big.Rat
 }
 
 func NewRat(m int, n int) *Rat {
@@ -237,74 +237,82 @@ func NewRat(m int, n int) *Rat {
 		panic(NewRuntimeError("E1013"))
 	}
 	v := new(Rat)
-	v.Value = []int{m, n}
-	v.calc()
-	return v
-}
-func CreateRat(m int, n int) Number {
-	v := NewRat(m, n)
-	if v.Value[1] == 1 {
-		return NewInteger(v.Value[0])
-	}
+	v.Value = big.NewRat(int64(m), int64(n))
 	return v
 }
 func (self *Rat) Add(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return CreateRat(self.Value[0]*v.Value[1]+v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+		self.Value = self.Value.Add(self.Value, v.Value)
+		return self
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Sub(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return CreateRat(self.Value[0]*v.Value[1]-v.Value[0]*self.Value[1], self.Value[1]*v.Value[1])
+		self.Value = self.Value.Sub(self.Value, v.Value)
+		return self
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Mul(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return CreateRat(self.Value[0]*v.Value[0], self.Value[1]*v.Value[1])
+		self.Value = self.Value.Mul(self.Value, v.Value)
+		return self
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Div(n Number) Number {
 	if v, ok := n.(*Rat); ok {
-		return CreateRat(self.Value[0]*v.Value[1], self.Value[1]*v.Value[0])
+		self.Value = self.Value.Quo(self.Value, v.Value)
+		return self
 	}
 	panic(NewRuntimeError("E1022"))
 }
 
 func (self *Rat) Equal(n Number) bool {
 	if v, ok := n.(*Rat); ok {
-		return self.Value[0]*v.Value[1] == v.Value[0]*self.Value[1]
+		//  0 if x == y
+		b := self.Value.Cmp(v.Value)
+		return b == 0
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Greater(n Number) bool {
 	if v, ok := n.(*Rat); ok {
-		return self.Value[0]*v.Value[1] > v.Value[0]*self.Value[1]
+		// +1 if x >  y
+		b := self.Value.Cmp(v.Value)
+		return b == 1
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) Less(n Number) bool {
 	if v, ok := n.(*Rat); ok {
-		return self.Value[0]*v.Value[1] < v.Value[0]*self.Value[1]
+		// -1 if x <  y
+		b := self.Value.Cmp(v.Value)
+		return b == -1
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) GreaterEqual(n Number) bool {
 	if v, ok := n.(*Rat); ok {
-		return self.Value[0]*v.Value[1] >= v.Value[0]*self.Value[1]
+		// +1 if x >  y
+		//  0 if x == y
+		b := self.Value.Cmp(v.Value)
+		return b == 0 || b == 1
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) LessEqual(n Number) bool {
 	if v, ok := n.(*Rat); ok {
-		return self.Value[0]*v.Value[1] <= v.Value[0]*self.Value[1]
+		//  0 if x == y
+		// -1 if x <  y
+		b := self.Value.Cmp(v.Value)
+		return b == 0 || b == -1
 	}
 	panic(NewRuntimeError("E1022"))
 }
 func (self *Rat) String() string {
-	return strconv.Itoa(self.Value[0]) + "/" + strconv.Itoa(self.Value[1])
+	return self.Value.RatString()
 }
 func (self *Rat) Print() {
 	fmt.Print(self.String())
@@ -314,35 +322,9 @@ func (self *Rat) isAtom() bool {
 }
 func (self *Rat) equalValue(e Expression) bool {
 	if v, ok := e.(*Rat); ok {
-		return self.Value[0]*v.Value[1] == v.Value[0]*self.Value[1]
+		return self.Equal(v)
 	}
 	return false
-}
-func (self *Rat) calc() {
-
-	var gcm func(m, n int) int
-
-	gcm = func(m, n int) int {
-		mod := m % n
-		if mod == 0 {
-			return n
-		}
-		return gcm(n, mod)
-	}
-	g := gcm(self.Value[0], self.Value[1])
-	if 0 > g {
-		g = -g
-	}
-	sign := 1
-	if self.Value[0]*self.Value[1] < 0 {
-		sign = -1
-	}
-	self.Value[0] = self.Value[0] / g
-	self.Value[1] = self.Value[1] / g
-
-	self.Value[0] = int(math.Abs(float64(self.Value[0])))
-	self.Value[1] = int(math.Abs(float64(self.Value[1])))
-	self.Value[0] *= sign
 }
 func MakeRat(s string) Number {
 	return MakeRatRadix(s, 10)
@@ -353,7 +335,7 @@ func MakeRatRadix(s string, r int) Number {
 		if m, err := strconv.ParseInt(rat[0], r, 0); err == nil {
 			if n, err := strconv.ParseInt(rat[1], r, 0); err == nil {
 				if 0 != n {
-					return CreateRat(int(m), int(n))
+					return NewRat(int(m), int(n))
 				}
 			}
 		}
