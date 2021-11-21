@@ -145,42 +145,6 @@ func (self *Symbol) equalValue(e Expression) bool {
 	return false
 }
 
-// Boolean Type
-type Boolean struct {
-	Expression
-	Value bool
-	exp   string
-}
-
-func NewBoolean(v bool) *Boolean {
-	b := new(Boolean)
-	b.Value = v
-	if v {
-		b.exp = "#t"
-	} else {
-		b.exp = "#f"
-	}
-	return b
-}
-func (self *Boolean) String() string {
-	return self.exp
-}
-func (self *Boolean) Print() {
-	fmt.Print(self.String())
-}
-func (self *Boolean) isAtom() bool {
-	return true
-}
-func (self *Boolean) clone() Expression {
-	return NewBoolean(self.Value)
-}
-func (self *Boolean) equalValue(e Expression) bool {
-	if v, ok := e.(*Boolean); ok {
-		return self.Value == v.Value
-	}
-	return false
-}
-
 // Nil Type
 type Nil struct {
 	Expression
@@ -770,6 +734,7 @@ func BuildFunc() {
 	buildUtilFunc()
 	buildStringFunc()
 	buildCharFunc()
+	buildBooleanFunc()
 }
 
 // add func
