@@ -12,17 +12,6 @@ import (
 	"testing"
 )
 
-func TestNot(t *testing.T) {
-	testCode := [][]string{
-		{"(not (= 0.75 0.75))", "#f"},
-		{"(not (= 0.15 0.75))", "#t"},
-
-		{"(not 10)", "E1001"},
-		{"(not #t #f)", "E1007"},
-		{"(not)", "E1007"},
-	}
-	executeTest(testCode, "not", t)
-}
 func TestAnd(t *testing.T) {
 	testCode := [][]string{
 		{"(and (= 1 1)(= 2 2))", "#t"},
