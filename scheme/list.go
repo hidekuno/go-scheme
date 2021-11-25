@@ -14,9 +14,38 @@ import (
 	"strconv"
 )
 
+type Sequence interface {
+	GetValue() []Expression
+}
+
+func buildString(seq Sequence) string {
+	var buffer bytes.Buffer
+	var makeString func(Sequence)
+
+	makeString = func(seq Sequence) {
+		buffer.WriteString("(")
+
+		for i, e := range seq.GetValue() {
+			if j, ok := e.(Sequence); ok {
+				makeString(j)
+
+			} else if j, ok := e.(Expression); ok {
+				buffer.WriteString(j.String())
+			}
+			if i != len(seq.GetValue())-1 {
+				buffer.WriteString(" ")
+			}
+		}
+		buffer.WriteString(")")
+	}
+	makeString(seq)
+	return buffer.String()
+}
+
 // List Type
 type List struct {
 	Expression
+	Sequence
 	Value []Expression
 }
 
@@ -25,29 +54,8 @@ func NewList(exp []Expression) *List {
 	l.Value = exp
 	return l
 }
-
 func (self *List) String() string {
-	var buffer bytes.Buffer
-	var makeString func(*List)
-
-	makeString = func(l *List) {
-		buffer.WriteString("(")
-
-		for i, e := range l.Value {
-			if j, ok := e.(*List); ok {
-				makeString(j)
-
-			} else if j, ok := e.(Expression); ok {
-				buffer.WriteString(j.String())
-			}
-			if i != len(l.Value)-1 {
-				buffer.WriteString(" ")
-			}
-		}
-		buffer.WriteString(")")
-	}
-	makeString(self)
-	return buffer.String()
+	return buildString(self)
 }
 func (self *List) Print() {
 	fmt.Print(self.String())
@@ -61,6 +69,41 @@ func (self *List) clone() Expression {
 func (self *List) equalValue(e Expression) bool {
 	// Not Support this method
 	return false
+}
+func (self *List) GetValue() []Expression {
+	return self.Value
+}
+
+// Vector Type
+type Vector struct {
+	Expression
+	Sequence
+	List
+}
+
+func NewVector(exp []Expression) *Vector {
+	v := new(Vector)
+	v.Value = exp
+	return v
+}
+func (self *Vector) String() string {
+	return "#" + buildString(self)
+}
+func (self *Vector) Print() {
+	fmt.Print(self.String())
+}
+func (self *Vector) clone() Expression {
+	return NewVector(self.Value)
+}
+func (self *Vector) isAtom() bool {
+	return false
+}
+func (self *Vector) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
+func (self *Vector) GetValue() []Expression {
+	return self.Value
 }
 
 // Pair Type
@@ -873,5 +916,14 @@ func buildListFunc() {
 	}
 	buildInFuncTbl["sorted?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return isSorted(exp, env)
+	}
+
+	// list operator
+	buildInFuncTbl["vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l []Expression
+				return NewVector(append(l, exp...)), nil
+			})
 	}
 }
