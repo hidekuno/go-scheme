@@ -15,7 +15,9 @@ import (
 )
 
 type Sequence interface {
+	Expression
 	GetValue() []Expression
+	SetValue([]Expression)
 }
 
 func buildString(seq Sequence) string {
@@ -23,6 +25,9 @@ func buildString(seq Sequence) string {
 	var makeString func(Sequence)
 
 	makeString = func(seq Sequence) {
+		if _, ok := seq.(*Vector); ok {
+			buffer.WriteString("#")
+		}
 		buffer.WriteString("(")
 
 		for i, e := range seq.GetValue() {
@@ -41,10 +46,31 @@ func buildString(seq Sequence) string {
 	makeString(seq)
 	return buffer.String()
 }
+func makeSequence(exp []Expression, env *SimpleEnv, seq Sequence) (Expression, error) {
+
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			size, ok := exp[0].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+			}
+			if size.Value < 0 {
+				return nil, NewRuntimeError("E1011", strconv.Itoa(size.Value))
+			}
+			l := make([]Expression, 0, size.Value)
+			for i := 0; i < size.Value; i++ {
+				l = append(l, exp[1].clone())
+			}
+			seq.SetValue(l)
+			return seq, nil
+		})
+}
 
 // List Type
 type List struct {
-	Expression
 	Sequence
 	Value []Expression
 }
@@ -73,10 +99,12 @@ func (self *List) equalValue(e Expression) bool {
 func (self *List) GetValue() []Expression {
 	return self.Value
 }
+func (self *List) SetValue(v []Expression) {
+	self.Value = v
+}
 
 // Vector Type
 type Vector struct {
-	Expression
 	Sequence
 	List
 }
@@ -87,7 +115,7 @@ func NewVector(exp []Expression) *Vector {
 	return v
 }
 func (self *Vector) String() string {
-	return "#" + buildString(self)
+	return buildString(self)
 }
 func (self *Vector) Print() {
 	fmt.Print(self.String())
@@ -104,6 +132,9 @@ func (self *Vector) equalValue(e Expression) bool {
 }
 func (self *Vector) GetValue() []Expression {
 	return self.Value
+}
+func (self *Vector) SetValue(v []Expression) {
+	self.Value = v
 }
 
 // Pair Type
@@ -734,24 +765,7 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["make-list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				size, ok := exp[0].(*Integer)
-				if !ok {
-					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
-				}
-				if size.Value < 0 {
-					return nil, NewRuntimeError("E1011", strconv.Itoa(size.Value))
-				}
-				l := make([]Expression, 0, size.Value)
-				for i := 0; i < size.Value; i++ {
-					l = append(l, exp[1].clone())
-				}
-				return NewList(l), nil
-			})
+		return makeSequence(exp, env, new(List))
 	}
 	buildInFuncTbl["take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return subList(exp, env,
@@ -918,12 +932,15 @@ func buildListFunc() {
 		return isSorted(exp, env)
 	}
 
-	// list operator
+	// vector operator
 	buildInFuncTbl["vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return EvalCalcParam(exp, env,
 			func(exp ...Expression) (Expression, error) {
 				var l []Expression
 				return NewVector(append(l, exp...)), nil
 			})
+	}
+	buildInFuncTbl["make-vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return makeSequence(exp, env, new(Vector))
 	}
 }

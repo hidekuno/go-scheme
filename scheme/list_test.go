@@ -619,3 +619,14 @@ func TestIsSorted(t *testing.T) {
 	}
 	executeTest(testCode, "sorted?", t)
 }
+func TestVector(t *testing.T) {
+	testCode := [][]string{
+		{"(vector 1 2)", "#(1 2)"},
+		{"(vector 0.5 1)", "#(0.5 1)"},
+		{"(vector #t #f)", "#(#t #f)"},
+		{"(vector (list 1)(list 2))", "#((1) (2))"},
+		{"(vector (vector (vector 1))(vector 2)(vector 3))",
+			"#(#(#(1)) #(2) #(3))"},
+	}
+	executeTest(testCode, "vector", t)
+}
