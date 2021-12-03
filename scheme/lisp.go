@@ -58,8 +58,9 @@ var (
 		"E1017": "Not Case Gramar",
 		"E1018": "Not Format Gramar",
 		"E1019": "Not Char",
+		"E1020": "Not Rat",
 		"E1021": "Out Of Range",
-		"E1022": "Not Rational",
+		"E1022": "Not Vector",
 		"E9999": "System Panic",
 	}
 	tracer = log.New(os.Stderr, "", log.Lshortfile)

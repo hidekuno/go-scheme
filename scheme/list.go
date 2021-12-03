@@ -943,4 +943,43 @@ func buildListFunc() {
 	buildInFuncTbl["make-vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return makeSequence(exp, env, new(Vector))
 	}
+	buildInFuncTbl["vector-length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*Vector); ok {
+					return NewInteger(len(l.Value)), nil
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
+	buildInFuncTbl["vector->list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*Vector); ok {
+					return NewList(l.Value), nil
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
+	buildInFuncTbl["list->vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*List); ok {
+					return NewVector(l.Value), nil
+				} else {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
 }
