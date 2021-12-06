@@ -373,6 +373,7 @@ func tokenize(s string) ([]string, error) {
 	var tokens []string
 	stringMode := false
 	quoteMode := false
+	vectorMode := false
 	tokenName := make([]rune, 0, 1024)
 	from := 0
 	left := 0
@@ -393,6 +394,10 @@ func tokenize(s string) ([]string, error) {
 				stringMode = true
 			} else if c == '(' {
 				tokens = append(tokens, "(")
+				if vectorMode == true {
+					tokens = append(tokens, "vector")
+					vectorMode = false
+				}
 				if quoteMode == true {
 					left++
 				}
@@ -413,14 +418,19 @@ func tokenize(s string) ([]string, error) {
 			} else if c == ' ' {
 				//Nop
 			} else {
-				tokenName = append(tokenName, c)
 				if len(rb)-1 == i {
+					tokenName = append(tokenName, c)
 					tokens = append(tokens, string(tokenName))
 					if quoteMode == true {
 						tokens = append(tokens, ")")
 						quoteMode = false
 					}
 				} else {
+					if c == '#' && rb[i+1] == '(' {
+						vectorMode = true
+						continue
+					}
+					tokenName = append(tokenName, c)
 					switch rb[i+1] {
 					case '(', ')', ' ':
 						tokens = append(tokens, string(tokenName))
