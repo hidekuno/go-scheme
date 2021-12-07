@@ -433,3 +433,27 @@ func TestStringScanRight(t *testing.T) {
 	}
 	executeTest(testCode, "string-scan-right", t)
 }
+func TestStringVector(t *testing.T) {
+	testCode := [][]string{
+		{"(string->vector \"\")", "#()"},
+		{"(string->vector \"abc\")", "#(#\\a #\\b #\\c)"},
+		{"(string->vector \"山田\")", "#(#\\山 #\\田)"},
+		{"(string->vector)", "E1007"},
+		{"(string->vector \"a\" \"b\")", "E1007"},
+		{"(string->vector #\\a)", "E1015"},
+		{"(string->vector a)", "E1008"},
+	}
+	executeTest(testCode, "string->vector", t)
+}
+func TestVectorString(t *testing.T) {
+	testCode := [][]string{
+		{"(vector->string (vector))", "\"\""},
+		{"(vector->string (vector #\\a #\\b #\\c))", "\"abc\""},
+		{"(vector->string)", "E1007"},
+		{"(vector->string (list #\\a #\\b)(list #\\a #\\b))", "E1007"},
+		{"(vector->string 10)", "E1022"},
+		{"(vector->string (vector #\\a 10))", "E1019"},
+		{"(vector->string a)", "E1008"},
+	}
+	executeTest(testCode, "vector->string", t)
+}

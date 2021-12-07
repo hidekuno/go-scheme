@@ -244,3 +244,13 @@ func TestNativeEndian(t *testing.T) {
 	}
 	executeTest(testCode, "boolean?", t)
 }
+func TestVectorTypeEq(t *testing.T) {
+	testCode := [][]string{
+		{"(vector? #(1 2 3))", "#t"},
+		{"(vector? 90)", "#f"},
+		{"(vector?)", "E1007"},
+		{"(vector? (vector 1)(vector 2))", "E1007"},
+		{"(vector? a)", "E1008"},
+	}
+	executeTest(testCode, "vector?", t)
+}

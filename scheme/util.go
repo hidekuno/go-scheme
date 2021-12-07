@@ -185,6 +185,9 @@ func buildUtilFunc() {
 	buildInFuncTbl["boolean?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Boolean{}) })
 	}
+	buildInFuncTbl["vector?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return isType(exp, env, func(e Expression) bool { return reflect.TypeOf(e) == reflect.TypeOf(&Vector{}) })
+	}
 	buildInFuncTbl["native-endian"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		if len(exp) != 0 {
 			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
