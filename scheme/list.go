@@ -982,4 +982,88 @@ func buildListFunc() {
 				}
 			})
 	}
+	buildInFuncTbl["vector-append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l []Expression
+				for _, e := range exp {
+					if v, ok := e.(*Vector); ok {
+						l = append(l, v.Value...)
+					} else {
+						return nil, NewRuntimeError("E1022", reflect.TypeOf(e).String())
+					}
+				}
+				return NewVector(l), nil
+			})
+	}
+	buildInFuncTbl["vector-append!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l *Vector
+				if v, ok := exp[0].(*Vector); ok {
+					l = v
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				for _, e := range exp[1:] {
+					if v, ok := e.(*Vector); ok {
+						l.Value = append(l.Value, v.Value...)
+					} else {
+						return nil, NewRuntimeError("E1022", reflect.TypeOf(e).String())
+					}
+				}
+				return l, nil
+			})
+	}
+	buildInFuncTbl["vector-ref"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				l, ok := exp[0].(*Vector)
+				if !ok {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				n, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+
+				if n.Value < 0 || len(l.Value) <= n.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+				}
+				return l.Value[n.Value], nil
+			})
+	}
+	buildInFuncTbl["vector-set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 3 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				l, ok := exp[0].(*Vector)
+				if !ok {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				n, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+
+				if n.Value < 0 || len(l.Value) <= n.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+				}
+				l.Value[n.Value] = exp[2]
+
+				return NewNil(), nil
+			})
+	}
+
 }
