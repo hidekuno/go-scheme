@@ -619,3 +619,151 @@ func TestIsSorted(t *testing.T) {
 	}
 	executeTest(testCode, "sorted?", t)
 }
+func TestVector(t *testing.T) {
+	testCode := [][]string{
+		{"#(1 2)", "#(1 2)"},
+		{"(vector 1 2)", "#(1 2)"},
+		{"(vector 0.5 1)", "#(0.5 1)"},
+		{"(vector #t #f)", "#(#t #f)"},
+		{"(vector (list 1)(list 2))", "#((1) (2))"},
+		{"(vector (vector (vector 1))(vector 2)(vector 3))",
+			"#(#(#(1)) #(2) #(3))"},
+
+		{"(vector c 10)", "E1008"},
+		{"#", "E1008"},
+	}
+	executeTest(testCode, "vector", t)
+}
+func TestMakeVector(t *testing.T) {
+	testCode := [][]string{
+		{"(make-vector 10 0)", "#(0 0 0 0 0 0 0 0 0 0)"},
+		{"(make-vector 4 (list 1 2 3))", "#((1 2 3) (1 2 3) (1 2 3) (1 2 3))"},
+		{"(make-vector 8 'a)", "#(a a a a a a a a)"},
+		{"(make-vector 0 'a)", "#()"},
+
+		{"(make-vector)", "E1007"},
+		{"(make-vector 10)", "E1007"},
+		{"(make-vector 10 0 1)", "E1007"},
+		{"(make-vector #t 0)", "E1002"},
+		{"(make-vector -1 0)", "E1011"},
+		{"(make-vector 10 c)", "E1008"},
+	}
+	executeTest(testCode, "make-vector", t)
+}
+func TestVectorLength(t *testing.T) {
+	testCode := [][]string{
+		{"(vector-length (vector))", "0"},
+		{"(vector-length (vector 3))", "1"},
+		{"(vector-length (list->vector (iota 10)))", "10"},
+
+		{"(vector-length)", "E1007"},
+		{"(vector-length (vector 1)(vector 2))", "E1007"},
+		{"(vector-length (list 1 2))", "E1022"},
+		{"(vector-length (cons 1 2))", "E1022"},
+		{"(vector-length a)", "E1008"},
+	}
+	executeTest(testCode, "vector-length", t)
+}
+func TestVectorList(t *testing.T) {
+	testCode := [][]string{
+		{"(vector->list #(1 2 3))", "(1 2 3)"},
+		{"(vector->list (vector 1 2 3))", "(1 2 3)"},
+		{"(vector->list #())", "()"},
+		{"(vector->list)", "E1007"},
+		{"(vector->list #(1 2 3) #(1 2 3))", "E1007"},
+		{"(vector->list '(1 2 3))", "E1022"},
+	}
+	executeTest(testCode, "vector->list", t)
+}
+func TestListVector(t *testing.T) {
+	testCode := [][]string{
+		{"(list->vector '(1 2 3))", "#(1 2 3)"},
+		{"(list->vector (list 1 2 3))", "#(1 2 3)"},
+		{"(list->vector '())", "#()"},
+		{"(list->vector)", "E1007"},
+		{"(list->vector (list 1 2 3) '(1 2 3))", "E1007"},
+		{"(list->vector #(1 2 3))", "E1005"},
+	}
+	executeTest(testCode, "list->vector", t)
+}
+func TestVectorAppend(t *testing.T) {
+	testCode := [][]string{
+		{"(vector-append (vector 1)(vector 2))", "#(1 2)"},
+		{"(vector-append (vector 1)(vector 2)(vector 3))", "#(1 2 3)"},
+		{"(vector-append (vector (vector 10))(vector 2)(vector 3))", "#(#(10) 2 3)"},
+		{"(vector-append (list->vector (iota 5)) (vector 100))", "#(0 1 2 3 4 100)"},
+
+		{"(define a (list->vector (iota 5)))", "a"},
+		{"(define b a)", "b"},
+		{"(vector-append (list->vector(iota 5 5)) a)", "#(5 6 7 8 9 0 1 2 3 4)"},
+		{"a", "#(0 1 2 3 4)"},
+		{"b", "#(0 1 2 3 4)"},
+		{"(vector-append)", "E1007"},
+		{"(vector-append 10 10)", "E1022"},
+		{"(vector-append (vector 1) 105)", "E1022"},
+		{"(vector-append (vector 1) g)", "E1008"},
+	}
+	executeTest(testCode, "vector-append", t)
+}
+func TestVectorAppendEffect(t *testing.T) {
+	testCode := [][]string{
+		{"(vector-append! (vector 1)(vector 2))", "#(1 2)"},
+		{"(vector-append! (vector 1)(vector 2)(vector 3))", "#(1 2 3)"},
+		{"(vector-append! (vector (vector 10))(vector 2)(vector 3))", "#(#(10) 2 3)"},
+		{"(vector-append! (list->vector (iota 5)) (vector 100))", "#(0 1 2 3 4 100)"},
+
+		{"(vector-append! (vector 1) a)", "E1008"},
+		{"(define a (list->vector(iota 5)))", "a"},
+		{"(define b a)", "b"},
+		{"(vector-append! a (list->vector (iota 5 5)))", "#(0 1 2 3 4 5 6 7 8 9)"},
+		{"a", "#(0 1 2 3 4 5 6 7 8 9)"},
+		{"b", "#(0 1 2 3 4 5 6 7 8 9)"},
+		{"(vector-append!)", "E1007"},
+		{"(vector-append! 10)", "E1022"},
+		{"(vector-append! (vector 1) 105)", "E1022"},
+	}
+	executeTest(testCode, "vector-append!", t)
+}
+func TestVectorRef(t *testing.T) {
+	testCode := [][]string{
+		{"(vector-ref (list->vector (iota 10)) 0)", "0"},
+		{"(vector-ref (list->vector (iota 10)) 1)", "1"},
+		{"(vector-ref (list->vector (iota 10)) 8)", "8"},
+		{"(vector-ref (list->vector (iota 10)) 9)", "9"},
+		{"(vector-ref #(#\\a #\\b #\\c) 1)", "#\\b"},
+		{"(vector-ref #((vector 0 1) 1 2 3) 0)", "#(0 1)"},
+
+		{"(vector-ref)", "E1007"},
+		{"(vector-ref (list->vector (iota 10)))", "E1007"},
+		{"(vector-ref (list->vector (iota 10)) 1 2)", "E1007"},
+		{"(vector-ref 10 -1)", "E1022"},
+		{"(vector-ref (list->vector (iota 10)) #t)", "E1002"},
+		{"(vector-ref a #t)", "E1008"},
+		{"(vector-ref (list->vector (iota 10)) a)", "E1008"},
+		{"(vector-ref (list->vector (iota 10)) -1)", "E1011"},
+		{"(vector-ref (list->vector (iota 10)) 10)", "E1011"},
+	}
+	executeTest(testCode, "vector-ref", t)
+}
+func TestVectorSet(t *testing.T) {
+	testCode := [][]string{
+		{"(define a #(1 2 3 4 5))", "a"},
+		{"(define b a)", "b"},
+		{"(vector-set! a 0 100)", "#<nil>"},
+		{"a", "#(100 2 3 4 5)"},
+		{"b", "#(100 2 3 4 5)"},
+		{"(vector-set!)", "E1007"},
+		{"(vector-set! (list->vector (iota 10)))", "E1007"},
+		{"(vector-set! (list->vector (iota 10)) 1 2 3)", "E1007"},
+
+		{"(vector-set! 10 0 -1)", "E1022"},
+		{"(vector-set! (list->vector (iota 10)) #t 0)", "E1002"},
+
+		{"(vector-set! g 0 #t)", "E1008"},
+		{"(vector-set! (list->vector (iota 10)) 0 g)", "E1008"},
+
+		{"(vector-set! (list->vector (iota 10)) -1 0)", "E1011"},
+		{"(vector-set! (list->vector (iota 10)) 10 0)", "E1011"},
+	}
+	executeTest(testCode, "vector-set!", t)
+}

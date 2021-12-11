@@ -14,9 +14,64 @@ import (
 	"strconv"
 )
 
+type Sequence interface {
+	Expression
+	GetValue() []Expression
+	SetValue([]Expression)
+}
+
+func buildString(seq Sequence) string {
+	var buffer bytes.Buffer
+	var makeString func(Sequence)
+
+	makeString = func(seq Sequence) {
+		if _, ok := seq.(*Vector); ok {
+			buffer.WriteString("#")
+		}
+		buffer.WriteString("(")
+
+		for i, e := range seq.GetValue() {
+			if j, ok := e.(Sequence); ok {
+				makeString(j)
+
+			} else if j, ok := e.(Expression); ok {
+				buffer.WriteString(j.String())
+			}
+			if i != len(seq.GetValue())-1 {
+				buffer.WriteString(" ")
+			}
+		}
+		buffer.WriteString(")")
+	}
+	makeString(seq)
+	return buffer.String()
+}
+func makeSequence(exp []Expression, env *SimpleEnv, seq Sequence) (Expression, error) {
+
+	if len(exp) != 2 {
+		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+	}
+	return EvalCalcParam(exp, env,
+		func(exp ...Expression) (Expression, error) {
+			size, ok := exp[0].(*Integer)
+			if !ok {
+				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+			}
+			if size.Value < 0 {
+				return nil, NewRuntimeError("E1011", strconv.Itoa(size.Value))
+			}
+			l := make([]Expression, 0, size.Value)
+			for i := 0; i < size.Value; i++ {
+				l = append(l, exp[1].clone())
+			}
+			seq.SetValue(l)
+			return seq, nil
+		})
+}
+
 // List Type
 type List struct {
-	Expression
+	Sequence
 	Value []Expression
 }
 
@@ -25,29 +80,8 @@ func NewList(exp []Expression) *List {
 	l.Value = exp
 	return l
 }
-
 func (self *List) String() string {
-	var buffer bytes.Buffer
-	var makeString func(*List)
-
-	makeString = func(l *List) {
-		buffer.WriteString("(")
-
-		for i, e := range l.Value {
-			if j, ok := e.(*List); ok {
-				makeString(j)
-
-			} else if j, ok := e.(Expression); ok {
-				buffer.WriteString(j.String())
-			}
-			if i != len(l.Value)-1 {
-				buffer.WriteString(" ")
-			}
-		}
-		buffer.WriteString(")")
-	}
-	makeString(self)
-	return buffer.String()
+	return buildString(self)
 }
 func (self *List) Print() {
 	fmt.Print(self.String())
@@ -61,6 +95,46 @@ func (self *List) clone() Expression {
 func (self *List) equalValue(e Expression) bool {
 	// Not Support this method
 	return false
+}
+func (self *List) GetValue() []Expression {
+	return self.Value
+}
+func (self *List) SetValue(v []Expression) {
+	self.Value = v
+}
+
+// Vector Type
+type Vector struct {
+	Sequence
+	List
+}
+
+func NewVector(exp []Expression) *Vector {
+	v := new(Vector)
+	v.Value = exp
+	return v
+}
+func (self *Vector) String() string {
+	return buildString(self)
+}
+func (self *Vector) Print() {
+	fmt.Print(self.String())
+}
+func (self *Vector) clone() Expression {
+	return NewVector(self.Value)
+}
+func (self *Vector) isAtom() bool {
+	return false
+}
+func (self *Vector) equalValue(e Expression) bool {
+	// Not Support this method
+	return false
+}
+func (self *Vector) GetValue() []Expression {
+	return self.Value
+}
+func (self *Vector) SetValue(v []Expression) {
+	self.Value = v
 }
 
 // Pair Type
@@ -691,24 +765,7 @@ func buildListFunc() {
 			})
 	}
 	buildInFuncTbl["make-list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
-		if len(exp) != 2 {
-			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
-		}
-		return EvalCalcParam(exp, env,
-			func(exp ...Expression) (Expression, error) {
-				size, ok := exp[0].(*Integer)
-				if !ok {
-					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
-				}
-				if size.Value < 0 {
-					return nil, NewRuntimeError("E1011", strconv.Itoa(size.Value))
-				}
-				l := make([]Expression, 0, size.Value)
-				for i := 0; i < size.Value; i++ {
-					l = append(l, exp[1].clone())
-				}
-				return NewList(l), nil
-			})
+		return makeSequence(exp, env, new(List))
 	}
 	buildInFuncTbl["take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return subList(exp, env,
@@ -874,4 +931,139 @@ func buildListFunc() {
 	buildInFuncTbl["sorted?"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return isSorted(exp, env)
 	}
+
+	// vector operator
+	buildInFuncTbl["vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l []Expression
+				return NewVector(append(l, exp...)), nil
+			})
+	}
+	buildInFuncTbl["make-vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		return makeSequence(exp, env, new(Vector))
+	}
+	buildInFuncTbl["vector-length"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*Vector); ok {
+					return NewInteger(len(l.Value)), nil
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
+	buildInFuncTbl["vector->list"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*Vector); ok {
+					return NewList(l.Value), nil
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
+	buildInFuncTbl["list->vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				if l, ok := exp[0].(*List); ok {
+					return NewVector(l.Value), nil
+				} else {
+					return nil, NewRuntimeError("E1005", reflect.TypeOf(exp[0]).String())
+				}
+			})
+	}
+	buildInFuncTbl["vector-append"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l []Expression
+				for _, e := range exp {
+					if v, ok := e.(*Vector); ok {
+						l = append(l, v.Value...)
+					} else {
+						return nil, NewRuntimeError("E1022", reflect.TypeOf(e).String())
+					}
+				}
+				return NewVector(l), nil
+			})
+	}
+	buildInFuncTbl["vector-append!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				var l *Vector
+				if v, ok := exp[0].(*Vector); ok {
+					l = v
+				} else {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				for _, e := range exp[1:] {
+					if v, ok := e.(*Vector); ok {
+						l.Value = append(l.Value, v.Value...)
+					} else {
+						return nil, NewRuntimeError("E1022", reflect.TypeOf(e).String())
+					}
+				}
+				return l, nil
+			})
+	}
+	buildInFuncTbl["vector-ref"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				l, ok := exp[0].(*Vector)
+				if !ok {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				n, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+
+				if n.Value < 0 || len(l.Value) <= n.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+				}
+				return l.Value[n.Value], nil
+			})
+	}
+	buildInFuncTbl["vector-set!"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 3 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env,
+			func(exp ...Expression) (Expression, error) {
+				l, ok := exp[0].(*Vector)
+				if !ok {
+					return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+				}
+				n, ok := exp[1].(*Integer)
+				if !ok {
+					return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
+				}
+
+				if n.Value < 0 || len(l.Value) <= n.Value {
+					return nil, NewRuntimeError("E1011", strconv.Itoa(n.Value))
+				}
+				l.Value[n.Value] = exp[2]
+
+				return NewNil(), nil
+			})
+	}
+
 }

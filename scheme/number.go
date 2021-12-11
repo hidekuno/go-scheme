@@ -245,28 +245,28 @@ func (self *Rat) Add(n Number) Number {
 		self.Value = self.Value.Add(self.Value, v.Value)
 		return self
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) Sub(n Number) Number {
 	if v, ok := n.(*Rat); ok {
 		self.Value = self.Value.Sub(self.Value, v.Value)
 		return self
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) Mul(n Number) Number {
 	if v, ok := n.(*Rat); ok {
 		self.Value = self.Value.Mul(self.Value, v.Value)
 		return self
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) Div(n Number) Number {
 	if v, ok := n.(*Rat); ok {
 		self.Value = self.Value.Quo(self.Value, v.Value)
 		return self
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 
 func (self *Rat) Equal(n Number) bool {
@@ -275,7 +275,7 @@ func (self *Rat) Equal(n Number) bool {
 		b := self.Value.Cmp(v.Value)
 		return b == 0
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) Greater(n Number) bool {
 	if v, ok := n.(*Rat); ok {
@@ -283,7 +283,7 @@ func (self *Rat) Greater(n Number) bool {
 		b := self.Value.Cmp(v.Value)
 		return b == 1
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) Less(n Number) bool {
 	if v, ok := n.(*Rat); ok {
@@ -291,7 +291,7 @@ func (self *Rat) Less(n Number) bool {
 		b := self.Value.Cmp(v.Value)
 		return b == -1
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) GreaterEqual(n Number) bool {
 	if v, ok := n.(*Rat); ok {
@@ -300,7 +300,7 @@ func (self *Rat) GreaterEqual(n Number) bool {
 		b := self.Value.Cmp(v.Value)
 		return b == 0 || b == 1
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) LessEqual(n Number) bool {
 	if v, ok := n.(*Rat); ok {
@@ -309,7 +309,7 @@ func (self *Rat) LessEqual(n Number) bool {
 		b := self.Value.Cmp(v.Value)
 		return b == 0 || b == -1
 	}
-	panic(NewRuntimeError("E1022"))
+	panic(NewRuntimeError("E1020"))
 }
 func (self *Rat) String() string {
 	return self.Value.RatString()

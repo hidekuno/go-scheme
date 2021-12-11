@@ -407,4 +407,41 @@ func buildStringFunc() {
 	buildInFuncTbl["string-scan-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
 		return stringScan(exp, env, strings.LastIndex)
 	}
+	buildInFuncTbl["vector->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			var buffer bytes.Buffer
+
+			l, ok := exp[0].(*Vector)
+			if !ok {
+				return nil, NewRuntimeError("E1022", reflect.TypeOf(exp[0]).String())
+			}
+			for _, e := range l.Value {
+				c, ok := e.(*Char)
+				if !ok {
+					return nil, NewRuntimeError("E1019", reflect.TypeOf(e).String())
+				}
+				buffer.WriteRune(c.Value)
+			}
+			return NewString(buffer.String()), nil
+		})
+	}
+	buildInFuncTbl["string->vector"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 1 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+			}
+			l := make([]Expression, 0, len(s.Value))
+			for _, c := range s.Value {
+				l = append(l, NewCharFromRune(rune(c)))
+			}
+			return NewVector(l), nil
+		})
+	}
 }
