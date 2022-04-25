@@ -93,6 +93,12 @@ xhost +
 docker run -it --name go-scheme -e DISPLAY=${HOSTIP}:0.0 hidekuno/go-scheme /root/glisp
 ```
 
+### Windows11+WSL2+WSLg
+```
+docker pull hidekuno/go-scheme
+docker run -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=:0 --name go-scheme hidekuno/go-scheme /root/glisp
+```
+
 ### For environments where the X server is not running
 ```
 docker pull hidekuno/go-scheme
