@@ -457,3 +457,195 @@ func TestVectorString(t *testing.T) {
 	}
 	executeTest(testCode, "vector->string", t)
 }
+func TestStringReverse(t *testing.T) {
+	testCode := [][]string{
+		{"(string-reverse \"1234567890\")", "\"0987654321\""},
+		{"(string-reverse \"1234567890\" 3)", "\"0987654\""},
+		{"(string-reverse \"1234567890\" 3 8)", "\"87654\""},
+		{"(string-reverse  \"山川\")", "\"川山\""},
+		{"(string-reverse)", "E1007"},
+		{"(string-reverse \"abcdefghijklmn\" 2 3 4)", "E1007"},
+		{"(string-reverse 10)", "E1015"},
+		{"(string-reverse \"abcdefghijklmn\" #\\a 1)", "E1002"},
+		{"(string-reverse \"abcdefghijklmn\" 1 #\\a)", "E1002"},
+		{"(string-reverse \"abcdefghijklmn\" 1 20)", "E1021"},
+		{"(string-reverse \"abcdefghijklmn\" 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-reverse", t)
+}
+func TestStringUpcase(t *testing.T) {
+	testCode := [][]string{
+		{"(string-upcase \"ab1012cd\")", "\"AB1012CD\""},
+		{"(string-upcase \"abcd\" 1)", "\"BCD\""},
+		{"(string-upcase \"abcd\" 1 2)", "\"B\""},
+		{"(string-upcase)", "E1007"},
+		{"(string-upcase \"abcdefghijklmn\" 2 3 4)", "E1007"},
+		{"(string-upcase 10)", "E1015"},
+		{"(string-upcase \"abcdefghijklmn\" #\\a 1)", "E1002"},
+		{"(string-upcase \"abcdefghijklmn\" 1 #\\a)", "E1002"},
+		{"(string-upcase \"abcdefghijklmn\" 1 20)", "E1021"},
+		{"(string-upcase \"abcdefghijklmn\" 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-upcase", t)
+}
+
+func TestStringDowncase(t *testing.T) {
+	testCode := [][]string{
+		{"(string-downcase \"AB1012CD\")", "\"ab1012cd\""},
+		{"(string-downcase \"ABCD\" 1)", "\"bcd\""},
+		{"(string-downcase \"ABCD\" 1 2)", "\"b\""},
+		{"(string-downcase)", "E1007"},
+		{"(string-downcase \"ABCDEFGHIJKLMN\" 2 3 4)", "E1007"},
+		{"(string-downcase 10)", "E1015"},
+		{"(string-downcase \"ABCDEFGHIJKLMN\" 1 #\\a)", "E1002"},
+		{"(string-downcase \"ABCDEFGHIJKLMN\" 1 #\\a)", "E1002"},
+		{"(string-downcase \"ABCDEFGHIJKLMN\" 1 20)", "E1021"},
+		{"(string-downcase \"ABCDEFGHIJKLMN\" 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-downcase", t)
+}
+func TestStringIndex(t *testing.T) {
+	testCode := [][]string{
+		{"(string-index \"abcdefghijlklmn\" #\\a)", "0"},
+		{"(string-index \"abcdefghijlklmn\" #\\e)", "4"},
+		{"(string-index \"abcdefghijlklmn\" #\\z)", "#f"},
+		{"(string-index \"abcdefghijlklmn\" #\\c 2)", "2"},
+		{"(string-index \"abcdefghijlklmn\" #\\d 2 8)", "3"},
+		{"(string-index \"abcdefghijlklmn\" #\\k 2 8)", "#f"},
+		{"(string-index \"abcdefghijlklcn\" #\\n 0 14)", "#f"},
+		{"(string-index \"abcdefghijlklcn\" #\\n 0 15)", "14"},
+		{"(string-index)", "E1007"},
+		{"(string-index \"abcdefghijklmn\" 2 3 4 5)", "E1007"},
+		{"(string-index 10 #\\a)", "E1015"},
+		{"(string-index \"abc\" 10)", "E1019"},
+		{"(string-index \"abcdefghijklmn\" #\\a #\\a 1)", "E1002"},
+		{"(string-index \"abcdefghijklmn\" #\\a  1 #\\a)", "E1002"},
+		{"(string-index \"abcdefghijklmn\" #\\a 1 20)", "E1021"},
+		{"(string-index \"abcdefghijklmn\" #\\a 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-index", t)
+}
+func TestStringIndexRight(t *testing.T) {
+	testCode := [][]string{
+		{"(string-index-right \"abcdefghijlklmn\" #\\a)", "0"},
+		{"(string-index-right \"abcdefghijlklmn\" #\\z)", "#f"},
+		{"(string-index-right \"abcdefghijlklcn\" #\\c 2)", "13"},
+		{"(string-index-right \"abcdefghijlklcn\" #\\n 2 14)", "#f"},
+		{"(string-index-right \"abcdefghijlklcn\" #\\n 2 15)", "14"},
+		{"(string-index-right)", "E1007"},
+		{"(string-index-right \"abcdefghijklmn\" 2 3 4 5)", "E1007"},
+		{"(string-index-right 10 #\\a)", "E1015"},
+		{"(string-index-right \"abc\" 10)", "E1019"},
+		{"(string-index-right \"abcdefghijklmn\" #\\a #\\a 1)", "E1002"},
+		{"(string-index-right \"abcdefghijklmn\" #\\a  1 #\\a)", "E1002"},
+		{"(string-index-right \"abcdefghijklmn\" #\\a 1 20)", "E1021"},
+		{"(string-index-right \"abcdefghijklmn\" #\\a 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-index-right", t)
+}
+func TestStringDelete(t *testing.T) {
+	testCode := [][]string{
+		{"(string-delete \"abcdefghijlklcn\" #\\a)", "\"bcdefghijlklcn\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\a 3)", "\"defghijlklcn\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\n 13)", "\"c\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\n 14)", "\"\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\a 3 4)", "\"d\""},
+		{"(string-delete \"aaaaaaaaaaaaaaaaaaaa\" #\\a 3 4)", "\"\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\a 3 9)", "\"defghi\""},
+		{"(string-delete \"abcdefghijlklcn\" #\\h 3 9)", "\"defgi\""},
+		{"(string-delete)", "E1007"},
+		{"(string-delete \"abcdefghijklmn\" 2 3 4 5)", "E1007"},
+		{"(string-delete 10 #\\a)", "E1015"},
+		{"(string-delete \"abc\" 10)", "E1019"},
+		{"(string-delete \"abcdefghijklmn\" #\\a #\\a 1)", "E1002"},
+		{"(string-delete \"abcdefghijklmn\" #\\a  1 #\\a)", "E1002"},
+		{"(string-delete \"abcdefghijklmn\" #\\a 1 20)", "E1021"},
+		{"(string-delete \"abcdefghijklmn\" #\\a 6 5)", "E1021"},
+	}
+	executeTest(testCode, "string-delete", t)
+}
+func TestStringTrim(t *testing.T) {
+	testCode := [][]string{
+		{"(string-trim  \"  ad  \")", "\"ad  \""},
+		{"(string-trim \"ada\" #\\a)", "\"da\""},
+		{"(string-trim)", "E1007"},
+		{"(string-trim \"abcdefghijklmn\" 2 3 4)", "E1007"},
+		{"(string-trim 10 #\\a)", "E1015"},
+		{"(string-trim \"abcdefghijklmn\" 2)", "E1019"},
+	}
+	executeTest(testCode, "string-trim", t)
+}
+func TestStringTrimRight(t *testing.T) {
+	testCode := [][]string{
+		{"(string-trim-right  \"  ad  \")", "\"  ad\""},
+		{"(string-trim-right \"ada\" #\\a)", "\"ad\""},
+		{"(string-trim-right)", "E1007"},
+		{"(string-trim-right \"abcdefghijklmn\" 2 3 4)", "E1007"},
+		{"(string-trim-right 10 #\\a)", "E1015"},
+		{"(string-trim-right \"abcdefghijklmn\" 2)", "E1019"},
+	}
+	executeTest(testCode, "string-trim-right", t)
+}
+func TestStringTrimBoth(t *testing.T) {
+	testCode := [][]string{
+		{"(string-trim-both  \"  ad  \")", "\"ad\""},
+		{"(string-trim-both \"ada\" #\\a)", "\"d\""},
+		{"(string-trim-both)", "E1007"},
+		{"(string-trim-both \"abcdefghijklmn\" 2 3 4)", "E1007"},
+		{"(string-trim-both 10 #\\a)", "E1015"},
+		{"(string-trim-both \"abcdefghijklmn\" 2)", "E1019"},
+	}
+	executeTest(testCode, "string-trim-both", t)
+}
+func TestStringTake(t *testing.T) {
+	testCode := [][]string{
+		{"(string-take \"1234567890\" 0)", "\"\""},
+		{"(string-take \"1山2\" 2)", "\"1山\""},
+		{"(string-take \"1234567890\" 10)", "\"1234567890\""},
+		{"(string-take)", "E1007"},
+		{"(string-take 2 3 4)", "E1007"},
+		{"(string-take \"123456\" #\\a)", "E1002"},
+		{"(string-take \"abcdefghijklmn\" -1)", "E1021"},
+		{"(string-take \"abcdefghijklmn\" 15)", "E1021"},
+	}
+	executeTest(testCode, "string-take", t)
+}
+func TestStringTakeRigth(t *testing.T) {
+	testCode := [][]string{
+		{"(string-take-right \"1234567890\" 0)", "\"\""},
+		{"(string-take-right \"1山2\" 2)", "\"山2\""},
+		{"(string-take-right \"1234567890\" 10)", "\"1234567890\""},
+		{"(string-take-right)", "E1007"},
+		{"(string-take-right 2 3 4)", "E1007"},
+		{"(string-take-right \"123456\" #\\a)", "E1002"},
+		{"(string-take-right \"abcdefghijklmn\" -1)", "E1021"},
+		{"(string-take-right \"abcdefghijklmn\" 15)", "E1021"},
+	}
+	executeTest(testCode, "string-take-right", t)
+}
+func TestStringDrop(t *testing.T) {
+	testCode := [][]string{
+		{"(string-drop \"1234567890\" 0)", "\"1234567890\""},
+		{"(string-drop \"1山2\" 1)", "\"山2\""},
+		{"(string-drop \"1234567890\" 10)", "\"\""},
+		{"(string-drop)", "E1007"},
+		{"(string-drop 2 3 4)", "E1007"},
+		{"(string-drop \"123456\" #\\a)", "E1002"},
+		{"(string-drop \"abcdefghijklmn\" -1)", "E1021"},
+		{"(string-drop \"abcdefghijklmn\" 15)", "E1021"},
+	}
+	executeTest(testCode, "string-drop", t)
+}
+func TestStringDropRigth(t *testing.T) {
+	testCode := [][]string{
+		{"(string-drop-right \"1234567890\" 0)", "\"1234567890\""},
+		{"(string-drop-right \"1山2\" 1)", "\"1山\""},
+		{"(string-drop-right \"1234567890\" 10)", "\"\""},
+		{"(string-drop-right)", "E1007"},
+		{"(string-drop-right 2 3 4)", "E1007"},
+		{"(string-drop-right \"123456\" #\\a)", "E1002"},
+		{"(string-drop-right \"abcdefghijklmn\" -1)", "E1021"},
+		{"(string-drop-right \"abcdefghijklmn\" 15)", "E1021"},
+	}
+	executeTest(testCode, "string-drop-right", t)
+}
