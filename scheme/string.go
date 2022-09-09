@@ -45,6 +45,95 @@ func (self *String) equalValue(e Expression) bool {
 	}
 	return false
 }
+
+func innerSubString(exp []Expression, env *SimpleEnv, s string) (*string, error) {
+	r := [2]int{0, utf8.RuneCountInString(s)}
+
+	for i, e := range exp {
+		v, ok := e.(*Integer)
+		if !ok {
+			return nil, NewRuntimeError("E1002", reflect.TypeOf(e).String())
+		}
+
+		r[i] = v.Value
+	}
+	from, to := r[0], r[1]
+	if from < 0 || to > utf8.RuneCountInString(s) || from > to {
+		return nil, NewRuntimeError("E1021", strconv.Itoa(from), strconv.Itoa(to))
+	}
+
+	ret := string([]rune(s)[from:to])
+	return &ret, nil
+}
+func getStartEnd(exp []Expression, env *SimpleEnv, s string) (int, int, error) {
+
+	r := [2]int{0, utf8.RuneCountInString(s)}
+
+	for i, e := range exp {
+		v, ok := e.(*Integer)
+		if !ok {
+			return r[0], r[1], NewRuntimeError("E1002", reflect.TypeOf(e).String())
+		}
+
+		r[i] = v.Value
+	}
+	from, to := r[0], r[1]
+	if from < 0 || to > utf8.RuneCountInString(s) || from > to {
+		return from, to, NewRuntimeError("E1021", strconv.Itoa(from), strconv.Itoa(to))
+	}
+	return from, to, nil
+}
+func stringCase(exp []Expression, env *SimpleEnv, caseFunc func(s string) string) (Expression, error) {
+
+	s, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	ss, err := innerSubString(exp[1:], env, s.Value)
+	if err != nil {
+		return nil, err
+	}
+	return NewString(caseFunc(*ss)), nil
+}
+func stringIndex(exp []Expression, env *SimpleEnv, index func(s, chars string) int) (Expression, error) {
+
+	s, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	c, ok := exp[1].(*Char)
+	if !ok {
+		return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
+	}
+	from, to, err := getStartEnd(exp[2:], env, s.Value)
+	if err != nil {
+		return nil, err
+	}
+	idx := index(s.Value, string(c.Value))
+	if idx == -1 {
+		return NewBoolean(false), nil
+	} else if (from <= idx) && (idx < to) {
+		return NewInteger(idx), nil
+	} else {
+		return NewBoolean(false), nil
+	}
+}
+func stringTrim(exp []Expression, env *SimpleEnv, trim func(s, chars string) string) (Expression, error) {
+
+	s, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	if len(exp) == 1 {
+		return NewString(trim(s.Value, " ")), nil
+	} else {
+		c, ok := exp[1].(*Char)
+		if !ok {
+			return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
+		}
+		return NewString(trim(s.Value, string(c.Value))), nil
+	}
+}
 func stringScan(exp []Expression, env *SimpleEnv, index func(s, chars string) int) (Expression, error) {
 	if len(exp) != 2 {
 		return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
@@ -130,6 +219,21 @@ func stringNumber(exp Expression, env *SimpleEnv, r int) (Expression, error) {
 		}
 	}
 	return NewBoolean(false), nil
+}
+func stringRange(exp []Expression, env *SimpleEnv, rangeFunc func(r []rune, n int) []rune) (Expression, error) {
+
+	s, ok := exp[0].(*String)
+	if !ok {
+		return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+	}
+	n, ok := exp[1].(*Integer)
+	if !ok {
+		return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[0]).String())
+	}
+	if 0 > n.Value || utf8.RuneCountInString(s.Value) < n.Value {
+		return nil, NewRuntimeError("E1021", n.String())
+	}
+	return NewString(string(rangeFunc([]rune(s.Value), n.Value))), nil
 }
 
 // Build Global environement.
@@ -282,24 +386,13 @@ func buildStringFunc() {
 			s, ok := exp[0].(*String)
 			if !ok {
 				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+			}
 
+			ss, err := innerSubString(exp[1:], env, s.Value)
+			if err != nil {
+				return nil, err
 			}
-			from, ok := exp[1].(*Integer)
-			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[1]).String())
-
-			}
-			to, ok := exp[2].(*Integer)
-			if !ok {
-				return nil, NewRuntimeError("E1002", reflect.TypeOf(exp[2]).String())
-
-			}
-			if from.Value < 0 || to.Value > utf8.RuneCountInString(s.Value) || from.Value > to.Value {
-				return nil, NewRuntimeError("E1021", from.String(), to.String())
-			}
-			return NewString(
-				string(
-					[]rune(s.Value)[from.Value:to.Value])), nil
+			return NewString(*ss), nil
 		})
 	}
 	buildInFuncTbl["symbol->string"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
@@ -442,6 +535,143 @@ func buildStringFunc() {
 				l = append(l, NewCharFromRune(rune(c)))
 			}
 			return NewVector(l), nil
+		})
+	}
+	buildInFuncTbl["string-reverse"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 3 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+
+			}
+			ss, err := innerSubString(exp[1:], env, s.Value)
+			if err != nil {
+				return nil, err
+			}
+			// golang is not exists string reverse api
+			runes := []rune(*ss)
+			for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+				runes[i], runes[j] = runes[j], runes[i]
+			}
+			return NewString(string(runes)), nil
+		})
+	}
+	buildInFuncTbl["string-upcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 3 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringCase(exp, env, strings.ToUpper)
+		})
+	}
+	buildInFuncTbl["string-downcase"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 3 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringCase(exp, env, strings.ToLower)
+		})
+	}
+	buildInFuncTbl["string-index"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 4 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringIndex(exp, env, strings.Index)
+		})
+	}
+	buildInFuncTbl["string-index-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 4 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringIndex(exp, env, strings.LastIndex)
+		})
+	}
+	buildInFuncTbl["string-delete"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 4 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+
+			s, ok := exp[0].(*String)
+			if !ok {
+				return nil, NewRuntimeError("E1015", reflect.TypeOf(exp[0]).String())
+			}
+			c, ok := exp[1].(*Char)
+			if !ok {
+				return nil, NewRuntimeError("E1019", reflect.TypeOf(exp[1]).String())
+			}
+			ss, err := innerSubString(exp[2:], env, s.Value)
+			if err != nil {
+				return nil, err
+			}
+			runes := make([]rune, 0, len(*ss))
+			for _, e := range []rune(*ss) {
+				if e != c.Value {
+					runes = append(runes, e)
+				}
+			}
+			return NewString(string(runes)), nil
+		})
+	}
+	buildInFuncTbl["string-trim"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 2 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringTrim(exp, env, strings.TrimLeft)
+		})
+	}
+	buildInFuncTbl["string-trim-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 2 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringTrim(exp, env, strings.TrimRight)
+		})
+	}
+	buildInFuncTbl["string-trim-both"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) < 1 || 2 < len(exp) {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringTrim(exp, env, strings.Trim)
+		})
+	}
+	buildInFuncTbl["string-take"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringRange(exp, env, func(r []rune, n int) []rune { return r[:n] })
+		})
+	}
+	buildInFuncTbl["string-take-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringRange(exp, env, func(r []rune, n int) []rune { return r[len(r)-n:] })
+		})
+	}
+	buildInFuncTbl["string-drop"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringRange(exp, env, func(r []rune, n int) []rune { return r[n:] })
+		})
+	}
+	buildInFuncTbl["string-drop-right"] = func(exp []Expression, env *SimpleEnv) (Expression, error) {
+		if len(exp) != 2 {
+			return nil, NewRuntimeError("E1007", strconv.Itoa(len(exp)))
+		}
+		return EvalCalcParam(exp, env, func(exp ...Expression) (Expression, error) {
+			return stringRange(exp, env, func(r []rune, n int) []rune { return r[:len(r)-n] })
 		})
 	}
 }
