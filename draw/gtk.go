@@ -17,14 +17,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"local.packages/fractal"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
+	"local.packages/fractal"
 )
 
 const (
-	ScreenWidth  = 720
+	ScreenWidth  = 560
 	ScreenHeight = 560
 )
 
