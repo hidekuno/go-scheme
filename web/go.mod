@@ -1,6 +1,6 @@
 module go-scheme/web
 
-go 1.16
+go 1.23.0
 
 replace local.packages/web => ./
 
@@ -10,3 +10,5 @@ require (
 	golang.org/x/net v0.36.0
 	local.packages/web v0.0.0-00010101000000-000000000000
 )
+
+require github.com/gorilla/securecookie v1.1.1 // indirect
